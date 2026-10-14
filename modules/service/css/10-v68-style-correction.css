@@ -1,0 +1,218 @@
+/* =====================================================================
+   V6.8 STYLE CORRECTION
+   - Global module header: V5.17 blue digital visual
+   - Sidebar: V5.17-inspired background only
+   - Navigation buttons / hover / active: restore V6.7.1 behavior
+   ===================================================================== */
+
+/* Common module header: restore the blue V5.17 digital look. */
+.v68-global-hero{
+  position:relative!important;
+  overflow:hidden!important;
+  background:linear-gradient(135deg,#08256f 0%,#0d3ea5 38%,#1356d4 72%,#0ab6b3 100%)!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.14)!important;
+  box-shadow:0 18px 42px rgba(11,47,143,.18),inset 0 1px 0 rgba(255,255,255,.10)!important;
+}
+.v68-global-hero::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  pointer-events:none!important;
+  opacity:.95!important;
+  background:
+    radial-gradient(circle at 94% 18%,rgba(255,255,255,.10) 0 42px,transparent 43px),
+    radial-gradient(circle at 88% 84%,rgba(20,255,214,.18) 0 180px,transparent 181px),
+    radial-gradient(circle at 78% 74%,rgba(255,133,24,.35) 0 3px,transparent 6px),
+    radial-gradient(circle at 37% 18%,rgba(255,133,24,.85) 0 2px,transparent 7px),
+    linear-gradient(90deg,transparent 0 60%,rgba(43,215,255,.18) 60% 61%,transparent 61% 100%),
+    linear-gradient(180deg,transparent 0 76%,rgba(43,215,255,.12) 76% 77%,transparent 77% 100%)!important;
+  background-size:auto!important;
+}
+.v68-global-hero::after{
+  content:""!important;
+  position:absolute!important;
+  right:-26px!important;
+  top:-38px!important;
+  bottom:auto!important;
+  width:240px!important;
+  height:240px!important;
+  border-radius:50%!important;
+  opacity:1!important;
+  pointer-events:none!important;
+  background:
+    radial-gradient(circle,rgba(255,255,255,.08) 0 62%,transparent 63% 100%),
+    radial-gradient(circle,transparent 0 66%,rgba(55,225,255,.14) 67% 69%,transparent 70% 100%),
+    radial-gradient(circle,transparent 0 75%,rgba(255,255,255,.10) 76% 77%,transparent 78% 100%)!important;
+}
+.v68-global-hero>*{position:relative!important;z-index:1!important}
+.v68-global-hero h2{color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.08)!important}
+.v68-global-hero p{color:rgba(244,248,255,.94)!important}
+.v68-global-hero .v68-hero-copy::before{
+  background:linear-gradient(180deg,#ff9d45,#ff5b18)!important;
+  box-shadow:0 0 12px rgba(255,120,34,.7)!important;
+}
+.v68-global-logo{filter:drop-shadow(0 4px 10px rgba(3,18,61,.24))!important}
+
+/* Desktop sidebar: keep the V6.7.1 structure/interactions, change only the shell background. */
+@media(min-width:901px){
+  .app-shell{grid-template-columns:318px 1fr!important}
+  .main{grid-column:2!important;padding:0 18px 110px 0!important;min-width:0!important}
+  .sidebar{
+    top:70px!important;
+    left:18px!important;
+    bottom:16px!important;
+    width:282px!important;
+    padding:15px 14px 14px!important;
+    border-radius:30px!important;
+    overflow:hidden!important;
+    background:
+      radial-gradient(circle at 16% 5%,rgba(93,164,255,.30),transparent 25%),
+      radial-gradient(circle at 94% 74%,rgba(37,202,214,.12),transparent 31%),
+      linear-gradient(165deg,#174fc4 0%,#0d3ea5 44%,#08256f 100%)!important;
+    border:1px solid rgba(255,255,255,.22)!important;
+    box-shadow:0 28px 60px rgba(7,37,105,.25),0 8px 20px rgba(7,37,105,.18),inset 0 1px 0 rgba(255,255,255,.30)!important;
+  }
+  .sidebar::before{
+    content:""!important;
+    position:absolute!important;
+    inset:0!important;
+    pointer-events:none!important;
+    border-radius:inherit!important;
+    background:
+      radial-gradient(circle at 88% 10%,rgba(10,182,179,.13),transparent 21%),
+      linear-gradient(120deg,rgba(255,255,255,.10),transparent 27%),
+      linear-gradient(300deg,rgba(255,255,255,.04),transparent 40%)!important;
+  }
+  .brand-block{
+    position:relative!important;
+    z-index:1!important;
+    padding:9px 10px 16px!important;
+    border-bottom:1px solid rgba(255,255,255,.16)!important;
+    background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.025))!important;
+    border-radius:20px 20px 10px 10px!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12)!important;
+  }
+  .brand-logo-shell{min-height:76px!important}
+  .brand-title{margin-top:7px!important}
+
+  .side-nav{
+    position:relative!important;
+    z-index:2!important;
+    display:grid!important;
+    gap:7px!important;
+    margin:13px -2px 0!important;
+    padding:3px 6px 12px 2px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    min-width:0!important;
+  }
+  .side-nav .nav-item{
+    position:relative!important;
+    max-width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+    min-height:55px!important;
+    padding:8px 11px 8px 9px!important;
+    border:1px solid transparent!important;
+    border-radius:16px!important;
+    grid-template-columns:39px minmax(0,1fr) auto!important;
+    gap:10px!important;
+    color:#f5f8ff!important;
+    letter-spacing:.005em!important;
+    background:transparent!important;
+    transform:none!important;
+    text-shadow:0 1px 4px rgba(0,22,78,.18)!important;
+    transition:transform .20s cubic-bezier(.2,.8,.2,1),box-shadow .20s ease,background .20s ease,border-color .20s ease,color .20s ease!important;
+  }
+  .side-nav .nav-item>span:first-child{
+    width:37px!important;
+    height:37px!important;
+    display:grid!important;
+    place-items:center!important;
+    border-radius:12px!important;
+    font-size:17px!important;
+    line-height:1!important;
+    background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.08))!important;
+    border:1px solid rgba(255,255,255,.14)!important;
+    box-shadow:0 6px 12px rgba(2,19,66,.16),inset 0 1px 0 rgba(255,255,255,.28)!important;
+    /* 2026-09-20: THIS is the icon-chip timing that actually wins — it is !important and it
+       sits after css/01's copy, so editing css/01 alone changes nothing. Slowed to match
+       .nav-item in js/36 (transform .42s, the rest .34s), which is where the button's own
+       press/hover timing lives. All three have to move together or the icon lands first. */
+    transition:transform .42s cubic-bezier(.2,.8,.2,1),background .34s ease,box-shadow .34s ease!important;
+  }
+  .side-nav .nav-item b{
+    min-width:0!important;
+    font-size:16.5px!important;
+    font-weight:600!important;
+    line-height:1.28!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:normal!important;
+  }
+  .side-nav .nav-item:hover{
+    z-index:3!important;
+    color:#fff!important;
+    transform:translate3d(6px,-2px,0) scale(1.018)!important;
+    background:linear-gradient(135deg,rgba(255,255,255,.20),rgba(255,255,255,.09))!important;
+    border-color:rgba(255,255,255,.22)!important;
+    box-shadow:0 13px 24px rgba(2,20,72,.20),0 3px 7px rgba(2,20,72,.13),inset 0 1px 0 rgba(255,255,255,.30)!important;
+  }
+  .side-nav .nav-item:hover>span:first-child{
+    transform:translateY(-1px) scale(1.06)!important;
+    background:linear-gradient(145deg,rgba(255,255,255,.30),rgba(255,255,255,.12))!important;
+    box-shadow:0 8px 15px rgba(2,19,66,.22),inset 0 1px 0 rgba(255,255,255,.42)!important;
+  }
+  .side-nav .nav-item:active{
+    transform:translate3d(3px,0,0) scale(.994)!important;
+    box-shadow:0 5px 10px rgba(2,20,72,.16),inset 0 2px 5px rgba(4,27,87,.15)!important;
+  }
+  .side-nav .nav-item.active{
+    color:#143f9f!important;
+    transform:translateX(4px)!important;
+    border-color:rgba(255,255,255,.70)!important;
+    background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(237,244,255,.94))!important;
+    box-shadow:0 13px 26px rgba(1,21,72,.22),0 4px 0 rgba(3,29,91,.08),inset 0 1px 0 #fff,inset 0 -1px 0 rgba(116,145,205,.18)!important;
+    text-shadow:none!important;
+  }
+  .side-nav .nav-item.active::before{
+    content:""!important;
+    position:absolute!important;
+    left:-4px!important;
+    top:12px!important;
+    bottom:12px!important;
+    width:4px!important;
+    border-radius:99px!important;
+    background:linear-gradient(180deg,#ff8b37,#ff5714)!important;
+    box-shadow:0 0 12px rgba(255,91,20,.55)!important;
+  }
+  .side-nav .nav-item.active>span:first-child{
+    color:#fff!important;
+    background:linear-gradient(145deg,#3370ef,#123f9e)!important;
+    border-color:rgba(255,255,255,.42)!important;
+    box-shadow:0 7px 14px rgba(16,62,160,.28),inset 0 1px 0 rgba(255,255,255,.36)!important;
+  }
+  .side-nav .nav-item.active:hover{
+    color:#0e378e!important;
+    transform:translate3d(7px,-2px,0) scale(1.012)!important;
+    background:linear-gradient(145deg,#fff,#eef4ff)!important;
+  }
+
+  body.v68-nav-collapsed .app-shell{grid-template-columns:1fr!important}
+  .v68-nav-collapsed .sidebar{transform:translateX(-120%)!important;opacity:0!important;pointer-events:none!important}
+  .v68-nav-collapsed .main{grid-column:1!important;padding-left:18px!important}
+}
+
+/* Mobile drawer keeps the same blue shell while retaining responsive V6.8 behavior. */
+@media(max-width:900px){
+  .sidebar{
+    background:
+      radial-gradient(circle at 16% 5%,rgba(93,164,255,.30),transparent 25%),
+      radial-gradient(circle at 94% 74%,rgba(37,202,214,.12),transparent 31%),
+      linear-gradient(165deg,#174fc4 0%,#0d3ea5 44%,#08256f 100%)!important;
+  }
+  .v68-global-hero{background:linear-gradient(135deg,#08256f 0%,#0d3ea5 38%,#1356d4 72%,#0ab6b3 100%)!important}
+  .v68-global-hero h2{color:#fff!important}
+  .v68-global-hero p{color:rgba(244,248,255,.94)!important}
+}

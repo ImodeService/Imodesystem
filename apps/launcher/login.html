@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>เข้าสู่ระบบ · I-MODE System</title>
+<link rel="icon" href="../../assets/brand/imode-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<link rel="stylesheet" href="launcher.css">
+</head>
+<body class="login-page">
+<div class="login">
+  <section class="login-brand" aria-hidden="true">
+    <div class="login-logo"><img src="../../assets/brand/imode-logo-white.png" alt=""></div>
+    <div class="login-pitch">
+      <h1>I-MODE System</h1>
+      <p>ระบบงานของทีม I-MODE ล็อกอินครั้งเดียว ใช้ได้ทุกโมดูล</p>
+      <ul class="login-modules">
+        <li>Service</li><li>QC &amp; Installation</li><li>Inventory</li><li>Installation Planner</li><li>ประชุม</li>
+      </ul>
+    </div>
+  </section>
+
+  <main class="login-panel">
+    <form id="loginForm" class="login-form" novalidate>
+      <img class="login-logo-mobile" src="../../assets/brand/imode-logo.png" alt="I-MODE">
+      <div>
+        <h2>เข้าสู่ระบบ</h2>
+        <p class="muted">สำหรับพนักงาน I-MODE</p>
+      </div>
+
+      <div id="loginError" class="form-error" role="alert" hidden></div>
+
+      <div class="field">
+        <label for="username">ชื่อผู้ใช้</label>
+        <input id="username" name="username" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+      </div>
+      <div class="field">
+        <label for="password">รหัสผ่าน</label>
+        <div class="pw-wrap">
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+          <button type="button" id="togglePw" class="pw-toggle" aria-label="แสดงรหัสผ่าน" aria-pressed="false">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="row-between">
+        <label class="check"><input id="remember" type="checkbox" checked> จำฉันไว้ในเครื่องนี้</label>
+        <button type="button" id="forgotBtn" class="link-btn">ลืมรหัสผ่าน</button>
+      </div>
+      <p id="forgotNote" class="note" hidden>ติดต่อหัวหน้าแผนกหรือผู้ดูแลระบบเพื่อตั้งรหัสผ่านใหม่</p>
+
+      <button id="submitBtn" type="submit" class="btn-primary"><span class="btn-label">เข้าสู่ระบบ</span></button>
+      <p class="muted small">ยังไม่มีบัญชี ให้ติดต่อผู้ดูแลระบบของแผนก ระบบนี้ไม่เปิดให้สมัครเอง</p>
+    </form>
+  </main>
+</div>
+
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="login.js"></script>
+</body>
+</html>

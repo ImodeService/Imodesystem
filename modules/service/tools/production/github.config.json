@@ -1,0 +1,10 @@
+{
+  "_readme": "The production build served by GitHub Pages at /app/ (one host; customerByUrl lets the link pick the customer page). Build: node tools/production/build-web.js --config=tools/production/github.config.json --out=app --strict",
+  "customerHost": "",
+  "staffHost": "imodeservice.github.io",
+  "supabaseUrl": "https://cwrkquzuuyhfhesozqnb.supabase.co",
+  "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3cmtxdXp1dXloZmhlc296cW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NTgwNzAsImV4cCI6MjEwNjEzNDA3MH0.JhWDk3su9Pf9XZSPTDe4sWJiHKE3Pl2OPKHvTj0QTgw",
+  "lineAddFriendUrl": "https://line.me/R/ti/p/%40imodeservice",
+  "lineOfficialAccountId": "@imodeservice",
+  "customerByUrl": true
+}

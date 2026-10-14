@@ -1,0 +1,355 @@
+  /* Customer portal must own the viewport when opened from QR / LIFF. */
+  body.customer-portal-mode{
+    min-width:0!important;
+    min-height:100vh!important;
+    min-height:100dvh!important;
+    overflow-x:hidden!important;
+    background:linear-gradient(145deg,#eef3ff,#ffffff)!important;
+  }
+  body.customer-portal-mode .app-shell{
+    display:block!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    min-height:100vh!important;
+    min-height:100dvh!important;
+  }
+  body.customer-portal-mode .main{
+    display:block!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    min-height:100vh!important;
+    min-height:100dvh!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  body.customer-portal-mode #page-customer-portal{
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    min-height:100vh!important;
+    min-height:100dvh!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  body.customer-portal-mode .portal-shell{
+    width:100%!important;
+    max-width:760px!important;
+    min-width:0!important;
+    min-height:100vh!important;
+    min-height:100dvh!important;
+    margin:0 auto!important;
+    border-radius:0!important;
+    border:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+    box-shadow:0 24px 56px rgba(16,45,105,.14)!important;
+  }
+  body.customer-portal-mode .portal-header{
+    position:sticky;
+    top:0;
+    z-index:40;
+    width:100%;
+    min-width:0;
+    padding-top:calc(12px + env(safe-area-inset-top));
+  }
+  body.customer-portal-mode .portal-header > div{min-width:0}
+  body.customer-portal-mode .portal-header b,
+  body.customer-portal-mode .portal-header small{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  body.customer-portal-mode .portal-line-identity{
+    padding-left:max(14px,env(safe-area-inset-left));
+    padding-right:max(14px,env(safe-area-inset-right));
+  }
+  .imode-line-identity-inner{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    min-width:0;
+  }
+  .imode-line-identity-inner > span{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .imode-line-mini-btn{
+    flex:0 0 auto;
+    min-height:30px;
+    border:1px solid rgba(28,151,68,.22);
+    border-radius:999px;
+    background:#ffffff;
+    color:#16763a;
+    padding:5px 10px;
+    font:inherit;
+    font-size:10px;
+    font-weight:800;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+
+  /* Dedicated detail-page toolbar. It is inserted by the safe script below. */
+  .imode-portal-detail-toolbar{
+    display:none;
+    grid-template-columns:44px minmax(0,1fr) auto;
+    gap:10px;
+    align-items:center;
+    position:sticky;
+    top:76px;
+    z-index:32;
+    padding:10px 14px;
+    background:rgba(246,248,252,.96);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid #e3e8f2;
+  }
+  .portal-shell.imode-portal-detail-mode .imode-portal-detail-toolbar{display:grid}
+  .imode-portal-back-btn,
+  .imode-portal-line-btn{
+    border:1px solid #d8e2f2;
+    background:#ffffff;
+    color:#0b2f8f;
+    border-radius:13px;
+    min-height:42px;
+    font:inherit;
+    font-weight:800;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .imode-portal-back-btn{
+    width:44px;
+    padding:0;
+    font-size:27px;
+    line-height:1;
+  }
+  .imode-portal-line-btn{
+    min-width:68px;
+    padding:0 12px;
+    color:#117a37;
+    border-color:#cdebd6;
+    background:#effbf3;
+    font-size:11px;
+  }
+  .imode-portal-detail-title{min-width:0}
+  .imode-portal-detail-title b{
+    display:block;
+    color:#0c225e;
+    font-size:15px;
+    line-height:1.3;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .imode-portal-detail-title small{
+    display:block;
+    margin-top:2px;
+    color:#69758d;
+    font-size:10px;
+    line-height:1.35;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* Home and detail views share the same HTML without replacing the app. */
+  .portal-shell.imode-portal-detail-mode #portalMachineHero,
+  .portal-shell.imode-portal-detail-mode > .portal-action-grid{
+    display:none!important;
+  }
+  body.customer-portal-mode .portal-action-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    width:100%!important;
+    min-width:0!important;
+    gap:10px!important;
+    padding:0 14px 14px!important;
+  }
+  body.customer-portal-mode .portal-action-grid > button{
+    width:100%!important;
+    min-width:0!important;
+    min-height:108px!important;
+    margin:0!important;
+    padding:14px!important;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+  body.customer-portal-mode .portal-action-grid > button:active,
+  .imode-portal-back-btn:active,
+  .imode-portal-line-btn:active,
+  .imode-line-mini-btn:active{
+    transform:scale(.985);
+  }
+  body.customer-portal-mode #portalMachineHero,
+  body.customer-portal-mode #portalContent,
+  body.customer-portal-mode .portal-footer{
+    min-width:0;
+    max-width:100%;
+  }
+  body.customer-portal-mode #portalContent{
+    overflow-wrap:anywhere;
+  }
+  .portal-shell.imode-portal-detail-mode #portalContent{
+    flex:1 1 auto;
+    width:auto;
+    min-height:260px;
+    margin-top:12px!important;
+  }
+  .imode-portal-machine-context{
+    display:grid;
+    grid-template-columns:42px minmax(0,1fr);
+    gap:10px;
+    align-items:center;
+    margin:0 0 14px;
+    padding:11px 12px;
+    border:1px solid #dce5f5;
+    border-radius:14px;
+    background:linear-gradient(145deg,#f4f8ff,#ffffff);
+  }
+  .imode-portal-machine-context > span{
+    width:42px;
+    height:42px;
+    display:grid;
+    place-items:center;
+    border-radius:13px;
+    background:#eaf1ff;
+    font-size:20px;
+  }
+  .imode-portal-machine-context b{
+    display:block;
+    color:#0c225e;
+    font-size:12px;
+    line-height:1.4;
+  }
+  .imode-portal-machine-context small{
+    display:block;
+    color:#69758d;
+    font-size:10px;
+    line-height:1.45;
+    margin-top:2px;
+  }
+  .imode-portal-contact-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:12px;
+  }
+  .imode-portal-contact-card{
+    min-width:0;
+    border:1px solid #e1e7f1;
+    border-radius:15px;
+    background:#ffffff;
+    padding:14px;
+  }
+  .imode-portal-contact-card strong{
+    display:block;
+    color:#0c225e;
+    font-size:13px;
+  }
+  .imode-portal-contact-card small{
+    display:block;
+    margin-top:4px;
+    color:#69758d;
+    font-size:10px;
+    line-height:1.5;
+  }
+  .imode-portal-contact-action{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    min-height:44px;
+    margin-top:10px;
+    border:0;
+    border-radius:12px;
+    text-decoration:none;
+    background:linear-gradient(180deg,#174fc4,#0b2f8f);
+    color:#ffffff;
+    font:inherit;
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .imode-portal-contact-action.line{
+    background:linear-gradient(180deg,#2cc760,#15a447);
+  }
+  .imode-portal-contact-action.soft{
+    border:1px solid #dce5f5;
+    background:#f5f8ff;
+    color:#0b2f8f;
+  }
+  body.customer-portal-mode .portal-footer{
+    margin-top:auto;
+    padding-bottom:calc(16px + env(safe-area-inset-bottom));
+  }
+
+  /* Tablet: centered app-like panel with enough room for every function. */
+  @media (min-width:768px){
+    body.customer-portal-mode{padding:16px!important}
+    body.customer-portal-mode #page-customer-portal{min-height:calc(100dvh - 32px)!important}
+    body.customer-portal-mode .portal-shell{
+      width:min(100%,760px)!important;
+      min-height:calc(100vh - 32px)!important;
+      min-height:calc(100dvh - 32px)!important;
+      border:1px solid #e2e7f1!important;
+      border-radius:28px!important;
+    }
+    body.customer-portal-mode .portal-header{padding-top:14px}
+  }
+
+  /* Phones: full viewport, no side gaps or negative margins. */
+  @media (max-width:767px){
+    body.customer-portal-mode{padding:0!important}
+    body.customer-portal-mode .portal-shell{
+      width:100%!important;
+      max-width:none!important;
+      min-height:100vh!important;
+      min-height:100dvh!important;
+      margin:0!important;
+      border-radius:0!important;
+    }
+    body.customer-portal-mode .portal-header{
+      grid-template-columns:64px minmax(0,1fr) 40px!important;
+      gap:9px!important;
+      padding-left:max(12px,env(safe-area-inset-left))!important;
+      padding-right:max(12px,env(safe-area-inset-right))!important;
+    }
+    body.customer-portal-mode .portal-header img{width:64px!important;height:42px!important}
+    body.customer-portal-mode .portal-machine-card{
+      grid-template-columns:82px minmax(0,1fr)!important;
+      gap:11px!important;
+      margin:12px!important;
+      padding:12px!important;
+    }
+    body.customer-portal-mode .portal-machine-card img{width:82px!important;height:72px!important}
+    body.customer-portal-mode .portal-machine-card > div{min-width:0}
+    body.customer-portal-mode .portal-machine-card h3{font-size:16px!important;overflow-wrap:anywhere}
+    body.customer-portal-mode .portal-action-grid{padding:0 12px 12px!important;gap:8px!important}
+    body.customer-portal-mode .portal-action-grid > button{min-height:100px!important;padding:12px!important}
+    body.customer-portal-mode #portalContent{margin:0 12px 12px!important;padding:13px!important}
+    .portal-shell.imode-portal-detail-mode #portalContent{margin-top:10px!important}
+    .imode-portal-detail-toolbar{
+      top:calc(66px + env(safe-area-inset-top));
+      padding-left:max(12px,env(safe-area-inset-left));
+      padding-right:max(12px,env(safe-area-inset-right));
+    }
+  }
+
+  /* Very narrow phones keep controls readable and avoid horizontal scroll. */
+  @media (max-width:359px){
+    body.customer-portal-mode .portal-action-grid{grid-template-columns:1fr!important}
+    body.customer-portal-mode .portal-action-grid > button{min-height:88px!important}
+    .imode-portal-contact-grid{grid-template-columns:1fr}
+    .imode-portal-detail-toolbar{grid-template-columns:42px minmax(0,1fr) 58px;gap:7px}
+    .imode-portal-line-btn{min-width:58px;padding:0 8px}
+  }
+
+  @media (min-width:360px) and (max-width:767px){
+    .imode-portal-contact-grid{grid-template-columns:1fr}
+  }

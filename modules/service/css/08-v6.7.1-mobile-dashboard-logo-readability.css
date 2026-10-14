@@ -1,0 +1,49 @@
+/* V6.7.1 — Mobile dashboard logo readability + flex protection */
+@media(max-width:640px){
+  .hero-mobile.hero-digital{
+    align-items:center!important;
+    gap:12px!important;
+    overflow:hidden;
+  }
+  .hero-mobile.hero-digital > div:first-child{
+    flex:1 1 230px;
+    min-width:0;
+  }
+  .hero-mobile.hero-digital .hero-logo{
+    display:block!important;
+    width:clamp(170px,48vw,225px)!important;
+    max-width:72vw!important;
+    height:76px!important;
+    min-width:170px;
+    object-fit:contain!important;
+    object-position:left center!important;
+    flex:0 0 auto!important;
+    margin:0 0 4px!important;
+    filter:none!important;
+  }
+  .hero-mobile.hero-digital .orange-btn{
+    flex:0 0 auto;
+    min-width:118px;
+  }
+}
+@media(max-width:480px){
+  .hero-mobile.hero-digital{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    align-items:start!important;
+    padding:14px 16px 18px!important;
+  }
+  .hero-mobile.hero-digital > div:first-child{width:100%;}
+  .hero-mobile.hero-digital .hero-logo{
+    width:min(220px,72vw)!important;
+    max-width:100%!important;
+    min-width:0!important;
+    height:78px!important;
+  }
+  .hero-mobile.hero-digital .orange-btn{
+    justify-self:start;
+    width:auto!important;
+    max-width:none!important;
+    min-width:138px;
+  }
+}

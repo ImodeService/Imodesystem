@@ -1,0 +1,9 @@
+{
+  "_readme": "Values baked into web/js/00-env.js by tools/build-web.js. Fill the four REPLACE_ME values once the server and the domain exist, then build again. The anon key is public by design (every browser receives it); RLS in database/02-security.sql is what protects the data. NEVER put the service_role key or the JWT secret here.",
+  "customerHost": "REPLACE_ME e.g. service.imode.co.th",
+  "staffHost": "REPLACE_ME e.g. app.imode.co.th",
+  "supabaseUrl": "REPLACE_ME e.g. https://api.imode.co.th",
+  "supabaseAnonKey": "REPLACE_ME (the ANON_KEY from the server's .env)",
+  "lineAddFriendUrl": "https://line.me/R/ti/p/%40imodeservice",
+  "lineOfficialAccountId": "@imodeservice"
+}

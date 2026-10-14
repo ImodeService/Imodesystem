@@ -1,0 +1,8 @@
+{
+  "customerHost": "cust.imode.test",
+  "staffHost": "app.imode.test",
+  "supabaseUrl": "http://api.imode.test:8765",
+  "supabaseAnonKey": "test-anon-key",
+  "lineAddFriendUrl": "https://line.me/R/ti/p/%40imodeservice",
+  "lineOfficialAccountId": "@imodeservice"
+}

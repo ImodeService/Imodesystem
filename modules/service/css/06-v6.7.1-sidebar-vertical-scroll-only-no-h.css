@@ -1,0 +1,4 @@
+/* V6.7.1 — Sidebar: vertical scroll only, no horizontal scrollbar */
+.side-nav{overflow-y:auto!important;overflow-x:hidden!important;min-width:0!important;}
+.side-nav .nav-item{max-width:100%!important;min-width:0!important;box-sizing:border-box!important;}
+.side-nav .nav-item b{min-width:0;}

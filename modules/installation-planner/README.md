@@ -1,0 +1,3 @@
+# installation-planner
+
+ยังว่างอยู่ ดูแผนใน README.md ที่ราก

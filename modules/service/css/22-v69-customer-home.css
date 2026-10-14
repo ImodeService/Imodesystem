@@ -1,0 +1,500 @@
+/* =====================================================================
+   V6.9 — Customer Home page, built to the design the user supplied
+
+   Only #page-customer-portal is touched. The structure is the one in
+   pages/customer-home.html; the machine information card is rendered at runtime by
+   js/19-v69CustomerHomeScript.js.
+
+   Loaded after css/21, which is itself loaded after css/20 and after the <style> blocks
+   js/10 and js/16 append to <head> — so these rules win at equal specificity. The few
+   !important declarations here are answering an !important rule in css/20.
+
+   The entrance animation (each button popping in one after another) is driven by
+   --chome-i, an index js/19 stamps on every button before the first paint.
+   ===================================================================== */
+
+/* Belt and braces with the <meta name="color-scheme"> in index.html: some Android
+   browsers only honour the CSS property. The whole UI is white by design — without this,
+   Chrome/Samsung Internet "auto dark theme" repaints the customer page dark and inverts
+   the machine photographs. */
+:root{color-scheme:only light}
+
+.chome{
+  --chome-ink:#0c225e;
+  --chome-muted:#68789a;
+  --chome-line:#dbe6f8;
+  background:linear-gradient(180deg,#eef4ff 0%,#f7faff 40%,#ffffff 100%);
+}
+
+/* ---------------------------------------------------------------------
+   1. Header — logo | name + tagline | close
+   White, with the type in the logo's own navy and the accent in its orange.
+   The base rule in css/01 paints it I-MODE blue and sets white type; everything that
+   assumed a dark ground is restated here. The grid (78px / 1fr / 38px) is untouched.
+   --------------------------------------------------------------------- */
+.chome-header{
+  padding:16px 16px 18px;
+  background:linear-gradient(180deg,#ffffff 0%,#f7faff 100%);
+  color:#0c225e;
+  border-bottom:1px solid #e3ebf8;
+  box-shadow:0 6px 18px rgba(16,54,128,.06);
+}
+/* The wordmark is already navy on transparent, so the white chip it wore on the blue
+   header (js/14, .centry-portal-logo) is not needed and would show as a box. */
+.chome-header .centry-portal-logo{
+  background:transparent;
+  padding:0;
+  box-shadow:none;
+}
+.chome-headline{
+  min-width:0;
+  padding-left:14px;
+  border-left:1px solid #dbe6f8;
+}
+.chome-headline b{
+  display:block;
+  font-size:18px;
+  line-height:1.2;
+  letter-spacing:.01em;
+  color:#0c225e;
+}
+.chome-headline small{
+  display:block;
+  font-size:12px;
+  margin-top:1px;
+  color:#2b5fae;
+  opacity:1;
+}
+.chome-headline em{
+  display:block;
+  margin-top:6px;
+  font-style:normal;
+  font-size:10.5px;
+  line-height:1.45;
+  color:#6b7d9e;
+}
+/* Close button: a light chip instead of the translucent white one. */
+.chome-header .portal-close{
+  background:#eef3fb;
+  border:1px solid #dce6f6;
+  color:#3b4d73;
+  font-weight:700;
+}
+.chome-header .portal-close:hover{
+  background:#e2ebf9;
+  color:#0c225e;
+}
+
+/* The green LINE / QR strip under the header is removed from the design.
+   #portalLineIdentity stays in the DOM: renderCustomerPortal() in js/03 and
+   updateLineIdentity() in js/08 both write to it by id and would throw without it. */
+.chome .portal-line-identity{display:none !important}
+
+/* ---------------------------------------------------------------------
+   2. Machine information card
+   --------------------------------------------------------------------- */
+.chome-machine{
+  margin:14px;
+  padding:14px;
+  border-radius:20px;
+  background:linear-gradient(160deg,#ffffff,#f4f8ff);
+  border:1px solid var(--chome-line);
+  box-shadow:0 12px 26px rgba(16,54,128,.09);
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
+  gap:14px;
+  align-items:start;
+}
+.chome-machine-photo{
+  border-radius:16px;
+  overflow:hidden;
+  background:linear-gradient(150deg,#e9f1ff,#ffffff);
+  border:1px solid #e2ebf9;
+  aspect-ratio:4/3;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.chome-machine-photo img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+/* A reference picture of the model is not this machine, so it is shown whole. */
+.chome-machine-photo img.is-reference{object-fit:contain;background:#fff;padding:6px}
+.chome-machine-photo .chome-noimg{
+  font-size:11px;
+  font-weight:700;
+  color:#5571ab;
+}
+.chome-machine-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+.chome-machine-head span{
+  width:38px;height:38px;
+  flex:0 0 38px;
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;
+  background:linear-gradient(160deg,#2b7bf0,#0b46b0);
+  box-shadow:0 6px 14px rgba(11,70,176,.30);
+}
+.chome-machine-head b{
+  display:block;
+  font-size:15px;
+  color:var(--chome-ink);
+  line-height:1.25;
+}
+.chome-machine-head small{
+  display:block;
+  font-size:9.5px;
+  letter-spacing:.16em;
+  color:#8ea3c6;
+  margin-top:2px;
+}
+.chome-row{
+  display:grid;
+  grid-template-columns:minmax(74px,auto) minmax(0,1fr);
+  gap:8px;
+  padding:7px 0;
+  border-bottom:1px dashed #e5edf9;
+  font-size:12px;
+  align-items:baseline;
+}
+.chome-row:last-child{border-bottom:0}
+.chome-row dt{color:var(--chome-muted);font-size:11.5px}
+.chome-row dd{margin:0;color:var(--chome-ink);font-weight:700;overflow-wrap:anywhere}
+.chome-row dd.is-plain{font-weight:600;color:#33456d}
+.chome-warranty{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 11px;
+  border-radius:999px;
+  font-size:11.5px;
+  font-weight:800;
+}
+.chome-warranty.active{background:#e6f7ec;color:#12784a;border:1px solid #bde9cf}
+.chome-warranty.expiring{background:#fff4e2;color:#9a5b06;border:1px solid #f6d9ab}
+.chome-warranty.expired,
+.chome-warranty.none{background:#fdeceb;color:#9d2b26;border:1px solid #f5c9c6}
+.chome-warranty-sub{
+  display:block;
+  margin-top:4px;
+  font-size:10.5px;
+  font-weight:600;
+  color:var(--chome-muted);
+}
+.chome-refnote{
+  margin:6px 0 0;
+  font-size:10px;
+  color:#8ea3c6;
+}
+
+/* ---------------------------------------------------------------------
+   3. Action cards
+   --------------------------------------------------------------------- */
+.chome-grid{gap:12px !important}
+.chome-grid > button{
+  position:relative;
+  display:grid;
+  grid-template-columns:56px minmax(0,1fr);
+  grid-template-rows:auto auto auto;
+  column-gap:12px;
+  row-gap:2px;
+  align-content:center;
+  min-height:118px !important;
+  padding:15px 42px 13px 15px !important;
+  border-radius:18px;
+}
+.chome-grid > button > span:first-child{
+  grid-row:1 / span 3;
+  align-self:center;
+  width:52px !important;
+  height:52px !important;
+  font-size:26px;
+}
+.chome-grid > button b{margin-top:0 !important;font-size:14.5px;line-height:1.25}
+.chome-grid > button small{margin-top:2px !important;font-size:10.5px}
+/* The small caps label, with the coloured rule above it from the design. */
+.chome-grid > button i{
+  grid-column:2;
+  font-style:normal;
+  margin-top:9px;
+  padding-top:8px;
+  font-size:8.5px;
+  font-weight:800;
+  letter-spacing:.14em;
+  color:#93a6c7;
+  position:relative;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.chome-grid > button i::before{
+  content:"";
+  position:absolute;
+  top:0;left:0;
+  width:26px;height:3px;
+  border-radius:2px;
+  background:#0b63e5;
+}
+.chome-grid > button:nth-child(1) i::before{background:#2b7bf0}
+.chome-grid > button:nth-child(2) i::before{background:#22b6d8}
+.chome-grid > button:nth-child(3) i::before{background:#f79009}
+.chome-grid > button:nth-child(4) i::before{background:#e2591f}
+.chome-grid > button:nth-child(5) i::before{background:#7a5af0}
+.chome-grid > button:nth-child(6) i::before{background:#0f9d6b}
+.chome-grid > button:nth-child(7) i::before{background:#07b154}
+.chome-grid > button:nth-child(8) i::before{background:#4b5fd6}
+.chome-grid > button:nth-child(9) i::before{background:#f2911c}
+/* 2026-09-21 — แจ้งปัญหาเครื่อง IS THE ONE BUTTON A CUSTOMER IS LOOKING FOR when something is
+   wrong, so it wears the same red as the หมดประกัน pill above it (.chome-warranty.expired):
+   #fdeceb on #f5c9c6 with #9d2b26 type. Addressed by CLASS, not by :nth-child — the colours
+   below it are positional and would follow the order if the buttons were ever rearranged;
+   this one has to follow the meaning.
+
+   css/21 is loaded AFTER this file and dresses every .portal-action-grid > button, so these
+   rules carry one extra class to outrank it (0,2,1 against 0,1,1) rather than !important.
+
+   THE WHOLE BLOCK SITS AFTER THE :nth-child COLOURS ABOVE, and has to: the stripe rule is
+   (0,2,2) either way, so on equal specificity the later one wins. Measured — placed before
+   them the stripe stayed #2b7bf0 blue. */
+.chome-grid > button.chome-report{
+  background:linear-gradient(180deg,#fff6f5 0%,#fdeceb 60%,#fbe0de 100%);
+  border-color:#f0b9b5;
+  border-bottom-color:#e3a5a0;
+  box-shadow:
+    0 5px 0 #f3c8c4,
+    0 13px 22px rgba(157,43,38,.16),
+    inset 0 1px 0 rgba(255,255,255,.9);
+}
+.chome-grid > button.chome-report:hover{
+  border-color:#e79a94;
+  box-shadow:
+    0 7px 0 #f0bdb8,
+    0 18px 30px rgba(157,43,38,.22),
+    inset 0 1px 0 rgba(255,255,255,.9);
+}
+.chome-grid > button.chome-report:active{
+  box-shadow:
+    0 1px 0 #f0bdb8,
+    0 6px 12px rgba(157,43,38,.18),
+    inset 0 1px 0 rgba(255,255,255,.9);
+}
+.chome-grid > button.chome-report b{color:#9d2b26}
+.chome-grid > button.chome-report i{color:#b4635e}
+.chome-grid > button.chome-report i::before{background:#e31b2f}
+.chome-grid > button.chome-report > span:first-child{
+  background:linear-gradient(180deg,#fff2f1 0%,#fbdcda 100%);
+  border-color:#f0b9b5;
+  box-shadow:0 3px 0 #f0bdb8, inset 0 1px 0 rgba(255,255,255,.95);
+}
+/* the chevron gutter mark, so the whole card reads as one colour */
+.chome-grid > button.chome-report::after{color:#c4736d}
+/* THE CHEVRON GUTTER.
+
+   css/20 line 334 is
+
+     body.customer-portal-mode .portal-action-grid > button{...;padding:12px!important}
+
+   which is (0,2,2) with !important and therefore beats the (0,1,1) padding above, so in
+   portal mode on a phone the right gutter that keeps the title clear of the ::after
+   chevron disappeared and long titles ran underneath it — measured at 390px:
+   "ประวัติ Service" 21px under, "ติดต่อ Service" 16px. Pre-existing; it showed on the
+   reported screenshot too.
+
+   Clearing it with a right gutter on the whole card works, but it narrows the text column
+   on every row and the small-caps English label starts ellipsising ("SERVICE C..."). The
+   chevron is only 34px tall — title height, not label height — so the clearance is put on
+   the title alone and the label keeps the full column width. */
+body.customer-portal-mode .chome-grid > button b{padding-right:26px}
+
+/* The chevron the design puts in the top right corner. */
+.chome-grid > button::after{
+  content:"›";
+  position:absolute;
+  top:12px;right:12px;
+  width:22px;height:22px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;
+  font-weight:700;
+  line-height:1;
+  color:#2b7bf0;
+  background:#eaf2ff;
+  border:1px solid #d5e6fd;
+  transition:transform .16s ease, background .16s ease;
+}
+.chome-grid > button:hover::after{transform:translateX(2px);background:#ddeaff}
+
+/* The announcement card spans the row. */
+.chome-grid > button.chome-wide{
+  grid-column:1 / -1;
+  min-height:96px !important;
+  background:linear-gradient(160deg,#eef5ff 0%,#ffffff 60%,#f2f7ff 100%);
+}
+.chome-grid > button.chome-wide b{font-size:14px}
+
+/* ---------------------------------------------------------------------
+   4. Entrance — every button pops in, one after the next
+   --chome-i is stamped per button by js/19 before the first paint.
+   --------------------------------------------------------------------- */
+@keyframes chomePopIn{
+  0%  {opacity:0;transform:translateY(14px) scale(.92)}
+  62% {opacity:1;transform:translateY(-3px) scale(1.02)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes chomeFadeIn{from{opacity:0}to{opacity:1}}
+.chome-anim .chome-grid > button{
+  animation:chomePopIn .42s cubic-bezier(.2,.9,.3,1.15) backwards;
+  animation-delay:calc(var(--chome-i,0) * 70ms);
+}
+.chome-anim .chome-machine{
+  animation:chomePopIn .44s cubic-bezier(.2,.9,.3,1.15) backwards;
+}
+.chome-anim .chome-header{animation:chomeFadeIn .3s ease backwards}
+
+/* ---------------------------------------------------------------------
+   4b. After reporting a problem: confirmation + the machine's case list
+   --------------------------------------------------------------------- */
+.chome-done{
+  text-align:center;
+  padding:16px 12px 14px;
+  border-radius:16px;
+  background:linear-gradient(160deg,#e9f9ef,#ffffff);
+  border:1px solid #c8ead6;
+}
+.chome-done-mark{font-size:38px;line-height:1}
+.chome-done b{
+  display:block;
+  margin-top:6px;
+  font-size:17px;
+  color:#12784a;
+}
+.chome-done p{margin:6px 0 0;font-size:12.5px;color:var(--chome-ink)}
+.chome-done strong{color:#0b63e5}
+.chome-done small{display:block;margin-top:6px;font-size:11px;color:var(--chome-muted)}
+
+.chome-caselist{margin-top:16px}
+.chome-caselist h4{
+  margin:0 0 8px;
+  font-size:13.5px;
+  color:var(--chome-ink);
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.chome-caselist h4 span{
+  font-size:11px;
+  font-weight:800;
+  color:#0b63e5;
+  background:#eaf2ff;
+  border:1px solid #d5e6fd;
+  border-radius:999px;
+  padding:1px 8px;
+}
+.chome-case{
+  padding:10px 12px;
+  border:1px solid var(--chome-line);
+  border-radius:12px;
+  background:#fff;
+  margin-bottom:8px;
+}
+.chome-case-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.chome-case-top b{font-size:12.5px;color:var(--chome-ink)}
+.chome-case small{display:block;margin-top:3px;font-size:10.5px;color:var(--chome-muted)}
+.chome-case-issue{overflow-wrap:anywhere}
+.chome-case-chip{
+  flex:0 0 auto;
+  font-size:10.5px;
+  font-weight:800;
+  border-radius:999px;
+  padding:2px 9px;
+}
+.chome-case-chip.new{background:#eaf2ff;color:#0b63e5;border:1px solid #d5e6fd}
+.chome-case-chip.open{background:#fff4e2;color:#9a5b06;border:1px solid #f6d9ab}
+.chome-case-chip.wait{background:#fdeceb;color:#9d2b26;border:1px solid #f5c9c6}
+.chome-case-chip.done{background:#e6f7ec;color:#12784a;border:1px solid #bde9cf}
+.chome-case-empty{font-size:12px;color:var(--chome-muted);margin:0}
+
+.chome-back-home{
+  width:100%;
+  margin-top:14px;
+  padding:12px;
+  border:1px solid #cfe0f7;
+  border-radius:12px;
+  font-size:13.5px;
+  font-weight:700;
+  color:#0c4bb5;
+  cursor:pointer;
+  background:linear-gradient(180deg,#ffffff,#eef4ff);
+  box-shadow:0 4px 0 #dfe9f8, 0 10px 18px rgba(16,54,128,.10);
+  transition:transform .16s ease, box-shadow .16s ease;
+}
+.chome-back-home:hover{transform:translateY(-2px);box-shadow:0 6px 0 #d6e4f7, 0 14px 24px rgba(16,54,128,.14)}
+.chome-back-home:active{transform:translateY(3px);box-shadow:0 1px 0 #d6e4f7, inset 0 2px 6px rgba(16,54,128,.10)}
+
+/* ---------------------------------------------------------------------
+   5. Footer
+   --------------------------------------------------------------------- */
+.chome-footer{
+  padding:18px 16px 22px;
+  line-height:1.7;
+}
+.chome-motto{
+  display:block;
+  margin-bottom:5px;
+  font-size:9.5px;
+  font-weight:800;
+  letter-spacing:.2em;
+  color:#7d93bb;
+}
+
+/* ---------------------------------------------------------------------
+   6. Narrow phones — the card stacks, everything else already fits
+   --------------------------------------------------------------------- */
+@media (max-width:420px){
+  .chome-machine{grid-template-columns:minmax(0,1fr)}
+  .chome-grid > button{
+    grid-template-columns:46px minmax(0,1fr);
+    min-height:112px !important;
+    padding:13px 38px 12px 13px !important;
+  }
+
+  .chome-grid > button > span:first-child{width:44px !important;height:44px !important;font-size:22px}
+  .chome-headline em{display:none}
+}
+
+/* ---------------------------------------------------------------------
+   6b. The English label fits on a phone
+   2026-09-24 - measured, not eyeballed: the label box is 95px at 390px and 80px at
+   360px, while "BUY / RENEW WARRANTY" needs 135px, so with white-space:nowrap it came
+   out as "BUY / RENEW W...". Four of the nine labels were cut at 390px, six at 360px,
+   three at 430px and one at 480px; at 540px and above nothing is cut, which is why this
+   stops there. The label is allowed to wrap instead of being truncated. The coloured
+   rule is an absolutely positioned ::before at top:0, so it is unaffected, and the
+   cards already carry min-height:112px, so a second line costs no height. The letter
+   spacing comes down a little so most labels still fit on one line.
+   --------------------------------------------------------------------- */
+@media (max-width:540px){
+  .chome-grid > button i{
+    white-space:normal;
+    letter-spacing:.07em;
+    line-height:1.3;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   7. Reduced motion — the page simply appears
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion:reduce){
+  .chome-anim .chome-grid > button,
+  .chome-anim .chome-machine,
+  .chome-anim .chome-header{animation:chomeFadeIn .2s ease backwards;animation-delay:0s}
+  .chome-grid > button:hover::after{transform:none}
+}

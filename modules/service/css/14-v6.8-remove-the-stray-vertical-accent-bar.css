@@ -1,0 +1,8 @@
+/* V6.8 — Remove the stray vertical accent bar from the shared module header. */
+.v68-global-hero .v68-hero-copy::before{
+  display:none!important;
+  content:none!important;
+  width:0!important;
+  height:0!important;
+  box-shadow:none!important;
+}

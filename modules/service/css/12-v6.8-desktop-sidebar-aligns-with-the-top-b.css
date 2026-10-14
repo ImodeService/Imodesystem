@@ -1,0 +1,7 @@
+/* V6.8 — Desktop sidebar aligns with the top bar instead of starting below it. */
+@media (min-width:901px){
+  .sidebar{
+    top:0!important;
+    bottom:16px!important;
+  }
+}

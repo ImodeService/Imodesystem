@@ -1,0 +1,143 @@
+/* V6.8 — Mobile Calendar: show the real calendar instead of hiding it */
+@media (max-width:640px){
+  #page-calendar .calendar-scroll{
+    display:block!important;
+    overflow-x:auto!important;
+    overflow-y:visible!important;
+    width:100%;
+    padding:0 10px 10px;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-inline:contain;
+    scrollbar-width:thin;
+  }
+  #page-calendar .tech-calendar{
+    min-width:0!important;
+    width:100%;
+  }
+  /* Day view stays fitted to the phone width */
+  #page-calendar .day-list{
+    min-width:0;
+    padding:10px 0;
+    gap:9px;
+  }
+  #page-calendar .day-tech-card{
+    min-width:0;
+    padding:12px;
+    border-radius:14px;
+  }
+  #page-calendar .day-tech-head{
+    gap:8px;
+  }
+  #page-calendar .day-tech-head h4{font-size:14px}
+  #page-calendar .day-tech-head p{font-size:10px}
+  #page-calendar .day-job{padding:9px 10px}
+  #page-calendar .day-job b{font-size:11px}
+  #page-calendar .day-job small{font-size:10px}
+
+  /* Week view is a real 7-day calendar and can be swiped horizontally */
+  #page-calendar .cal-header,
+  #page-calendar .cal-row{
+    grid-template-columns:125px repeat(7,92px)!important;
+    width:max-content;
+    min-width:769px;
+  }
+  #page-calendar .cal-header>div,
+  #page-calendar .cal-row>div{
+    padding:7px;
+    min-height:72px;
+  }
+  #page-calendar .cal-header>div{
+    position:sticky;
+    top:0;
+    z-index:2;
+    font-size:10px;
+  }
+  #page-calendar .cal-header>div:first-child,
+  #page-calendar .cal-row>div:first-child{
+    position:sticky;
+    left:0;
+    z-index:3;
+    box-shadow:4px 0 8px rgba(19,45,103,.05);
+  }
+  #page-calendar .cal-header>div:first-child{z-index:4}
+  #page-calendar .tech-name{font-size:11px}
+  #page-calendar .tech-role{font-size:8.5px}
+  #page-calendar .team-badge{font-size:8px;padding:4px 6px}
+  #page-calendar .job-chip{padding:6px;font-size:9px;border-radius:8px}
+  #page-calendar .job-chip b{font-size:9px}
+
+  /* Month view keeps the familiar 7-column calendar; swipe to see all days */
+  #page-calendar .month-grid{
+    grid-template-columns:repeat(7,82px)!important;
+    width:max-content;
+    min-width:574px;
+    gap:0!important;
+    padding:0!important;
+    border-top:1px solid var(--line)!important;
+    border-left:1px solid var(--line)!important;
+  }
+  #page-calendar .month-cell{
+    min-height:92px!important;
+    padding:6px!important;
+    border-radius:0!important;
+    border:0!important;
+    border-right:1px solid var(--line)!important;
+    border-bottom:1px solid var(--line)!important;
+  }
+  #page-calendar .month-date{font-size:9px;margin-bottom:4px}
+  #page-calendar .month-count{font-size:8px;padding:2px 5px}
+  #page-calendar .month-appt{
+    font-size:8px;
+    padding:4px 5px;
+    border-radius:6px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  #page-calendar .month-more{font-size:8px}
+
+  /* Year view remains a clean single column */
+  #page-calendar .year-grid{
+    grid-template-columns:1fr!important;
+    min-width:0;
+    padding:10px 0;
+    gap:9px;
+  }
+  #page-calendar .year-card{padding:12px;border-radius:14px}
+
+  /* Keep the appointment summary below the visible calendar */
+  #page-calendar .mobile-agenda{
+    display:grid!important;
+    padding:10px;
+    gap:9px;
+    border-top:1px solid var(--line);
+  }
+  #page-calendar .calendar-toolbar-v2{
+    padding:10px 12px;
+    gap:9px;
+  }
+  #page-calendar .calendar-main-controls,
+  #page-calendar .calendar-view-switch{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:7px;
+  }
+  #page-calendar .calendar-view-switch{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+  #page-calendar .calendar-main-controls button,
+  #page-calendar .calendar-view-switch button{
+    min-width:0;
+    padding:9px 6px;
+    font-size:11px;
+  }
+  #page-calendar .calendar-filters select{
+    width:100%;
+  }
+  #page-calendar #calendarRange{
+    display:block;
+    width:100%;
+    text-align:right;
+    font-size:12px;
+  }
+}

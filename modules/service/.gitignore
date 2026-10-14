@@ -1,0 +1,58 @@
+# I-MODE Plus Service & Maintenance
+
+# Browser / tooling noise
+debug.log
+*.log
+# Headless-test debris that has landed in the repo root before: a Chrome profile from a
+# test run, and a literal "%SystemDrive%" folder from a Windows variable that was never
+# expanded. Neither belongs to the application.
+tmp/
+%SystemDrive%/
+
+# Data exports — these contain real customer records, never publish them
+I-MODE_Service_Backup_*.json
+imode-seed-*.sql
+
+# Credentials — the app stores the Supabase URL and anon key in localStorage,
+# so nothing should ever land here. Kept as a guard.
+.env
+.env.*
+*.pem
+*.key
+
+# OS / editor
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Dependencies (this project has none, kept as a guard)
+node_modules/
+
+# Claude Code local machine settings — not part of the app
+.claude/settings.local.json
+
+# Android WebView wrapper for the technician (Andriod_app/) — kept out of this repository on
+# the owner's instruction 2026-09-23. It is 22 MB including Gradle build artifacts, GitHub
+# Pages would not serve it, and the offline test is being done in a mobile browser instead.
+# The source is on the owner's machine; move it to its own repository when it is wanted.
+Andriod_app/
+
+# Shell accidents that have landed in the repo root
+indow.*
+
+# Real customer / machine data — never commit (repo was public)
+Data/
+
+# The owner's own to-do list (list-to-make.html) — kept on this machine only
+list-to-make.html
+
+# The production folder (its own private git repo): real customer data, staff seed passwords,
+# server config. It must never reach this PUBLIC repository or GitHub Pages.
+/production/
+
+# Test build output of tools/production (npm run build-test)
+tools/production/test/webtest/
+__pycache__/

@@ -1,0 +1,9 @@
+{
+  "_readme": "Staging on Supabase Cloud (project cwrkquzuuyhfhesozqnb, free plan) to test the server login and RLS before the VPS exists. Served locally: staff = http://localhost:PORT, customer = http://127.0.0.1:PORT (same files, the hostname picks the mode). Build: node tools/build-web.js --config=staging.config.json --out=webstaging --strict",
+  "customerHost": "127.0.0.1",
+  "staffHost": "localhost",
+  "supabaseUrl": "https://cwrkquzuuyhfhesozqnb.supabase.co",
+  "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3cmtxdXp1dXloZmhlc296cW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NTgwNzAsImV4cCI6MjEwNjEzNDA3MH0.JhWDk3su9Pf9XZSPTDe4sWJiHKE3Pl2OPKHvTj0QTgw",
+  "lineAddFriendUrl": "https://line.me/R/ti/p/%40imodeservice",
+  "lineOfficialAccountId": "@imodeservice"
+}

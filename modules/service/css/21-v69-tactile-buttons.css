@@ -1,0 +1,274 @@
+/* =====================================================================
+   V6.9 — Tactile buttons on the customer Home page and the technician pages
+
+   The customer's seven service buttons and the technician's module cards were flat
+   panels: nothing rose under the finger and nothing pressed down, so on a phone there
+   was no feedback that a tap had registered at all.
+
+   This file gives them the same dimensional treatment the application already uses for
+   its important actions (.action-3d-orange in css/01, V5.25): a solid colour "ledge"
+   under the element that makes it stand proud of the page, a small lift on hover, and a
+   real press on :active where the ledge collapses and the element travels down into it.
+   Nothing here changes a layout, a colour role or a size — only depth and motion.
+
+   Loaded last, after css/20 and after the <style> blocks js/10 and js/16 append to
+   <head>, so these rules win at equal specificity without needing !important. The two
+   places that do carry !important are overriding an !important rule in css/20.
+   ===================================================================== */
+
+:root{
+  --tactile-lift:-2px;
+  --tactile-press:3px;
+}
+
+/* ---------------------------------------------------------------------
+   1. Customer Home — the seven service buttons
+   --------------------------------------------------------------------- */
+.portal-action-grid > button{
+  position:relative;
+  background:linear-gradient(180deg,#ffffff 0%,#f7faff 55%,#eef4fd 100%);
+  border:1px solid #d7e3f5;
+  border-bottom-color:#c2d3ec;
+  box-shadow:
+    0 5px 0 #dbe6f7,
+    0 13px 22px rgba(16,54,128,.13),
+    inset 0 1px 0 rgba(255,255,255,.95);
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  will-change:transform;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.portal-action-grid > button:hover{
+  transform:translateY(var(--tactile-lift));
+  border-color:#a9cdf7;
+  box-shadow:
+    0 7px 0 #d3e2f7,
+    0 18px 30px rgba(16,54,128,.18),
+    inset 0 1px 0 rgba(255,255,255,.95);
+}
+.portal-action-grid > button:focus-visible{
+  outline:3px solid #ff8a3c;
+  outline-offset:3px;
+}
+/* The press: the ledge collapses to a hairline and the button travels into it. */
+.portal-action-grid > button:active,
+body.customer-portal-mode .portal-action-grid > button:active{
+  transform:translateY(var(--tactile-press));
+  box-shadow:
+    0 1px 0 #cfdff5,
+    0 4px 9px rgba(16,54,128,.14),
+    inset 0 2px 6px rgba(16,54,128,.10);
+}
+/* The icon is what the eye lands on first, so give it a little pad of its own. */
+.portal-action-grid > button > span:first-child{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  background:linear-gradient(160deg,#eaf2ff,#ffffff);
+  border:1px solid #dbe7f9;
+  box-shadow:inset 0 1px 0 #fff, 0 3px 7px rgba(16,54,128,.08);
+  transition:transform .16s ease, box-shadow .16s ease;
+}
+.portal-action-grid > button:hover > span:first-child{
+  transform:translateY(-1px);
+  box-shadow:inset 0 1px 0 #fff, 0 6px 12px rgba(16,54,128,.14);
+}
+.portal-action-grid > button:active > span:first-child{
+  transform:translateY(1px);
+  box-shadow:inset 0 1px 3px rgba(16,54,128,.14);
+}
+
+/* The buttons the portal builds for a detail view (back / LINE) get the same feel. */
+.imode-portal-back-btn,
+.imode-portal-line-btn,
+.imode-line-mini-btn{
+  transition:transform .16s ease, box-shadow .16s ease, filter .16s ease;
+  will-change:transform;
+}
+.imode-portal-back-btn:hover,
+.imode-portal-line-btn:hover,
+.imode-line-mini-btn:hover{
+  transform:translateY(var(--tactile-lift));
+  filter:brightness(1.03);
+}
+.imode-portal-back-btn:active,
+.imode-portal-line-btn:active,
+.imode-line-mini-btn:active{
+  transform:translateY(var(--tactile-press)) scale(.995);
+  box-shadow:inset 0 2px 6px rgba(16,54,128,.16);
+}
+
+/* ---------------------------------------------------------------------
+   2. Customer entry page — scan / photo / continue
+   --------------------------------------------------------------------- */
+.centry-scan{
+  box-shadow:
+    0 5px 0 #b94705,
+    0 13px 22px rgba(238,95,11,.26),
+    inset 0 1px 0 rgba(255,255,255,.6) !important;
+  transition:transform .16s ease, box-shadow .16s ease, filter .16s ease;
+  will-change:transform;
+}
+.centry-scan:hover{
+  transform:translateY(var(--tactile-lift));
+  box-shadow:0 7px 0 #b94705, 0 17px 28px rgba(238,95,11,.30), inset 0 1px 0 rgba(255,255,255,.6) !important;
+}
+.centry-scan:active{
+  transform:translateY(var(--tactile-press));
+  box-shadow:0 1px 0 #b94705, 0 4px 9px rgba(238,95,11,.20), inset 0 2px 6px rgba(138,48,0,.20) !important;
+}
+.rhome-login-btn{
+  transition:transform .16s ease, box-shadow .16s ease, filter .16s ease;
+  will-change:transform;
+  box-shadow:0 5px 0 #0a479f, 0 13px 22px rgba(11,99,229,.26), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.rhome-login-btn:hover{
+  transform:translateY(var(--tactile-lift));
+  box-shadow:0 7px 0 #0a479f, 0 17px 28px rgba(11,99,229,.30), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.rhome-login-btn:active{
+  transform:translateY(var(--tactile-press));
+  box-shadow:0 1px 0 #0a479f, 0 4px 9px rgba(11,99,229,.20), inset 0 2px 6px rgba(6,40,92,.24);
+}
+
+/* ---------------------------------------------------------------------
+   3. Technician (and admin) Home board — the module cards
+   js/10 appends its own <style> to <head>; this file is a <link> inside <body>, so it
+   comes later in the cascade and these win at equal specificity.
+   --------------------------------------------------------------------- */
+.rhome-modcard{
+  background:linear-gradient(180deg,#ffffff 0%,#f7faff 55%,#edf3fd 100%);
+  border-bottom-color:#c2d3ec;
+  box-shadow:
+    0 5px 0 #dbe6f7,
+    0 13px 22px rgba(18,58,128,.13),
+    inset 0 1px 0 rgba(255,255,255,.95);
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  will-change:transform;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.rhome-modcard:hover{
+  transform:translateY(var(--tactile-lift));
+  border-color:#a9cdf7;
+  box-shadow:
+    0 7px 0 #d3e2f7,
+    0 18px 30px rgba(18,58,128,.18),
+    inset 0 1px 0 rgba(255,255,255,.95);
+}
+/* Not while the launch animation is running: that animation owns the transform, and a
+   finger still on the card would otherwise fight it. */
+.rhome-modcard:active:not(.is-launch){
+  transform:translateY(var(--tactile-press));
+  box-shadow:
+    0 1px 0 #cfdff5,
+    0 4px 9px rgba(18,58,128,.14),
+    inset 0 2px 6px rgba(18,58,128,.10);
+}
+.rhome-modcard-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:46px;
+  height:46px;
+  border-radius:14px;
+  background:linear-gradient(160deg,#eaf2ff,#ffffff);
+  border:1px solid #dbe7f9;
+  box-shadow:inset 0 1px 0 #fff, 0 3px 7px rgba(18,58,128,.08);
+  transition:transform .16s ease, box-shadow .16s ease;
+}
+.rhome-modcard:hover .rhome-modcard-icon{
+  transform:translateY(-1px);
+  box-shadow:inset 0 1px 0 #fff, 0 6px 12px rgba(18,58,128,.14);
+}
+.rhome-modcard:active:not(.is-launch) .rhome-modcard-icon{
+  transform:translateY(1px);
+  box-shadow:inset 0 1px 3px rgba(18,58,128,.14);
+}
+.rhome-modtoggle{
+  transition:transform .16s ease, box-shadow .16s ease, background .16s ease;
+  will-change:transform;
+}
+.rhome-modtoggle:hover{transform:translateY(-1px)}
+.rhome-modtoggle:active{transform:translateY(2px)}
+
+/* ---------------------------------------------------------------------
+   4. Technician work surfaces — My Work rows, Field Service actions
+   --------------------------------------------------------------------- */
+.work-row-actions button,
+.field-actions button,
+.assign-row-actions button{
+  transition:transform .14s ease, box-shadow .14s ease, filter .14s ease;
+  will-change:transform;
+  touch-action:manipulation;
+}
+.work-row-actions button:hover,
+.field-actions button:hover,
+.assign-row-actions button:hover{
+  transform:translateY(-2px);
+  filter:brightness(1.03);
+}
+.work-row-actions button:active,
+.field-actions button:active,
+.assign-row-actions button:active{
+  transform:translateY(2px) scale(.99);
+  box-shadow:inset 0 2px 5px rgba(16,54,128,.16);
+}
+.work-row,
+.field-job-card{
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.work-row:hover,
+.field-job-card:hover{
+  transform:translateY(-2px);
+  border-color:#c3d9f6;
+  box-shadow:0 12px 22px rgba(16,54,128,.12);
+}
+
+/* ---------------------------------------------------------------------
+   4b. Field Service shows only งานของฉัน
+   The คิวเข้าหาลูกค้า panel duplicated it row for row. It stays in the DOM (hidden)
+   because renderFieldService() writes into #fieldQueue as an id global.
+   .panel has an author display rule, so [hidden] needs saying explicitly.
+   --------------------------------------------------------------------- */
+.field-queue-panel[hidden]{display:none!important}
+.field-layout{grid-template-columns:minmax(0,1fr)}
+
+/* ---------------------------------------------------------------------
+   5. Anyone who asked for less motion gets the depth without the travel
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion:reduce){
+  .portal-action-grid > button,
+  .portal-action-grid > button > span:first-child,
+  .rhome-modcard,
+  .rhome-modcard-icon,
+  .rhome-modtoggle,
+  .centry-scan,
+  .rhome-login-btn,
+  .work-row,
+  .field-job-card,
+  .work-row-actions button,
+  .field-actions button,
+  .assign-row-actions button,
+  .imode-portal-back-btn,
+  .imode-portal-line-btn,
+  .imode-line-mini-btn{
+    transition:none;
+  }
+  .portal-action-grid > button:hover,
+  .portal-action-grid > button:active,
+  body.customer-portal-mode .portal-action-grid > button:active,
+  .rhome-modcard:hover,
+  .rhome-modcard:active:not(.is-launch),
+  .centry-scan:hover,
+  .centry-scan:active,
+  .rhome-login-btn:hover,
+  .rhome-login-btn:active,
+  .work-row:hover,
+  .field-job-card:hover{
+    transform:none;
+  }
+}

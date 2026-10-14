@@ -1,0 +1,42 @@
+/* I-MODE platform tokens. Every module loads this first. */
+:root {
+  color-scheme: light;
+  --navy: #0c225e;
+  --navy-2: #1a3a86;
+  --blue: #0b63e5;
+  --blue-text: #0b56c7;
+  --orange: #f79009;
+  --orange-strong: #b45300;
+  --orange-shadow: #7a3a00;
+  --danger: #c4320a;
+  --danger-bg: #fff1ec;
+  --ink: #0c225e;
+  --ink-2: #4a5d80;
+  --line: #b9c8e2;
+  --line-soft: #e3eaf5;
+  --bg: #eef2f9;
+  --surface: #ffffff;
+  --radius: 10px;
+  --side: #3d4147;
+  --font: 'Anuphan', 'Noto Sans Thai', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--font); color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+a { color: var(--blue-text); }
+a:hover { color: #083f93; }
+button, input { font: inherit; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.btn-primary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 50px; border: 0; border-radius: var(--radius); cursor: pointer;
+  background: var(--orange-strong); color: #fff; font-size: 16px; font-weight: 600;
+  box-shadow: 0 2px 0 var(--orange-shadow); transition: transform .08s, box-shadow .08s, filter .15s;
+}
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-primary:active { transform: translateY(2px); box-shadow: 0 0 0 var(--orange-shadow); }
+.btn-primary[disabled] { opacity: .65; cursor: progress; }
+.spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition: none !important; } }

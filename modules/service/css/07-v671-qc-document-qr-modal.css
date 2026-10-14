@@ -1,0 +1,111 @@
+/* =====================================================================
+   V6.7.1 QC 2-page Thai document + QR modal + responsive/flex hardening
+   ===================================================================== */
+:root{--v671-doc-blue:#153d8f;--v671-doc-line:#64748b;--v671-doc-soft:#f3f6fb}
+
+/* Global flex/grid safety: stop child content from forcing page width */
+.app-shell,.main,.page,.panel,.panel-body,.panel-head,.toolbar,.topbar,.topbar-left,.topbar-actions,
+.form-grid,.qc-form-grid,.qc-toolbar,.qr-wrap,.detail-grid,.backup-grid,.button-row,.card-actions{min-width:0;max-width:100%}
+.panel-head,.toolbar-head,.topbar-actions,.button-row,.card-actions{flex-wrap:wrap}
+.table-wrap{max-width:100%;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch}
+img,video,canvas{max-width:100%}
+.field,.form-grid>*,.qc-form-grid>*,.detail-grid>*{min-width:0}
+input,select,textarea{max-width:100%}
+
+/* Modal hardening: close button stays clickable and content cannot lock the app */
+#modal{z-index:10000;overscroll-behavior:contain}
+/* 2026-09-15: the toast has to be above the popup it is talking about. css/01 gives it 200,
+   which was above the modal's original 100 — but the line above raised the modal to 10000 and
+   nothing followed, so every message fired while a popup was open (บันทึกบัญชีแล้ว, กรุณาระบุ
+   วันนัด, …) appeared BEHIND it and read as no confirmation at all. Measured: toast z 200,
+   modal z 10000, the element at the toast's position was the account row. Below the image
+   lightbox (12000), which is a full-screen viewer and should not be covered. */
+.toast{z-index:10050}
+#modal.open{pointer-events:auto}
+#modal .modal-panel{position:relative;max-width:calc(100vw - 36px);max-height:calc(100dvh - 36px);overflow:auto;overflow-x:hidden;overscroll-behavior:contain;pointer-events:auto}
+#modal .modal-head{z-index:30;align-items:center}
+#modal .close-btn{position:relative;z-index:35;display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;pointer-events:auto;touch-action:manipulation;font-weight:800;color:#173f8a;background:#eef3fb;border:1px solid #d9e2f1}
+#modal .close-btn:hover{background:#ffece5;color:#c94d16;border-color:#ffd0bd}
+.v671-modal-close-row{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
+/* QR preview */
+.v671-qr-wrap{grid-template-columns:minmax(250px,320px) minmax(0,1fr);align-items:start}
+.v671-qr-label-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px;background:#fff;border:1px solid #d8e2f2;border-radius:18px;box-shadow:0 10px 24px rgba(16,54,128,.08)}
+.v671-qr-doc-logo{display:block!important;width:min(210px,88%)!important;height:80px!important;object-fit:contain!important;object-position:center!important;background:#fff!important;border-radius:8px}
+.v671-qr-label-card .qr-box{width:min(220px,100%);min-height:220px;margin:0 auto;box-shadow:none;border-radius:14px}
+.v671-qr-label-title{font-size:15px;font-weight:800;color:var(--blue3);text-align:center}
+.v671-qr-label-sub{font-size:10px;line-height:1.5;color:var(--muted);text-align:center}
+
+/* QC editor: visually separate the two document pages */
+.v671-qc-page-editor-title{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin:6px 0 0;padding:10px 12px;border-radius:12px;background:#eef4ff;border:1px solid #d4e0f4;color:#173f8a;font-weight:800}
+.v671-qc-page-editor-title span{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#173f8a;color:#fff;font-size:12px}
+.v671-qc-photo-note{margin:0 0 10px;padding:10px 12px;border-radius:11px;background:#fff7e8;border:1px solid #f2d49b;color:#7b5711;font-size:11px;line-height:1.55}
+
+/* QC document preview — two distinct A4 pages */
+.qc-doc-stack{display:grid;gap:18px;justify-items:center;max-width:100%;overflow-x:auto;padding:2px}
+.qc-doc-page{width:min(100%,210mm);min-height:297mm;background:#fff;margin:0 auto;padding:10mm;border:1px solid #cbd5e1;box-sizing:border-box;color:#17233c;box-shadow:0 8px 24px rgba(0,0,0,.07);font-family:"Anuphan","Noto Sans Thai","Segoe UI",sans-serif}
+.qc-doc-page-head{display:grid;grid-template-columns:175px minmax(0,1fr);gap:14px;align-items:center;border-bottom:3px solid var(--v671-doc-blue);padding-bottom:8px;margin-bottom:9px}
+.qc-doc-page-head img{width:165px;height:68px;object-fit:contain;object-position:left center;background:#fff}
+.qc-doc-page-head h1{font-size:18px;line-height:1.25;color:var(--v671-doc-blue);margin:0 0 3px}
+.qc-doc-page-head .page-name{font-size:11px;font-weight:800;color:#52627d;margin-bottom:3px}
+.qc-doc-company{font-size:9.5px;line-height:1.45;color:#4f5e75}
+.qc-doc-info{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:8px 0}
+.qc-doc-info>div{border:1px solid #c7d1df;border-radius:5px;padding:6px 7px;font-size:9.5px;line-height:1.6;min-width:0;word-break:break-word}
+.qc-doc-info b{color:#243b69}
+.qc-doc-table{width:100%;min-width:0!important;border-collapse:collapse;table-layout:fixed;margin-top:7px}
+.qc-doc-table th,.qc-doc-table td{border:1px solid #596b85;padding:4px 5px;font-size:9.2px;line-height:1.35;vertical-align:top;background:#fff;word-break:break-word}
+.qc-doc-table th{background:#edf3fb;color:#243b69;font-weight:800;text-align:center}
+.qc-doc-table .n{width:34px;text-align:center}.qc-doc-table .result{width:86px;text-align:center}.qc-doc-table .remark{width:145px}
+.qc-doc-summary{display:grid;grid-template-columns:1.2fr .8fr;gap:7px;margin-top:8px}
+.qc-doc-summary>div{border:1px solid #c7d1df;border-radius:5px;padding:7px;font-size:9.5px;line-height:1.55}
+.qc-doc-sign{display:grid;grid-template-columns:repeat(3,1fr);margin-top:10px}
+.qc-doc-sign>div{border:1px solid #596b85;min-height:70px;text-align:center;padding:7px;font-size:9px}
+.qc-doc-sign b{display:block;margin-top:28px;color:#243b69}
+.qc-doc-section-title{font-size:12px;font-weight:800;color:var(--v671-doc-blue);margin:8px 0 6px}
+.qc-doc-note-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:7px 0 9px}
+.qc-doc-note-box{border:1px solid #c7d1df;border-radius:6px;padding:7px;min-height:48px;font-size:9.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.qc-doc-note-box.full{grid-column:1/-1;min-height:42px}.qc-doc-note-box b{display:block;color:#243b69;margin-bottom:3px}
+.qc-photo-sheet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.qc-photo-slot{height:50mm;border:1px solid #8593a8;border-radius:7px;background:#fbfcfe;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.qc-photo-slot .photo-stage{flex:1;min-height:0;display:grid;place-items:center;background:#f5f7fb;overflow:hidden}
+.qc-photo-slot img{width:100%;height:100%;object-fit:contain;background:#fff}
+.qc-photo-slot .photo-empty{font-size:10px;color:#8995a8;text-align:center;padding:12px}
+.qc-photo-slot .photo-caption{flex:0 0 auto;border-top:1px solid #d5dce7;padding:4px 6px;font-size:8.5px;color:#52627d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff}
+.qc-photo-extra{margin-top:6px;font-size:9px;color:#6a7588;text-align:right}
+
+/* Responsive behavior */
+@media(max-width:1180px) and (min-width:901px){
+  .topbar{align-items:flex-start;gap:12px;flex-wrap:wrap}.topbar-left{flex:1 1 420px}.topbar-actions{flex:1 1 360px;justify-content:flex-end}
+  .search-btn{min-width:160px;flex:1 1 180px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-grid> :last-child{grid-column:1/-1}.quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .people-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:1100px){
+  .qc-check-row.v67{grid-template-columns:34px minmax(0,1fr)!important;align-items:start}
+  .qc-check-row.v67 .qc-status-pills,.qc-check-row.v67 .qc-remark{grid-column:2!important;width:100%}
+  .qc-status-pills{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  .main{width:100%;max-width:100%;overflow-x:hidden}
+  .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}.topbar-left{min-width:0}.topbar-actions{justify-content:flex-end;min-width:0}
+  .topbar h1{overflow-wrap:anywhere}.panel-head{align-items:flex-start}.toolbar>*{min-width:0!important;flex:1 1 180px}
+  #modal{padding:8px;align-items:flex-end}.modal-panel,.modal-panel.small,#modal .modal-panel{width:100%;max-width:100%;max-height:calc(100dvh - 12px);border-radius:20px 20px 0 0}
+  .v671-qr-wrap,.qr-wrap{grid-template-columns:1fr!important}.v671-qr-label-card{width:min(360px,100%);margin:0 auto}.qr-meta{min-width:0}
+  .qc-doc-page{width:100%;min-height:auto;padding:18px}.qc-doc-page-head{grid-template-columns:120px minmax(0,1fr)}.qc-doc-page-head img{width:115px;height:54px}
+  .qc-doc-info,.qc-doc-note-grid{grid-template-columns:1fr}.qc-doc-note-box.full{grid-column:auto}.qc-doc-sign{grid-template-columns:1fr}.qc-doc-sign>div{min-height:58px}.qc-doc-sign b{margin-top:18px}
+}
+@media(max-width:640px){
+  .metric-grid{grid-template-columns:1fr}.dash-grid{grid-template-columns:1fr}.dash-grid> :last-child{grid-column:auto}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .topbar{grid-template-columns:minmax(0,1fr) auto}.topbar-actions{gap:5px}.icon-btn{width:40px;height:40px}.topbar h1{font-size:19px!important;line-height:1.25}
+  .button-row>*{flex:1 1 140px}.qc-status-pills{grid-template-columns:repeat(2,minmax(0,1fr))}.qc-photo-sheet{grid-template-columns:1fr}.qc-photo-slot{height:220px}
+  .qc-doc-page-head{grid-template-columns:1fr;text-align:left}.qc-doc-page-head img{width:150px;height:60px}.qc-doc-table th,.qc-doc-table td{font-size:8.5px;padding:3px}.qc-doc-table .remark{width:95px}.qc-doc-table .result{width:65px}
+}
+
+@media print{
+  @page{size:A4 portrait;margin:0}
+  html,body{margin:0!important;padding:0!important;background:#fff!important}
+  .qc-doc-stack{display:block!important;padding:0!important;overflow:visible!important}
+  .qc-doc-page{width:210mm!important;min-height:297mm!important;margin:0!important;padding:10mm!important;border:0!important;border-radius:0!important;box-shadow:none!important;break-after:page;page-break-after:always}
+  .qc-doc-page:last-child{break-after:auto;page-break-after:auto}
+  .qc-photo-slot{height:50mm!important}
+}

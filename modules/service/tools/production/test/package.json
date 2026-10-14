@@ -1,0 +1,15 @@
+{
+  "name": "imode-production-tests",
+  "private": true,
+  "type": "module",
+  "description": "Checks to run before every upload. See ../../README.md",
+  "scripts": {
+    "db": "node dbtest.mjs seed/03-real-data.sql",
+    "security": "node sectest.mjs",
+    "build-test": "node ../build-web.js --config=test.config.json --out=webtest --strict",
+    "browser": "node portaltest.mjs 390 && node portaltest.mjs 1440",
+    "dev": "node devreg.mjs 1440 && node devreg.mjs 390",
+    "test": "npm run db && npm run security && npm run build-test && npm run browser"
+  },
+  "devDependencies": { "@electric-sql/pglite": "^0.3.0" }
+}

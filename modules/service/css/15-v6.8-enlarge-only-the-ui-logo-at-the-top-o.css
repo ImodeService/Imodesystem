@@ -1,0 +1,15 @@
+/* V6.8 — Enlarge only the UI logo at the top of the left sidebar. */
+.brand-logo-shell{
+  min-height:104px!important;
+  padding:2px 4px!important;
+}
+.brand-logo-shell .brand-logo{
+  width:100%!important;
+  max-width:195px!important;
+  height:94px!important;
+  object-fit:contain!important;
+}
+@media (max-width:900px){
+  .brand-logo-shell{min-height:92px!important;}
+  .brand-logo-shell .brand-logo{max-width:180px!important;height:84px!important;}
+}

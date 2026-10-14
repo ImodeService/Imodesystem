@@ -1,0 +1,2 @@
+/* V6.8 — QR / Customer Portal preview: hide the global module header only in portal mode */
+body.customer-portal-mode .v68-global-hero{display:none!important;}
