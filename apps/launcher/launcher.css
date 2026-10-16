@@ -91,7 +91,7 @@
 .launcher > nav { width: 100%; }
 .app-grid {
   list-style: none; margin: 0; padding: 0; width: 100%;
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 32px 16px; justify-items: center;
+  display: grid; grid-template-columns: repeat(5, 118px); justify-content: center; gap: 32px 40px; justify-items: center;
 }
 .app {
   display: flex; flex-direction: column; align-items: center; gap: 10px; width: 118px; padding: 6px 0;
@@ -100,24 +100,28 @@
 .app:hover { color: var(--ink); }
 .app-icon {
   position: relative; width: 84px; height: 84px; border-radius: 20px; background: #fff;
-  box-shadow: 0 2px 6px rgba(12,34,94,.12); display: flex; align-items: center; justify-content: center;
-  transition: transform .15s, box-shadow .15s;
+  border: 1px solid #dfe6f2; box-shadow: 0 1px 2px rgba(12,34,94,.06); display: flex; align-items: center; justify-content: center;
+  transition: transform .15s ease-out, box-shadow .15s ease-out, border-color .15s ease-out;
 }
-.app:hover .app-icon, .app:focus-visible .app-icon { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(12,34,94,.18); }
+.app:not(.is-soon):hover .app-icon, .app:not(.is-soon):focus-visible .app-icon { transform: translateY(-3px); border-color: #c7d4ea; box-shadow: 0 8px 18px -4px rgba(12,34,94,.18); }
 .app:active .app-icon { transform: translateY(0) scale(.97); }
 .app-name { font-size: 15px; font-weight: 500; text-align: center; line-height: 1.3; }
-.app.is-soon .app-icon svg { opacity: .45; filter: grayscale(.6); }
-.app.is-soon .app-name { color: var(--ink-2); }
-.soon-tag {
-  position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); white-space: nowrap;
-  font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 10px; background: #e3eaf5; color: var(--ink-2);
-}
+.app.is-soon { cursor: default; }
+.app.is-soon .app-icon { background: #f6f8fc; border-style: dashed; border-color: #cfd9ea; box-shadow: none; }
+.app.is-soon .app-icon svg { opacity: .5; filter: grayscale(1); }
+.app.is-soon .app-name { color: #5b6b88; }
+.app.is-soon:active .app-icon { transform: none; }
+.grid-note { margin: -20px 0 0; font-size: 14px; color: var(--ink-2); text-align: center; }
+.grid-note i { display: inline-block; width: 12px; height: 12px; margin: 0 6px -1px 0; border: 1px dashed #b5c3db; border-radius: 4px; background: #f6f8fc; }
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20; max-width: calc(100vw - 32px);
   background: var(--navy); color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 15px; box-shadow: 0 6px 20px rgba(12,34,94,.3);
 }
 .is-loading .topbar, .is-loading .greeting { visibility: hidden; }
 
+@media (max-width: 760px) {
+  .app-grid { grid-template-columns: repeat(4, 118px); gap: 28px 16px; }
+}
 @media (max-width: 560px) {
   .topbar { padding: 8px 12px; }
   .user-text { display: none; }
@@ -128,3 +132,23 @@
   .app-icon svg { width: 40px; height: 40px; }
   .app-name { font-size: 13px; }
 }
+
+/* menu item that is not sign-out */
+.pop-item.is-plain { color: var(--ink); }
+.pop-item.is-plain:hover { background: var(--line-soft); }
+.pop-item.is-plain svg { color: var(--ink-2); }
+
+/* ---------- dark (shared/theme-pref.js) ---------- */
+html[data-theme="dark"] .field input { background: #1f1f1f; }
+html[data-theme="dark"] .note { background: #2e2e2e; }
+html[data-theme="dark"] .form-error { border-color: #6b3424; }
+html[data-theme="dark"] .user-btn:hover { background: rgba(255,255,255,.07); }
+html[data-theme="dark"] .avatar { background: #4a2e12; color: #ffc68a; }
+html[data-theme="dark"] .user-pop { background: var(--surface); border: 1px solid var(--line-soft); box-shadow: 0 10px 28px -6px rgba(0,0,0,.6); }
+html[data-theme="dark"] .app-icon { background: #262626; border-color: #3a3a3a; box-shadow: none; }
+html[data-theme="dark"] .app:not(.is-soon):hover .app-icon,
+html[data-theme="dark"] .app:not(.is-soon):focus-visible .app-icon { border-color: #5a5a5a; box-shadow: 0 8px 18px -6px rgba(0,0,0,.6); }
+html[data-theme="dark"] .app.is-soon .app-icon { background: #1f1f1f; border-color: #4a4a4a; }
+html[data-theme="dark"] .app.is-soon .app-name { color: #9a9a9a; }
+html[data-theme="dark"] .grid-note i { background: #1f1f1f; border-color: #6a6a6a; }
+html[data-theme="dark"] .toast { background: #333; box-shadow: 0 6px 20px rgba(0,0,0,.5); }

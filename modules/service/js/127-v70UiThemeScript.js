@@ -3,9 +3,12 @@
    classic is the original look. The inline script in <head> applies the saved choice before the
    first paint; this file only draws the picker and switches live.
    Customer pages (QR / serial entry and the machine portal) keep their own choice under
-   imode.customerTheme, default classic, picked from a round button at the bottom right. */
+   imode.customerTheme, default classic, picked from a round button at the bottom right.
+   2026-10-14: the staff choice is the platform's one theme for every module (imode.theme, was
+   imode.serviceTheme). When shared/theme-pref.js is loaded it also saves the choice with the
+   account and tells this page when another module or tab changed it. */
 (function(){
- var STAFF_KEY='imode.serviceTheme',CUST_KEY='imode.customerTheme';
+ var STAFF_KEY='imode.theme',OLD_STAFF_KEY='imode.serviceTheme',CUST_KEY='imode.customerTheme';
  var DEFAULTS={};DEFAULTS[STAFF_KEY]='flat-light';DEFAULTS[CUST_KEY]='classic';
  function isCustomer(){try{return typeof window.imodeCustomerSurface==='function'&&!!window.imodeCustomerSurface()}catch(e){return false}}
  function keyNow(){return isCustomer()?CUST_KEY:STAFF_KEY}
@@ -18,7 +21,7 @@
  function valid(id){return THEMES.some(function(t){return t.id===id})}
  function current(key){
   key=key||keyNow();
-  var v='';try{v=localStorage.getItem(key)||''}catch(e){}
+  var v='';try{v=localStorage.getItem(key)||(key===STAFF_KEY&&localStorage.getItem(OLD_STAFF_KEY))||''}catch(e){}
   return valid(v)?v:DEFAULTS[key];
  }
  var darkMq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
@@ -37,7 +40,8 @@
   if(sum)sum.textContent=themeOf(current(STAFF_KEY)).name;
  }
  function save(id){
-  try{localStorage.setItem(keyNow(),id)}catch(e){}
+  if(!isCustomer()&&window.ImodeTheme)window.ImodeTheme.set(id);
+  else try{localStorage.setItem(keyNow(),id)}catch(e){}
   apply(id);
  }
  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -51,7 +55,7 @@
     +'<span style="display:flex;align-items:center;gap:6px"><b>'+esc(t.name)+'</b><span class="ui-theme-check">✓</span></span>'
     +'<small>'+esc(t.desc)+'</small></button>';
   }).join('')+'</div>'
-   +'<p class="muted" style="margin:14px 0 0;font-size:13px">เปลี่ยนทันทีและจำไว้ในเครื่องนี้</p>';
+   +'<p class="muted" style="margin:14px 0 0;font-size:13px">'+(isCustomer()?'เปลี่ยนทันทีและจำไว้ในเครื่องนี้':'เปลี่ยนแล้วทุกโมดูลเปลี่ยนตามทันที และจำไว้กับบัญชีของคุณ')+'</p>';
   var cust=isCustomer();
   openModal(cust?'ธีมหน้าจอ / Theme':'ธีมหน้าจอ',cust?'เลือกรูปแบบหน้าจอที่ชอบ':'เลือกรูปแบบหน้าจอของระบบ Service',html);
   setTimeout(function(){
@@ -91,4 +95,6 @@
  if(darkMq){var onMq=function(){sync()};if(darkMq.addEventListener)darkMq.addEventListener('change',onMq);else if(darkMq.addListener)darkMq.addListener(onMq)}
  // another tab changed the theme
  window.addEventListener('storage',function(e){if(e.key===STAFF_KEY||e.key===CUST_KEY)sync()});
+ // theme changed from the account (another PC / phone)
+ window.addEventListener('imode-theme',sync);
 })();

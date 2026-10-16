@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>I-MODE System</title>
+<link rel="icon" href="../../assets/brand/imode-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- one screen theme for every module (light / dark), before the first paint -->
+<script src="../../shared/theme-pref.js"></script>
+<link rel="stylesheet" href="../../shared/theme.css">
+<link rel="stylesheet" href="../../shared/module-shell.css">
+</head>
+<body>
+<!-- แม่แบบหน้าโมดูลใหม่ (ตัวอย่างใช้หน้าติดตามเครื่องจักร) ข้อมูลในหน้านี้เป็นตัวอย่าง ไม่ได้อ่าน/บันทึกจากฐานข้อมูล
+     โมดูลใหม่: คัดลอกโฟลเดอร์นี้ เปลี่ยน module id แล้วเปลี่ยน SAMPLE เป็นข้อมูลจาก Supabase -->
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../../shared/modules.js"></script>
+<script src="../../shared/module-shell.js"></script>
+<script>
+(async function () {
+  'use strict';
+  var SAMPLE = [
+    { serial: 'IMD-M-26-0001', factory: 'FACTORY-SN-DEMO-001', model: 'Wax Setting Machine', project: 'PRJ-26-001', customer: 'ลูกค้าตัวอย่าง A', status: 'QC ผ่าน' },
+    { serial: 'IMD-M-26-0002', factory: 'FACTORY-SN-DEMO-002', model: 'Wax Setting Machine', project: 'PRJ-26-001', customer: 'ลูกค้าตัวอย่าง A', status: 'รอแก้ไข QC' },
+    { serial: 'IMD-M-26-0003', factory: 'FACTORY-SN-DEMO-003', model: 'Centrifugal VA20', project: 'PRJ-26-002', customer: 'ลูกค้าตัวอย่าง B', status: 'อยู่คลัง' },
+    { serial: 'IMD-M-26-0004', factory: '', model: 'Laser Welding', project: '', customer: '', status: 'รอรับเข้า' },
+    { serial: 'IMD-M-26-0005', factory: 'FACTORY-SN-DEMO-005', model: 'Hydrogen HO200WT', project: 'PRJ-26-002', customer: 'ลูกค้าตัวอย่าง B', status: 'ติดตั้งแล้ว' }
+  ];
+  var list;
+  var page = await ImodeShell.start({
+    module: 'tracking', root: '../../',
+    subtitle: 'ผูก IMODE S/N กับ Factory S/N และดูว่าเครื่องแต่ละตัวอยู่ขั้นไหน',
+    actions: [
+      { label: 'ส่งออก CSV', icon: 'download', onClick: function () {
+        var n = list.csv('machines-' + new Date().toISOString().slice(0, 10) + '.csv');
+        page.toast('ส่งออก ' + n + ' รายการแล้ว');
+      } },
+      { label: 'เพิ่มเครื่อง', icon: 'plus', primary: true, onClick: function () {
+        page.toast('หน้านี้เป็นแม่แบบ ยังเพิ่มเครื่องจริงไม่ได้');
+      } }
+    ]
+  });
+  page.body.insertAdjacentHTML('beforeend', '<div class="sh-banner" role="note">' + ImodeShell.icon('alert') + '<span>หน้านี้เป็นแม่แบบ ข้อมูลทั้งหมดเป็นตัวอย่าง ยังไม่ได้ต่อฐานข้อมูล</span></div>');
+  var waiting = function (r) { return /^รอ/.test(r.status); };
+  var done = function (r) { return /ผ่าน|ติดตั้ง/.test(r.status); };
+  var problem = function (r) { return /แก้ไข|ซ่อม/.test(r.status); };
+  var count = function (f) { return SAMPLE.filter(f).length; };
+  var kp = ImodeShell.kpis(page.body, [
+    { label: 'เครื่องทั้งหมด', value: SAMPLE.length, note: 'มี IMODE S/N แล้ว', tone: 'blue', icon: 'list' },
+    { label: 'รอดำเนินการ', value: count(waiting), note: 'รอรับเข้า หรือรอแก้ไข', tone: 'orange', icon: 'clock', filter: waiting },
+    { label: 'ผ่าน QC / ติดตั้งแล้ว', value: count(done), note: 'พร้อมส่งหรือใช้งานอยู่', tone: 'green', icon: 'check', filter: done },
+    { label: 'ต้องติดตาม', value: count(problem), note: 'QC ไม่ผ่าน หรือกำลังซ่อม', tone: 'red', icon: 'alert', filter: problem }
+  ]);
+  list = ImodeShell.list(page.body, {
+    title: 'รายการเครื่องจักร', subtitle: 'ค้นหาด้วย S/N รุ่น ลูกค้า หรือโครงการ',
+    columns: [
+      { key: 'serial', label: 'IMODE S/N', isKey: true },
+      { key: 'factory', label: 'Factory S/N' },
+      { key: 'model', label: 'รุ่นเครื่อง' },
+      { key: 'project', label: 'โครงการ' },
+      { key: 'customer', label: 'ลูกค้า' },
+      { key: 'status', label: 'สถานะ' }
+    ],
+    rows: [], loading: true, statusKey: 'status',
+    statusTone: { 'QC ผ่าน': 'green', 'ติดตั้งแล้ว': 'green', 'อยู่คลัง': 'blue', 'รอแก้ไข QC': 'red', 'รอรับเข้า': 'orange' },
+    empty: { title: 'ยังไม่มีเครื่องในระบบ', text: 'กด "เพิ่มเครื่อง" เพื่อลงทะเบียน IMODE S/N เครื่องแรก' },
+    footNote: 'ข้อมูลตัวอย่าง'
+  });
+  kp.bind(list);
+  // simulate the database round-trip so the loading state is visible
+  setTimeout(function () { list.setRows(SAMPLE); }, 450);
+})();
+</script>
+</body>
+</html>

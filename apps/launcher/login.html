@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- one screen theme for every module (light / dark), before the first paint -->
+<script src="../../shared/theme-pref.js"></script>
 <link rel="stylesheet" href="../../shared/theme.css">
 <link rel="stylesheet" href="launcher.css">
 </head>
@@ -27,7 +29,7 @@
 
   <main class="login-panel">
     <form id="loginForm" class="login-form" novalidate>
-      <img class="login-logo-mobile" src="../../assets/brand/imode-logo.png" alt="I-MODE">
+      <img class="login-logo-mobile" src="../../assets/brand/imode-logo.png" data-dark-src="../../assets/brand/imode-logo-white.png" alt="I-MODE">
       <div>
         <h2>เข้าสู่ระบบ</h2>
         <p class="muted">สำหรับพนักงาน I-MODE</p>

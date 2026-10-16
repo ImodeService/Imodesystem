@@ -9,10 +9,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- one screen theme for every module (light / dark), before the first paint -->
+<script src="../../shared/theme-pref.js"></script>
 <link rel="stylesheet" href="../../shared/theme.css">
 <link rel="stylesheet" href="launcher.css">
 </head>
-<body class="launcher-page is-loading">
+<body class="launcher-page is-loading" data-theme-fab>
 <header class="topbar">
   <div class="topbar-spacer"></div>
   <div class="user-menu">
@@ -23,6 +25,10 @@
     </button>
     <div id="userPop" class="user-pop" role="menu" hidden>
       <div class="pop-head"><strong id="popName"></strong><span id="popUser" class="muted small"></span></div>
+      <button id="themeBtn" role="menuitem" class="pop-item is-plain">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>
+        ธีมหน้าจอ
+      </button>
       <button id="signOutBtn" role="menuitem" class="pop-item">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
         ออกจากระบบ
@@ -33,13 +39,14 @@
 
 <main class="launcher">
   <div class="hero">
-    <img src="../../assets/brand/imode-logo.png" alt="I-MODE Spring up with Sustainability" class="hero-logo">
+    <img src="../../assets/brand/imode-logo.png" data-dark-src="../../assets/brand/imode-logo-white.png" alt="I-MODE Spring up with Sustainability" class="hero-logo">
     <span class="hero-sub">I-MODE System</span>
     <p id="greeting" class="greeting"></p>
   </div>
   <nav aria-label="โมดูล">
     <ul id="appGrid" class="app-grid"></ul>
   </nav>
+  <p id="gridNote" class="grid-note"></p>
 </main>
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
@@ -47,6 +54,7 @@
 <script src="../../shared/vendor/supabase.min.js"></script>
 <script src="../../shared/config.js"></script>
 <script src="../../shared/auth.js"></script>
+<script src="../../shared/modules.js"></script>
 <script src="launcher.js"></script>
 </body>
 </html>

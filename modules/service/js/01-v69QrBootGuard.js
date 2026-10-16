@@ -168,8 +168,10 @@
      explicit from AND to: with a `to`-only rule the implicit start has a different transform
      function list, the browser falls back to matrix interpolation, and a matrix for
      rotate(360deg) is the identity - the thing would sit perfectly still. */
+  /* 2026-10-14: background changed from navy #2d3695 to charcoal #2b2d31, asked for as
+     "เปลี่ยนสีพื้นหลังหน้าโหลดเป็นสีดำแบบโทนเทาๆหน่อย". */
   st.textContent='html.qr-booting .app-shell{visibility:hidden!important}'
-   +'.qr-boot-splash{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#2d3695}'
+   +'.qr-boot-splash{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#2b2d31}'
    +'.qr-boot-splash>.qr-boot-name{color:rgba(255,255,255,.92);font:600 13px/1.4 system-ui,sans-serif;letter-spacing:.02em}'
    +'.qr-boot-orbit{position:relative;width:340px;height:340px;flex:none}'
    +'.qbo-ring{position:absolute;inset:0;animation:qboSpin 9s linear infinite}'
@@ -180,7 +182,7 @@
    +'.qbo-face{position:absolute;width:42px;height:42px;margin:0;border-radius:50%;display:flex;'
    +'align-items:center;justify-content:center;font-size:19px;line-height:1;'
    +'background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.36);'
-   +'box-shadow:0 6px 16px rgba(3,24,66,.26);transform:translate(-50%,-50%);'
+   +'box-shadow:0 6px 16px rgba(0,0,0,.32);transform:translate(-50%,-50%);'
    +'animation:qboBack 9s linear infinite}'
    +'.qbo-core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center}'
    +'.qbo-core img{width:118px;max-width:40vw;height:auto;display:block}'

@@ -5,7 +5,9 @@
 <meta name="theme-color" content="#15379c"><meta name="description" content="ระบบบริหารคลังสินค้า ไอโมด พลัส HTML สำหรับเครื่องจักร อะไหล่ อุปกรณ์และวัสดุสิ้นเปลือง">
 <title>ระบบบริหารคลังสินค้า | IMODE</title>
 <!-- IMODE Inventory HTML Prototype รุ่น 1.1 (Phase 1) -->
-<script>try{var p=JSON.parse(localStorage.getItem("imode_inventory_prefs"))||{};var t=p.theme||"system";if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;document.documentElement.dataset.text=p.text||"normal";}catch(e){}</script>
+<!-- 2026-10-14: theme is shared with every I-MODE module (shared/theme-pref.js, imode.theme) -->
+<script src="../../shared/theme-pref.js"></script>
+<script>try{var p=JSON.parse(localStorage.getItem("imode_inventory_prefs"))||{};var t=p.theme||"system",s=window.ImodeTheme&&ImodeTheme.get();if(s)t=s==="flat-dark"?"dark":s==="auto"?"system":"light";if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;document.documentElement.dataset.text=p.text||"normal";}catch(e){}</script>
 <!-- ฟอนต์ภาษาไทยตามแนวภาพอ้างอิง IMODE Service: Kanit -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -695,8 +697,27 @@ function applyPrefs(animate=false){
  const b=document.getElementById('themeButton');
  if(b){b.innerHTML=icon(t==='dark'?'sun':'moon');b.title=t==='dark'?'เปลี่ยนเป็นธีมสว่าง':'เปลี่ยนเป็นธีมมืด';b.setAttribute('aria-label',b.title);}
 }
-function savePrefs(){try{localStorage.setItem(PREFS_KEY,JSON.stringify(prefs));}catch(e){}applyPrefs(true);}
+/* 2026-10-14: theme is one setting for every I-MODE module (shared/theme-pref.js).
+   Inventory's light / dark / system = the platform's flat-light / flat-dark / auto; Service's
+   glass look shows here as light. Text size stays an Inventory setting on this device. */
+const fromShared=v=>v==='flat-dark'?'dark':v==='auto'?'system':'light';
+const toShared=v=>v==='dark'?'flat-dark':v==='system'?'auto':'flat-light';
+if(window.ImodeTheme)prefs.theme=fromShared(ImodeTheme.get());
+function savePrefs(){
+ try{localStorage.setItem(PREFS_KEY,JSON.stringify(prefs));}catch(e){}
+ if(window.ImodeTheme&&fromShared(ImodeTheme.get())!==prefs.theme)ImodeTheme.set(toShared(prefs.theme));
+ applyPrefs(true);
+}
 darkQuery?.addEventListener?.('change',()=>{if(prefs.theme==='system')applyPrefs(true);});
+/* changed in another module or tab */
+window.addEventListener('imode-theme',e=>{
+ const t=fromShared(e.detail.theme);
+ if(t===prefs.theme){applyPrefs();return;}
+ prefs.theme=t;
+ try{localStorage.setItem(PREFS_KEY,JSON.stringify(prefs));}catch(err){}
+ applyPrefs(true);
+ if(typeof ui!=='undefined'&&ui.view==='settings')render();
+});
 
 function readJSON(key){try{return JSON.parse(localStorage.getItem(key));}catch(e){return null;}}
 function validShape(x){return x&&Array.isArray(x.products)&&Array.isArray(x.movements)&&Array.isArray(x.warehouses)&&x.warehouses.length;}
@@ -1224,7 +1245,7 @@ function storageUsed(){try{const n=(localStorage.getItem(STORE_KEY)||'').length*
 function settingsView(){
  const hasDemo=db.products.some(p=>p.demo),r=role();
  const themeOpt=(v,label,ic,sw)=>`<button class="theme-choice ${prefs.theme===v?'active':''}" data-action="setTheme" data-value="${v}" aria-pressed="${prefs.theme===v}"><span class="theme-swatch ${sw}"><i class="sw-side"></i><span class="sw-main"><i></i><i></i><i></i></span></span><strong>${icon(ic)}${label}</strong></button>`;
- const display=`<section class="card section-card"><h2>${icon('monitor')}การแสดงผล</h2><p class="helper-note">ตั้งค่าเฉพาะเครื่องนี้ ไม่กระทบผู้ใช้คนอื่น</p><div class="theme-choices" role="group" aria-label="ธีม">${themeOpt('light','สว่าง','sun','')}${themeOpt('dark','มืด','moon','dark')}${themeOpt('system','ตามเครื่อง','monitor','auto')}</div><div class="pref-row"><div><strong>ขนาดตัวอักษร</strong><small>ขยายเมนูและเนื้อหา เหมาะกับแท็บเล็ตในคลัง</small></div><div class="pref-seg" role="group" aria-label="ขนาดตัวอักษร">${[['normal','ปกติ'],['large','ใหญ่']].map(([v,l])=>`<button class="${prefs.text===v?'active':''}" data-action="setText" data-value="${v}" aria-pressed="${prefs.text===v}">${l}</button>`).join('')}</div></div></section>`;
+ const display=`<section class="card section-card"><h2>${icon('monitor')}การแสดงผล</h2><p class="helper-note">ธีมใช้ร่วมกับทุกโมดูล เปลี่ยนที่นี่แล้วโมดูลอื่นเปลี่ยนตาม ส่วนขนาดตัวอักษรตั้งเฉพาะเครื่องนี้</p><div class="theme-choices" role="group" aria-label="ธีม">${themeOpt('light','สว่าง','sun','')}${themeOpt('dark','มืด','moon','dark')}${themeOpt('system','ตามเครื่อง','monitor','auto')}</div><div class="pref-row"><div><strong>ขนาดตัวอักษร</strong><small>ขยายเมนูและเนื้อหา เหมาะกับแท็บเล็ตในคลัง</small></div><div class="pref-seg" role="group" aria-label="ขนาดตัวอักษร">${[['normal','ปกติ'],['large','ใหญ่']].map(([v,l])=>`<button class="${prefs.text===v?'active':''}" data-action="setText" data-value="${v}" aria-pressed="${prefs.text===v}">${l}</button>`).join('')}</div></div></section>`;
  return `<div class="settings-grid"><div class="settings-col">${display}
  <section class="card section-card"><h2>${icon('lock')}ผู้ใช้จำลอง</h2><p class="helper-note">ใช้ทดสอบหน้าจอตามสิทธิ์ของแต่ละฝ่าย ระบบล็อกอินจริงจะมาใน Phase 2</p><div class="role-current"><span class="avatar">${r.abbr}</span><div><strong>${esc(r.name)}</strong><small>${esc(r.desc)}</small></div><button class="btn outline small" data-action="switchRole">สลับผู้ใช้</button></div></section>
  <section class="card section-card"><h2>${icon('store')}คลังสินค้า</h2><p class="helper-note">รายการคลังเบื้องต้น เปลี่ยนหรือเพิ่มตามโครงสร้างจริงได้ภายหลัง</p><div class="warehouse-list" style="grid-template-columns:1fr">${db.warehouses.map(w=>`<div class="warehouse-tile">${icon('store')}<div style="flex:1"><strong>${esc(w.name)}</strong><small>รหัสคลัง ${esc(w.id)}</small></div></div>`).join('')}</div>${can('settings')?`<form id="warehouseForm" class="inline-form"><input class="form-control" name="name" maxlength="60" required placeholder="ชื่อคลังสินค้าใหม่" aria-label="ชื่อคลังสินค้าใหม่"><button class="btn primary">${icon('plus')}เพิ่มคลัง</button></form>`:''}</section>

@@ -20,6 +20,23 @@
   --side: #3d4147;
   --font: 'Anuphan', 'Noto Sans Thai', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
+/* Dark: chosen in the theme picker (shared/theme-pref.js sets html[data-theme]). Same greys as Service's flat-dark. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --navy-2: #9cc0ff;
+  --blue: #5b9bff;
+  --blue-text: #8fb8ff;
+  --danger: #ff9677;
+  --danger-bg: #3b2019;
+  --ink: #e8e8e8;
+  --ink-2: #b0b0b0;
+  --line: #4d4d4d;
+  --line-soft: #3a3a3a;
+  --bg: #1b1b1b;
+  --surface: #262626;
+  --side: #111111;
+}
+html[data-theme="dark"] a:hover { color: #b8d1ff; }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; }
 body { font-family: var(--font); color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
