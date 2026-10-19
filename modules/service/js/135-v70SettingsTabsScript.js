@@ -70,7 +70,7 @@
   TABS.forEach(function(t){
    var b=bar.querySelector('[data-stab="'+t.id+'"]'),p=box.querySelector('[data-stab-pane="'+t.id+'"]');
    var n=[].filter.call(p.querySelectorAll('.setting-action-card'),shown).length;
-   var extra=!!p.querySelector('.settings-cloud-grid');
+   var extra=[].some.call(p.querySelectorAll('.settings-cloud-grid'),shown);
    b.querySelector('em').textContent=n;
    var permOk=!t.perm||(typeof canPermission!=='function')||canPermission(t.perm);
    b.hidden=!permOk||(!n&&!extra);
