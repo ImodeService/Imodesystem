@@ -6,6 +6,11 @@
    - an OPEN case with no chat update for N days (settings.caseChatRemindDays, default 1, 0 = off)
      shows a reminder on the case and in the bell, again every N days; a closed case never reminds;
    - status changes the page already records (settings.caseStatusLog) show in the feed as grey lines.
+   2026-10-19 ("ทำให้แชทสามารถแท็กคนได้"): typing @ in the box lists the staff (public.profiles,
+   which staff may read) and picking one inserts "@ชื่อ". Tags are highlighted in the feed (your own
+   name in orange), and a message that tags you shows in the bell on index.html for 14 days, even on
+   a case you are not assigned to. The tag is the text itself, matched against profiles.full_name
+   (or username), the same name the server stamps as author_name, so no new column is needed.
    Messages live in Supabase public.case_messages (supabase/14-case-chat.sql): staff only, never
    customers. Until that SQL is run the panel says so and nothing else changes.
 
@@ -51,9 +56,31 @@
   function sett(){try{return settings||{}}catch(e){return {}}}
   function user(){try{return currentUser||null}catch(e){return null}}
   var last={},ready=false,missing=false,fetching=false;
+  var mentions=[],meId='',meName='',mentionAt=0;
+  function pullMentions(){
+   var c=db();if(!c||missing||!user()||Date.now()-mentionAt<50000)return;
+   mentionAt=Date.now();
+   c.auth.getSession().then(function(r){
+    var s=r&&r.data&&r.data.session;if(!s||!s.user){mentionAt=0;return null}
+    if(meName&&meId===s.user.id)return meName;
+    meId=s.user.id;
+    return c.from('profiles').select('full_name,username').eq('id',meId).maybeSingle().then(function(p){
+     var d=p&&p.data;meName=d?(String(d.full_name||'').trim()||String(d.username||'').trim()):'';return meName;
+    });
+   }).then(function(name){
+    if(!name)return;
+    var since=new Date(Date.now()-14*DAY).toISOString();
+    var pat='%@'+name.replace(/[\\%_]/g,'\\$&')+'%';
+    return c.from(TABLE).select('id,case_id,body,author_id,author_name,created_at').ilike('body',pat)
+     .gt('created_at',since).neq('author_id',meId).order('created_at',{ascending:false}).limit(50).then(function(r){
+      if(!r||r.error)return;mentions=r.data||[];repaint();
+     });
+   }).catch(function(){});
+  }
 
   function pull(){
    var c=db();if(!c||fetching||missing||!user())return;
+   pullMentions();
    fetching=true;
    try{
     c.from(VIEW).select('case_id,last_at').limit(10000).then(function(r){
@@ -75,11 +102,17 @@
    var o=readJ('imode_v70_notice_reads',{})||{};return o[k]||{};
   }
   function notices(){
-   if(!ready)return [];
-   var days=remindDays(sett());if(!days)return [];
    var list=[];try{list=Array.isArray(cases)?cases:[]}catch(e){}
-   var rd=reads(),out=[];
-   list.forEach(function(c){
+   var rd=reads(),out=[],days=ready?remindDays(sett()):0;
+   mentions.forEach(function(m){
+    var key='chat_mention_'+m.id,c=null;
+    for(var i=0;i<list.length;i++)if(list[i]&&list[i].id===m.case_id){c=list[i];break}
+    var body=String(m.body||'').replace(/\s+/g,' ').trim();
+    out.push({key:key,icon:'💬',title:'มีคนแท็กคุณในแชทเคส',
+     message:((c&&c.ticket)||m.case_id)+' · '+(m.author_name||'พนักงาน')+': '+(body.length>120?body.slice(0,120)+'…':body||'(รูปภาพ)'),
+     createdAt:m.created_at,caseId:m.case_id,read:!!rd[key]});
+   });
+   if(days)list.forEach(function(c){
     if(!c||!c.id||!mine(c))return;
     var st=staleInfo(c,last[c.id],days);if(!st)return;
     var key='auto_chat_'+c.id+'_'+st.n;
@@ -225,6 +258,18 @@
    '.cc-send{border:0;background:var(--imode-blue,#0b63e5);color:#fff;padding:0 14px}',
    '.cc-send:disabled{opacity:.5;cursor:default}',
    '.cc-hint{margin-top:6px;color:var(--muted,#6b7d9e);font-size:11.5px}',
+   '.cc-at{color:var(--imode-blue,#0b63e5);font-weight:700;background:#eaf2ff;border-radius:6px;padding:0 3px}',
+   '.cc-at.is-me{color:#9a4a00;background:#ffecd6}',
+   '.cc-msg.is-tagged{background:#fff8ef;box-shadow:inset 3px 0 0 var(--imode-orange,#f27a1a)}',
+   '.cc-compose{position:relative}',
+   '.cc-pick{position:absolute;left:12px;right:12px;bottom:calc(100% - 4px);max-height:240px;overflow-y:auto;background:#fff;border:1px solid var(--line,#e2ecfb);',
+    'border-radius:12px;box-shadow:0 -8px 28px rgba(12,34,94,.16);padding:4px;z-index:6}',
+   '.cc-pick[hidden]{display:none}',
+   '.cc-pick button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:7px 8px;border-radius:9px;cursor:pointer;font:inherit;font-size:13.5px;text-align:left;color:inherit}',
+   '.cc-pick button[aria-selected="true"],.cc-pick button:hover{background:#eef4ff}',
+   '.cc-pick .cc-av{width:28px;height:28px;font-size:11px;flex:none}',
+   '.cc-pick small{display:block;color:var(--muted,#6b7d9e);font-size:11.5px}',
+   '.cc-pick-none{padding:10px;color:var(--muted,#6b7d9e);font-size:13px}',
    '.cc-fab{position:fixed;right:18px;bottom:18px;z-index:40;height:52px;padding:0 18px 0 16px;border-radius:26px;border:0;cursor:pointer;',
     'background:var(--imode-navy,#0c225e);color:#fff;font:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;box-shadow:0 10px 26px rgba(12,34,94,.3)}',
    '.cc-fab em{font-style:normal;min-width:20px;height:20px;border-radius:10px;background:var(--imode-orange,#f27a1a);font-size:11.5px;line-height:20px;padding:0 6px}',
@@ -253,13 +298,15 @@
    +'<div id="ccBanner"></div>'
    +'<div class="cc-feed" id="ccFeed" aria-live="polite"><div class="cc-empty">กำลังโหลดแชท...</div></div>'
    +'<form class="cc-compose" id="ccForm" autocomplete="off">'
+   +'<div class="cc-pick" id="ccPick" role="listbox" aria-label="เลือกคนที่จะแท็ก" hidden></div>'
    +'<div class="cc-prev" id="ccPrev"></div>'
    +'<div class="cc-row">'
    +'<button type="button" class="cc-attach" id="ccAttach" aria-label="แนบรูป" title="แนบรูป (สูงสุด '+MAX_PHOTOS+' รูป)">📷</button>'
    +'<input type="file" id="ccFile" accept="image/*" multiple hidden>'
-   +'<textarea id="ccText" rows="1" placeholder="พิมพ์อัปเดตงาน..." aria-label="ข้อความ"></textarea>'
+   +'<button type="button" class="cc-attach" id="ccTag" aria-label="แท็กคน" title="แท็กคน (พิมพ์ @)">@</button>'
+   +'<textarea id="ccText" rows="1" placeholder="พิมพ์อัปเดตงาน... @ เพื่อแท็กคน" aria-label="ข้อความ" aria-autocomplete="list" aria-controls="ccPick"></textarea>'
    +'<button type="submit" class="cc-send" id="ccSend">ส่ง</button>'
-   +'</div><div class="cc-hint" id="ccHint">Enter เพื่อส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · ลูกค้าไม่เห็นแชทนี้</div></form>';
+   +'</div><div class="cc-hint" id="ccHint">Enter เพื่อส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · @ แท็กคน · ลูกค้าไม่เห็นแชทนี้</div></form>';
   var shade=document.createElement('div');shade.className='cc-shade';shade.hidden=true;
   var fab=document.createElement('button');
   fab.type='button';fab.className='cc-fab';fab.id='ccFab';fab.setAttribute('aria-controls','ccPanel');
@@ -267,7 +314,7 @@
   document.body.appendChild(shade);document.body.appendChild(panel);document.body.appendChild(fab);
   document.body.classList.add('cc-has-fab');
   /* a phone has no Enter-to-send (Enter is a new line there), so the hint says less */
-  if(!window.matchMedia('(hover:hover)').matches)document.getElementById('ccHint').textContent='ลูกค้าไม่เห็นแชทนี้';
+  if(!window.matchMedia('(hover:hover)').matches)document.getElementById('ccHint').textContent='@ แท็กคน · ลูกค้าไม่เห็นแชทนี้';
   var $=function(id){return document.getElementById(id)};
 
   /* ------------------------------------------------------- open / dock ---- */
@@ -303,6 +350,7 @@
   document.addEventListener('keydown',function(e){
    if(e.key!=='Escape')return;
    var lb=document.querySelector('.cc-light');if(lb){lb.remove();return}
+   if(!$('ccPick').hidden)return;
    if(drawerOpen)close();
   });
   window.addEventListener('resize',function(){clearTimeout(layout.t);layout.t=setTimeout(layout,120)});
@@ -370,7 +418,7 @@
    var feed=$('ccFeed'),atEnd=feed.scrollHeight-feed.scrollTop-feed.clientHeight<60;
    banner();
    var ro=state!=='ok';
-   $('ccText').disabled=ro;$('ccAttach').disabled=ro;$('ccSend').disabled=ro||sending;
+   $('ccText').disabled=ro;$('ccAttach').disabled=ro;$('ccTag').disabled=ro;$('ccSend').disabled=ro||sending;
    if(state==='loading'){feed.innerHTML='<div class="cc-empty">กำลังโหลดแชท...</div>';return}
    if(state==='nosql'){feed.innerHTML='<div class="cc-empty">แชทยังไม่พร้อมใช้<br>ต้องรันไฟล์ <b>supabase/14-case-chat.sql</b> ในฐานข้อมูลก่อน</div>';return}
    if(state==='nologin'){feed.innerHTML='<div class="cc-empty">เข้าสู่ระบบก่อนจึงจะใช้แชทได้</div>';return}
@@ -393,11 +441,11 @@
     }
     var m=it.m,mine=!!me.id&&m.author_id===me.id,name=m.author_name||'พนักงาน';
     var ph=Array.isArray(m.photos)?m.photos.filter(function(p){return typeof p==='string'&&/^data:image\//.test(p)}):[];
-    html+='<div class="cc-msg'+(mine?' is-mine':'')+'" data-id="'+esc(m.id)+'">'
+    html+='<div class="cc-msg'+(mine?' is-mine':'')+(!mine&&tagsMe(m.body)?' is-tagged':'')+'" data-id="'+esc(m.id)+'">'
      +'<div class="cc-av" style="background:'+color(name)+'" aria-hidden="true">'+esc(initials(name))+'</div>'
      +'<div><div class="cc-top"><span class="cc-name">'+esc(name)+(mine?' (คุณ)':'')+'</span>'
      +'<span class="cc-time" tabindex="0" data-full="'+esc(full(it.t))+'" aria-label="'+esc(full(it.t))+'">'+hhmm(it.t)+'</span></div>'
-     +(m.body?'<div class="cc-body">'+esc(m.body)+'</div>':'')
+     +(m.body?'<div class="cc-body">'+tagged(m.body)+'</div>':'')
      +(ph.length?'<div class="cc-photos'+(ph.length===1?' is-one':'')+'">'+ph.map(function(p,i){
        return '<button type="button" data-photo="'+i+'" aria-label="ดูรูปขนาดใหญ่"><img src="'+esc(p)+'" alt="รูปที่แนบ '+(i+1)+'" loading="lazy"></button>'}).join('')+'</div>':'')
      +'</div>'
@@ -409,6 +457,34 @@
    fabCount();
   }
   function scrollEnd(){var f=$('ccFeed');f.scrollTop=f.scrollHeight}
+
+  /* ------------------------------------------------------------------ tags ---- */
+  var people=[];   /* {id,name,role}, longest name first so "@สมชาย ใจดี" wins over "@สมชาย" */
+  function loadPeople(c){
+   return c.from('profiles').select('id,username,full_name,role,is_active').limit(500).then(function(r){
+    if(!r||r.error)return;
+    people=(r.data||[]).filter(function(p){return p&&p.is_active!==false&&!/^customer$/i.test(String(p.role||''))})
+     .map(function(p){return {id:p.id,name:String(p.full_name||'').trim()||String(p.username||'').trim(),user:String(p.username||''),role:String(p.role||'')}})
+     .filter(function(p){return p.name});
+    people.sort(function(a,b){return b.name.length-a.name.length});
+    people.forEach(function(p){if(p.id===me.id)me.name=p.name});
+    if(state==='ok')render();
+   },function(){});
+  }
+  function tagsMe(body){return !!me.name&&String(body||'').indexOf('@'+me.name)>=0}
+  function tagged(body){
+   var s=String(body||''),out='',i=0;
+   while(i<s.length){
+    var at=s.indexOf('@',i);if(at<0){out+=esc(s.slice(i));break}
+    out+=esc(s.slice(i,at));
+    var hit=null;
+    for(var k=0;k<people.length;k++){if(s.substr(at+1,people[k].name.length)===people[k].name){hit=people[k];break}}
+    if(!hit){out+='@';i=at+1;continue}
+    out+='<span class="cc-at'+(hit.id===me.id?' is-me':'')+'" title="'+esc(hit.role)+'">@'+esc(hit.name)+'</span>';
+    i=at+1+hit.name.length;
+   }
+   return out;
+  }
 
   $('ccFeed').addEventListener('click',function(e){
    var p=e.target.closest('[data-photo]');
@@ -468,7 +544,7 @@
       if(missingTable(r.error))state='nosql';else{state='offline';errText=r.error.message||''}
       render();return;
      }
-     state='ok';msgs=[];byId={};add(r&&r.data);render();layout();listen();
+     state='ok';msgs=[];byId={};add(r&&r.data);render();layout();listen();loadPeople(c);
     },function(e){state='offline';errText=String(e&&e.message||'');render()});
    });
   }
@@ -540,7 +616,58 @@
    var items=(e.clipboardData&&e.clipboardData.files)||[];
    if(items.length){e.preventDefault();addFiles(items)}
   });
+  var pick=$('ccPick'),pickList=[],pickIdx=0,pickFrom=-1;
+  function tagQuery(){
+   var pos=ta.selectionStart,txt=ta.value.slice(0,pos),at=txt.lastIndexOf('@');
+   if(at<0||(at>0&&!/\s/.test(txt.charAt(at-1))))return null;
+   var q=txt.slice(at+1);
+   if(q.length>30||/\n/.test(q))return null;
+   return {at:at,q:q};
+  }
+  function closePick(){pick.hidden=true;pickList=[];pickFrom=-1;ta.removeAttribute('aria-activedescendant')}
+  function drawPick(){
+   pick.innerHTML=pickList.length?pickList.map(function(p,i){
+    return '<button type="button" role="option" id="ccPick'+i+'" data-pick="'+i+'" aria-selected="'+(i===pickIdx)+'">'
+     +'<span class="cc-av" style="background:'+color(p.name)+'" aria-hidden="true">'+esc(initials(p.name))+'</span>'
+     +'<span><b>'+esc(p.name)+(p.id===me.id?' (คุณ)':'')+'</b><small>'+esc(p.role||p.user)+'</small></span></button>'}).join('')
+    :'<div class="cc-pick-none">'+(people.length?'ไม่พบชื่อนี้':'กำลังโหลดรายชื่อ...')+'</div>';
+   pick.hidden=false;
+   if(pickList.length){ta.setAttribute('aria-activedescendant','ccPick'+pickIdx);var b=$('ccPick'+pickIdx);if(b&&b.scrollIntoView)b.scrollIntoView({block:'nearest'})}
+  }
+  function updatePick(){
+   var t=tagQuery();if(!t||state!=='ok'){closePick();return}
+   var q=t.q.toLowerCase().trim();
+   pickList=people.filter(function(p){return !q||p.name.toLowerCase().indexOf(q)>=0||p.user.toLowerCase().indexOf(q)>=0})
+    .sort(function(a,b){return a.name.localeCompare(b.name,'th')}).slice(0,8);
+   if(pickFrom!==t.at)pickIdx=0;
+   pickFrom=t.at;pickIdx=Math.min(pickIdx,Math.max(0,pickList.length-1));
+   drawPick();
+  }
+  function choose(i){
+   var p=pickList[i],t=tagQuery();if(!p||!t)return;
+   var before=ta.value.slice(0,t.at),after=ta.value.slice(ta.selectionStart);
+   var ins='@'+p.name+' ';
+   ta.value=before+ins+after.replace(/^ /,'');
+   var caret=before.length+ins.length;
+   ta.setSelectionRange(caret,caret);closePick();grow();ta.focus();
+  }
+  pick.addEventListener('mousedown',function(e){e.preventDefault()});
+  pick.addEventListener('click',function(e){var b=e.target.closest('[data-pick]');if(b)choose(Number(b.getAttribute('data-pick')))});
+  ta.addEventListener('input',updatePick);
+  ta.addEventListener('click',updatePick);
+  ta.addEventListener('blur',function(){setTimeout(closePick,120)});
+  $('ccTag').addEventListener('click',function(){
+   if(ta.disabled)return;
+   var pos=ta.selectionStart,v=ta.value,pre=pos>0&&!/\s/.test(v.charAt(pos-1))?' ':'';
+   ta.value=v.slice(0,pos)+pre+'@'+v.slice(pos);
+   var c=pos+pre.length+1;ta.focus();ta.setSelectionRange(c,c);updatePick();
+  });
   ta.addEventListener('keydown',function(e){
+   if(!pick.hidden&&pickList.length){
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();pickIdx=(pickIdx+(e.key==='ArrowDown'?1:-1)+pickList.length)%pickList.length;drawPick();return}
+    if((e.key==='Enter'||e.key==='Tab')&&!e.isComposing){e.preventDefault();choose(pickIdx);return}
+   }
+   if(e.key==='Escape'&&!pick.hidden){e.preventDefault();e.stopPropagation();closePick();return}
    if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&window.matchMedia('(hover:hover)').matches){
     e.preventDefault();$('ccForm').requestSubmit?$('ccForm').requestSubmit():send();
    }
@@ -555,7 +682,7 @@
    c.from(TABLE).insert({case_id:caseId,body:body,photos:pending.slice()}).select(COLS).then(function(r){
     sending=false;$('ccSend').disabled=false;$('ccSend').textContent='ส่ง';
     if(r&&r.error){alert('ส่งไม่ได้: '+r.error.message);return}
-    ta.value='';grow();pending=[];preview();
+    ta.value='';grow();pending=[];preview();closePick();
     add(r&&r.data);render();scrollEnd();markSeen();
    },function(err){
     sending=false;$('ccSend').disabled=false;$('ccSend').textContent='ส่ง';
