@@ -161,12 +161,12 @@
         '<div class="imode-portal-contact-card"><strong>'+safeEsc(company.name)+'</strong><small>'+safeEsc(company.address||tr('ข้อมูลที่อยู่บริษัท','Company address'))+'</small></div>'+
       '</div>'+
       '<div class="imode-portal-map" style="margin-top:14px;border-radius:14px;overflow:hidden;border:1px solid rgba(128,128,128,.3)">'+
-        '<iframe title="Warehouse imodeplus" src="https://www.google.com/maps?q=Warehouse+imodeplus&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="display:block;width:100%;height:240px;border:0"></iframe>'+
+        '<iframe title="Warehouse imodeplus" src="https://www.google.com/maps?q=13.6951106,100.7006035&z=18&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="display:block;width:100%;height:240px;border:0"></iframe>'+
       '</div>'+
       '<button type="button" id="imodePortalOpenMap" class="soft-btn" style="width:100%;margin-top:10px">📍 '+safeEsc(tr('เปิดใน Google Maps (Warehouse imodeplus)','Open in Google Maps (Warehouse imodeplus)'))+'</button>';
     content.innerHTML=html;
     var mapBtn=byId('imodePortalOpenMap');
-    if(mapBtn)mapBtn.addEventListener('click',function(){openExternal('https://maps.app.goo.gl/YkFaH2rJmcLanfkd6')});
+    if(mapBtn)mapBtn.addEventListener('click',function(){openExternal('https://maps.app.goo.gl/GFDjRR9xA1GesPLs6')});
     var lineBtn=byId('imodePortalContactLine');
     if(lineBtn&&lineUrl)lineBtn.addEventListener('click',function(){openExternal(lineUrl)});
     setPortalMode('detail',tr('ติดต่อ Service','Contact Service'));
