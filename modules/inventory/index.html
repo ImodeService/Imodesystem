@@ -521,6 +521,41 @@ button.report-tile:hover{border-color:#cbd9f3}
 .logo-wrap .logo-dark{display:none}
 [data-theme="dark"] .logo-wrap .logo-light{display:none}
 [data-theme="dark"] .logo-wrap .logo-dark{display:block}
+/* ===== เครื่อง Demo / ยืม-คืน (เพิ่ม 2026-10-16) ===== */
+.loan-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.mstatus.lnout{background:#e8f0ff;color:var(--blue2)}
+[data-theme="dark"] .mstatus.lnout{background:#1a2a55;color:#a8c0ff}
+.mstatus.lnwarn{background:var(--warn-bg);color:var(--warn)}
+.ln-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin-bottom:14px}
+.ln-grid .k{font-size:12px;color:var(--muted)}
+.ln-grid .v{font-size:13px;color:var(--ink);font-weight:500;word-break:break-word}
+.ln-sec{font-size:13px;font-weight:600;color:var(--ink);margin:16px 0 8px;display:flex;align-items:center;gap:7px}
+.ln-sec .ic{width:17px;height:17px;color:var(--blue2)}
+.ln-items{width:100%;border-collapse:collapse;font-size:12px}
+.ln-items th{background:var(--soft);color:var(--muted);text-align:left;padding:7px 8px;font-weight:500;border-bottom:1px solid var(--border)}
+.ln-items td{padding:7px 8px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle}
+.ln-items .ok{color:var(--ok,#078345);font-weight:600}
+.ln-items .no{color:var(--bad,#c73636);font-weight:600}
+.ln-items .na{color:var(--muted)}
+.ln-chk{display:inline-flex;gap:3px}
+.ln-chk button{border:1px solid var(--border);background:var(--soft);color:var(--muted);border-radius:6px;padding:3px 9px;font-size:11px}
+.ln-chk button.on-ok{background:var(--ok-bg,#e2f8ed);color:var(--ok,#078345);border-color:transparent;font-weight:600}
+.ln-chk button.on-no{background:var(--bad-bg,#ffe7e7);color:var(--bad,#c73636);border-color:transparent;font-weight:600}
+.ln-pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.ln-pic{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--soft);padding:0;display:block}
+.ln-pic img{width:100%;height:100%;object-fit:cover;display:block}
+.ln-pic .rm{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:#000a;color:#fff;display:grid;place-items:center;padding:0}
+.ln-pic .rm .ic{width:12px;height:12px}
+.ln-add{aspect-ratio:4/3;border:1.5px dashed var(--border);border-radius:8px;display:grid;place-items:center;color:var(--muted);font-size:11px;text-align:center;cursor:pointer;background:transparent}
+.ln-add .ic{width:20px;height:20px;display:block;margin:0 auto 2px}
+.ln-none{font-size:12px;color:var(--muted)}
+.ln-rows .row{display:grid;grid-template-columns:1fr 70px 32px;gap:6px;margin-bottom:6px;align-items:center}
+.ln-rows .row .form-control{margin:0}
+.ln-sign{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--border);border-radius:9px;padding:10px 12px;background:var(--soft);font-size:12px;color:var(--ink)}
+.ln-sign.done{background:var(--ok-bg,#e2f8ed)}
+.ln-due{font-size:12px;color:var(--muted);margin-top:4px}
+.ln-photo-big{width:100%;max-height:70vh;object-fit:contain;border-radius:8px;background:#0001}
+@media(max-width:760px){.loan-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ln-grid{grid-template-columns:1fr}.ln-items{font-size:11px}}
 </style>
 </head>
 <body>
@@ -560,7 +595,7 @@ button.report-tile:hover{border-color:#cbd9f3}
 <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></symbol>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v14H3z"/><circle cx="12" cy="14" r="4"/></symbol>
 <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
-<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol><symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="12" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol><symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol><symbol id="i-loan" viewBox="0 0 24 24"><path d="M4 7h11l-3-3m3 3-3 3M20 17H9l3-3m-3 3 3 3"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="12" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
 </svg>
 <div class="app">
 <aside class="sidebar" id="sidebar">
@@ -580,6 +615,7 @@ button.report-tile:hover{border-color:#cbd9f3}
   <button class="nav" data-view="transfer"><svg class="ic"><use href="#i-transfer"/></svg>โอนย้ายคลัง</button>
   <button class="nav" data-view="count"><svg class="ic"><use href="#i-clipboard"/></svg>ตรวจนับสต๊อก</button>
   <button class="nav" data-view="approvals"><svg class="ic"><use href="#i-check"/></svg>รายการรออนุมัติ<span class="nav-count" id="pendingCount" hidden>0</span></button>
+  <button class="nav" data-view="loans"><svg class="ic"><use href="#i-loan"/></svg>เครื่อง Demo / ยืม-คืน</button>
   <button class="nav" data-view="scan"><svg class="ic"><use href="#i-scan"/></svg>สแกน QR / บาร์โค้ด</button>
   <div class="nav-head">ข้อมูลและการตั้งค่า</div>
   <button class="nav" data-view="history"><svg class="ic"><use href="#i-history"/></svg>ประวัติการเคลื่อนไหว</button>
@@ -644,6 +680,7 @@ const META={
  transfer:['โอนย้ายคลัง','ย้ายสินค้าระหว่างคลังโดยเก็บประวัติ'],
  count:['ตรวจนับสต๊อก','ปรับยอดตามผลการตรวจนับพร้อมบันทึกเหตุผล'],
  approvals:['รายการรออนุมัติ','คำขอเบิกและผลตรวจนับที่รอผู้จัดการคลังตรวจสอบ'],
+ loans:['เครื่อง Demo / ยืม-คืน','ติดตามเครื่อง Demo ที่ให้ลูกค้าหรือทีมยืม พร้อมเช็คลิสต์อุปกรณ์ รูปก่อน/หลัง และเอกสารเซ็นรับ'],
  scan:['สแกนรหัสสินค้า','ค้นหารายการด้วยรหัสคิวอาร์ บาร์โค้ด หรือเครื่องสแกน'],
  history:['ประวัติการเคลื่อนไหว','ตรวจสอบรายการรับเข้า เบิกออก โอนย้าย ตรวจนับ และการย้อนรายการ'],
  reports:['รายงานสต๊อก','สรุปข้อมูลสินค้าตามหมวดและคลัง พร้อมส่งออกข้อมูล'],
@@ -653,16 +690,16 @@ const PRODUCT_VIEWS=['products','machines','parts','equipment','consumables'];
 const TX_VIEWS=['in','out','transfer','count'];
 const MOVE_LABEL={in:'รับสินค้าเข้า',out:'เบิกสินค้าออก',transfer:'โอนย้ายคลัง',count:'ตรวจนับสต๊อก',reverse:'ย้อนรายการ'};
 const MOVE_ICON={in:'in',out:'out',transfer:'transfer',count:'clipboard',reverse:'history'};
-const DOC_PREFIX={in:'RCV',out:'ISS',transfer:'TRF',count:'CNT',reverse:'REV'};
+const DOC_PREFIX={loan:'LN',in:'RCV',out:'ISS',transfer:'TRF',count:'CNT',reverse:'REV'};
 const STATUS_LABEL={done:'สำเร็จ',pending:'รออนุมัติ',rejected:'ไม่อนุมัติ',reversed:'ถูกย้อนแล้ว'};
 
 /* บทบาทจำลอง: ใช้ทดสอบหน้าจอตามสิทธิ์เท่านั้น
    ระบบจริงต้องตรวจสิทธิ์ที่ Backend (Phase 2) ไม่ใช่ซ่อนปุ่มบนหน้าจอ */
 const ROLES={
- admin:{abbr:'AD',name:'ผู้ดูแลระบบ',desc:'จัดการระบบ ผู้ใช้ และตั้งค่าทั้งหมด',can:{product:1,in:1,out:1,transfer:1,count:1,approve:1,reverse:1,settings:1,reset:1}},
- manager:{abbr:'MG',name:'ผู้จัดการคลัง',desc:'ดูแลสต๊อก อนุมัติรายการ และปรับยอด',can:{product:1,in:1,out:1,transfer:1,count:1,approve:1,reverse:1,settings:1}},
- staff:{abbr:'ST',name:'พนักงานคลัง',desc:'รับเข้า เบิกออก โอนย้าย และส่งผลตรวจนับให้อนุมัติ',can:{product:1,in:1,out:1,transfer:1,count:'request'}},
- sales:{abbr:'SA',name:'ฝ่ายขาย',desc:'ดูสินค้าพร้อมขาย และส่งคำขอเบิก',can:{out:'request'}},
+ admin:{abbr:'AD',name:'ผู้ดูแลระบบ',desc:'จัดการระบบ ผู้ใช้ และตั้งค่าทั้งหมด',can:{loan:1,product:1,in:1,out:1,transfer:1,count:1,approve:1,reverse:1,settings:1,reset:1}},
+ manager:{abbr:'MG',name:'ผู้จัดการคลัง',desc:'ดูแลสต๊อก อนุมัติรายการ และปรับยอด',can:{loan:1,product:1,in:1,out:1,transfer:1,count:1,approve:1,reverse:1,settings:1}},
+ staff:{abbr:'ST',name:'พนักงานคลัง',desc:'รับเข้า เบิกออก โอนย้าย และส่งผลตรวจนับให้อนุมัติ',can:{loan:1,product:1,in:1,out:1,transfer:1,count:'request'}},
+ sales:{abbr:'SA',name:'ฝ่ายขาย',desc:'ดูสินค้าพร้อมขาย ส่งคำขอเบิก และบันทึกการยืมเครื่อง Demo',can:{out:'request',loan:1}},
  service:{abbr:'SV',name:'ทีม Service',desc:'ตรวจสอบอะไหล่ และส่งคำขอเบิกสำหรับงานบริการ',can:{out:'request'}},
  exec:{abbr:'EX',name:'ผู้บริหาร',desc:'ดูภาพรวมและรายงานเท่านั้น',can:{}}
 };
@@ -681,8 +718,12 @@ const now=()=>new Date().toISOString();
 const nearZero=x=>Math.abs(x)<1e-7?0:Number(Number(x).toFixed(3));
 const norm=s=>String(s||'').toLocaleLowerCase('th-TH').trim();
 
+/* เช็คลิสต์อุปกรณ์มาตรฐานของเครื่อง Demo (ตัวอย่าง รอข้อมูลจริงจากทีม) */
+const DEFAULT_LOAN_ITEMS=[{name:'ตัวเครื่องหลัก',qty:1},{name:'สายไฟ AC',qty:1},{name:'อะแดปเตอร์ / ที่ชาร์จ',qty:1},{name:'รีโมท / แป้นควบคุม',qty:1},{name:'คู่มือการใช้งาน',qty:1},{name:'กล่อง / กระเป๋าใส่เครื่อง',qty:1},{name:'อุปกรณ์เสริมอื่น ๆ (ตัวอย่าง)',qty:1}];
+function ensureLoans(x){if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.loanTemplate)||!x.loanTemplate.length)x.loanTemplate=structuredClone(DEFAULT_LOAN_ITEMS).map(i=>({...i,id:uid()}));return x;}
+
 /* ---------- 2. ชั้นข้อมูล ---------- */
-const empty=()=>({schema:SCHEMA,products:[],movements:[],warehouses:structuredClone(DEFAULT_WAREHOUSES),seq:{},updatedAt:null});
+const empty=()=>ensureLoans({schema:SCHEMA,products:[],movements:[],warehouses:structuredClone(DEFAULT_WAREHOUSES),seq:{},updatedAt:null});
 let db=load();
 let session=loadSession();
 let prefs={theme:'system',text:'normal',...(readJSON(PREFS_KEY)||{})};
@@ -730,7 +771,7 @@ function load(){
 }
 /* แปลงข้อมูลรุ่น 1.0 → 2 โดยไม่ทิ้งประวัติเดิม */
 function migrate(x){
- if(x.schema===SCHEMA)return x;
+ if(x.schema===SCHEMA)return ensureLoans(x);
  const out={...empty(),...x,schema:SCHEMA,seq:x.seq||{}};
  out.products=x.products.map(p=>{const {image,...rest}=p;return {demo:false,...rest,images:p.images||(image?{overview:image}:{}),balances:p.balances||{}};});
  const chrono=[...x.movements].reverse();
@@ -906,6 +947,7 @@ const api={
   const ids=new Set(db.products.filter(p=>p.demo).map(p=>p.id));
   db.products=db.products.filter(p=>!p.demo);
   db.movements=db.movements.filter(m=>!m.demo&&!ids.has(m.productId));
+  db.loans=db.loans.filter(l=>!l.demo);
   persist();return {ok:true,data:ids.size};
  },
  loadDemo(){
@@ -953,6 +995,7 @@ function deltasFor(type,p,wh,dest,amount){
 /* ---------- 3. หน้าจอ ---------- */
 let ui={view:'dashboard',dashCat:'all',dashSearch:'',dashWarehouse:'all',dashStatus:'all',prodSearch:'',prodWarehouse:'all',prodStatus:'all',historySearch:'',historyType:'all',historyStatus:'all',scanValue:'',lastScan:'',txProduct:'',txWarehouse:'',pendingImages:{}};
 let stream=null,scanActive=false;
+Object.assign(ui,{loanSearch:'',loanStatus:'all',loanPics:null});
 
 function toast(msg,type='ok'){
  const node=document.createElement('div');
@@ -975,6 +1018,7 @@ function closeNav(){$('#sidebar').classList.remove('open');$('#navScrim').classL
 function titleBar(){
  const m=META[ui.view];let addon='';
  if(ui.view==='dashboard'||PRODUCT_VIEWS.includes(ui.view))addon=`<button class="btn outline" data-action="exportCsv">${icon('download')}ส่งออกข้อมูล</button>${can('product')?`<button class="btn primary" data-action="addProduct">${icon('plus')}เพิ่มสินค้า</button>`:''}`;
+ else if(ui.view==='loans')addon=loanActions();
  else if(ui.view==='history')addon=`<button class="btn outline" data-action="exportMovement">${icon('download')}ส่งออกประวัติ</button>`;
  return `<div class="breadcrumb">หน้าหลัก <span>› ${esc(m[0])}</span></div><div class="page-header"><div><h1>${esc(m[0])}</h1><p>${esc(m[1])}</p></div><div class="page-action">${addon}</div></div>`;
 }
@@ -998,6 +1042,7 @@ function render(){
  else if(TX_VIEWS.includes(v))page=transactionView(v);
  else if(v==='approvals')page=approvalsView();
  else if(v==='history')page=historyView();
+ else if(v==='loans')page=loansView();
  else if(v==='scan')page=scanView();
  else if(v==='reports')page=reportsView();
  else if(v==='settings')page=settingsView();
@@ -1074,7 +1119,7 @@ function dashboard(){
  const s=stats(),p=dashboardProducts(),pc=pending().length;
  const banner=pc&&can('approve')?`<button class="attention-bar" data-view="approvals">${icon('clipboard')}<span><b>มี ${nfmt(pc)} รายการรออนุมัติ</b> คำขอเบิกหรือผลตรวจนับที่ต้องตรวจสอบ</span><span class="go">ตรวจสอบ ›</span></button>`:'';
  const alertList=db.products.filter(needsAttention);
- return `${banner}<div class="kpi-grid">
+ return `${banner}${loanBanner()}<div class="kpi-grid">
   ${kpi('สินค้าทั้งหมด',nfmt(s.total),'รายการในทะเบียน','package','blue','','products')}
   ${kpi('พร้อมเบิก',nfmt(s.ready),'รายการที่มียอดคงเหลือ','check','green','green-text')}
   ${kpi('ใกล้หมด',nfmt(s.low),'ถึงจุดสั่งซื้อขั้นต่ำ','alert','amber','orange-text','alert')}
@@ -1377,6 +1422,337 @@ function resetData(){
  if(!confirm('ยืนยันอีกครั้ง: ข้อมูลจะหายถาวรหากไม่มีไฟล์สำรอง'))return;
  api.resetAll();ui={...ui,dashSearch:'',prodSearch:'',lastScan:'',txProduct:'',txWarehouse:''};go('dashboard');toast('ล้างข้อมูลทั้งหมดแล้ว');
 }
+
+/* =====================================================================
+   เครื่อง Demo / ยืม-คืน (เพิ่ม 2026-10-16)
+   - ข้อมูลเก็บใน db.loans (อยู่ในที่เก็บเดียวกับสต๊อก จึงถูกสำรอง/กู้คืนไปพร้อมกัน)
+   - ยังไม่ตัด/เพิ่มยอดสต๊อกของเครื่องที่ให้ยืม (รอตกลงวิธีนับกับทีม)
+   - Phase 2: ย้ายไป Supabase พร้อม RLS แล้วเก็บรูปใน Storage
+   ===================================================================== */
+const LOAN_MAX_PICS=6;
+const dOnly=x=>x?new Intl.DateTimeFormat('th-TH',{day:'numeric',month:'short',year:'numeric'}).format(new Date(x+'T00:00:00')):'–';
+const addDays=(ymd,n)=>{const d=new Date(ymd+'T00:00:00');d.setDate(d.getDate()+Number(n||0));return dayKey(d);};
+const daysBetween=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5);
+const loanItemsOk=l=>l.items.every(i=>i.backOk!==false);
+/* สถานะที่แสดง: out / overdue / returned */
+function loanState(l){
+ if(l.status==='returned')return {key:'returned',label:loanItemsOk(l)?'คืนแล้ว':'คืนแล้ว (ไม่ครบ)',cls:loanItemsOk(l)?'done':'lnwarn'};
+ const late=daysBetween(l.dueDate,dayKey(new Date()));
+ if(late>0)return {key:'overdue',label:`เลยกำหนด ${late} วัน`,cls:'rejected',late};
+ return {key:'out',label:'กำลังยืม',cls:'lnout',left:-late};
+}
+const loansActive=()=>db.loans.filter(l=>l.status==='out');
+const loansOverdue=()=>loansActive().filter(l=>loanState(l).key==='overdue');
+function loanBanner(){
+ const n=loansOverdue().length;
+ return n?`<button class="attention-bar" data-view="loans">${icon('alert')}<span><b>เครื่อง Demo เลยกำหนดคืน ${nfmt(n)} เครื่อง</b> ติดตามผู้ยืมหรือบันทึกการรับคืน</span><span class="go">ตรวจสอบ ›</span></button>`:'';
+}
+
+const loanApi={
+ save(input,editId){
+  if(!can('loan'))return {error:'บทบาทนี้ไม่มีสิทธิ์บันทึกการยืมเครื่อง'};
+  const machine=String(input.machine||'').trim(),serial=String(input.serial||'').trim(),borrower=String(input.borrower||'').trim();
+  const days=Number(input.days),lentDate=String(input.lentDate||'');
+  if(!machine)return {error:'กรอกชื่อเครื่อง Demo'};
+  if(!borrower)return {error:'กรอกชื่อผู้ยืม'};
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(lentDate))return {error:'เลือกวันที่ยืม'};
+  if(!Number.isInteger(days)||days<1||days>365)return {error:'จำนวนวันที่ยืมต้องเป็นจำนวนเต็ม 1–365 วัน'};
+  const items=(input.items||[]).map(i=>({id:i.id||uid(),name:String(i.name||'').trim(),qty:Math.max(1,Math.floor(Number(i.qty)||1))})).filter(i=>i.name);
+  if(!items.length)return {error:'เช็คลิสต์ต้องมีอย่างน้อย 1 รายการ'};
+  const busy=db.loans.find(l=>l.id!==editId&&l.status==='out'&&((input.productId&&l.productId===input.productId)||(serial&&l.serial&&l.serial.toUpperCase()===serial.toUpperCase())));
+  if(busy)return {error:`เครื่องนี้ยังถูกยืมอยู่ (${busy.no} • ${busy.borrower}) ต้องบันทึกรับคืนก่อน`};
+  const snap=JSON.stringify(db);
+  const data={productId:input.productId||'',machine,serial,borrower,company:String(input.company||'').trim(),phone:String(input.phone||'').trim(),
+   purpose:String(input.purpose||'').trim(),lentDate,days,dueDate:addDays(lentDate,days),lentBy:String(input.lentBy||'').trim()||actor(),note:String(input.note||'').trim(),before:input.before||[]};
+  let l;
+  if(editId){
+   l=db.loans.find(x=>x.id===editId);if(!l)return {error:'ไม่พบรายการยืม'};
+   const old=Object.fromEntries(l.items.map(i=>[i.id,i]));
+   Object.assign(l,data,{items:items.map(i=>({outOk:true,backOk:null,note:'',...(old[i.id]||{}),...i}))});
+   l.updatedAt=now();l.updatedBy=actor();
+  }else{
+   l={id:uid(),no:nextNo(db,'loan',lentDate+'T09:00:00'),status:'out',...data,items:items.map(i=>({...i,outOk:true,backOk:null,note:''})),after:[],
+    returnedAt:null,returnDate:'',receivedBy:'',returnNote:'',signed:{done:false,at:null,scan:null},demo:false,createdAt:now(),createdBy:actor()};
+   db.loans.unshift(l);
+  }
+  if(!persist(db,true)){db=JSON.parse(snap);return {error:'พื้นที่เก็บข้อมูลในเบราว์เซอร์เต็ม ลองลดจำนวนรูปหรือสำรองข้อมูลก่อน'};}
+  return {ok:true,data:l};
+ },
+ giveBack(id,input){
+  if(!can('loan'))return {error:'บทบาทนี้ไม่มีสิทธิ์บันทึกการรับคืน'};
+  const l=db.loans.find(x=>x.id===id);if(!l||l.status!=='out')return {error:'รายการนี้ไม่ได้อยู่ในสถานะกำลังยืม'};
+  const returnDate=String(input.returnDate||'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(returnDate))return {error:'เลือกวันที่รับคืน'};
+  const snap=JSON.stringify(db);
+  l.items.forEach(i=>{const r=input.items.find(x=>x.id===i.id);i.backOk=r?!!r.ok:true;i.note=r?.note||i.note||'';});
+  Object.assign(l,{status:'returned',returnedAt:now(),returnDate,receivedBy:String(input.receivedBy||'').trim()||actor(),returnNote:String(input.note||'').trim(),after:input.after||[]});
+  if(!persist(db,true)){db=JSON.parse(snap);return {error:'พื้นที่เก็บข้อมูลในเบราว์เซอร์เต็ม ลองลดจำนวนรูปหรือสำรองข้อมูลก่อน'};}
+  return {ok:true,data:l};
+ },
+ setSigned(id,done,scan){
+  if(!can('loan'))return {error:'บทบาทนี้ไม่มีสิทธิ์แก้ไข'};
+  const l=db.loans.find(x=>x.id===id);if(!l)return {error:'ไม่พบรายการยืม'};
+  const snap=JSON.stringify(db);
+  if(done!==undefined){l.signed.done=!!done;l.signed.at=done?now():null;}
+  if(scan!==undefined){l.signed.scan=scan;if(scan&&!l.signed.done){l.signed.done=true;l.signed.at=now();}}
+  if(!persist(db,true)){db=JSON.parse(snap);return {error:'พื้นที่เก็บข้อมูลในเบราว์เซอร์เต็ม ลองลดจำนวนรูปหรือสำรองข้อมูลก่อน'};}
+  return {ok:true};
+ },
+ remove(id){
+  if(!can('approve'))return {error:'เฉพาะผู้จัดการคลังหรือผู้ดูแลระบบที่ลบรายการยืมได้'};
+  db.loans=db.loans.filter(l=>l.id!==id);persist();return {ok:true};
+ },
+ saveTemplate(rows){
+  if(!can('loan'))return {error:'บทบาทนี้ไม่มีสิทธิ์แก้ไขเช็คลิสต์'};
+  const items=rows.map(r=>({name:String(r.name||'').trim(),qty:Math.max(1,Math.floor(Number(r.qty)||1))})).filter(r=>r.name);
+  if(!items.length)return {error:'เช็คลิสต์มาตรฐานต้องมีอย่างน้อย 1 รายการ'};
+  db.loanTemplate=items;persist();return {ok:true};
+ },
+ loadSamples(){
+  if(db.loans.some(l=>l.demo))return {error:'มีตัวอย่างการยืมอยู่แล้ว'};
+  const pic=(t,c)=>{const cv=document.createElement('canvas');cv.width=480;cv.height=320;const x=cv.getContext('2d');x.fillStyle=c;x.fillRect(0,0,480,320);x.fillStyle='rgba(255,255,255,.92)';x.textAlign='center';x.font='600 28px Kanit,Tahoma,sans-serif';x.fillText(t,240,160);x.font='16px Kanit,Tahoma,sans-serif';x.fillText('รูปตัวอย่าง',240,196);return cv.toDataURL('image/jpeg',.6);};
+  const today=dayKey(new Date()),ago=n=>addDays(today,-n);
+  const mk=(n,o)=>{
+   const lentDate=ago(n);
+   const items=(o.items||DEFAULT_LOAN_ITEMS).map(i=>({id:uid(),name:i.name,qty:i.qty,outOk:true,backOk:null,note:''}));
+   const l={id:uid(),no:nextNo(db,'loan',lentDate+'T09:00:00'),status:'out',productId:'',machine:o.machine,serial:o.serial,borrower:o.borrower,company:o.company,phone:'000-000-0000',
+    purpose:o.purpose,lentDate,days:o.days,dueDate:addDays(lentDate,o.days),lentBy:'พนักงานตัวอย่าง',note:'',before:[pic('ก่อนยืม',o.c1),pic('อุปกรณ์ครบชุด',o.c2)],after:[],items,
+    returnedAt:null,returnDate:'',receivedBy:'',returnNote:'',signed:{done:!!o.signed,at:o.signed?now():null,scan:null},demo:true,createdAt:now(),createdBy:'ข้อมูลตัวอย่าง'};
+   if(o.back){
+    l.status='returned';l.returnDate=ago(o.back);l.returnedAt=now();l.receivedBy='พนักงานตัวอย่าง';l.after=[pic('หลังคืน',o.c3||'#3a6b57')];
+    l.items.forEach((i,k)=>{i.backOk=!(o.missing&&k===o.missing);if(!i.backOk)i.note='ตัวอย่าง: ไม่ได้ส่งคืน';});
+    l.returnNote=o.missing?'ตัวอย่าง: ขาดอุปกรณ์ 1 รายการ รอลูกค้าส่งตามมา':'ตัวอย่าง: สภาพเรียบร้อย';
+   }
+   return l;
+  };
+  db.loans.push(
+   mk(12,{machine:'เครื่องล้างอัลตราโซนิก (ตัวอย่าง)',serial:'DEMO-SN-L01',borrower:'คุณตัวอย่าง หนึ่ง',company:'บริษัท ตัวอย่าง เอ จำกัด',purpose:'ทดลองใช้ก่อนตัดสินใจซื้อ',days:7,c1:'#4a5a8a',c2:'#6a5a8a',signed:true}),
+   mk(2,{machine:'เครื่องพิมพ์เรซิน 3 มิติ (ตัวอย่าง)',serial:'DEMO-SN-L02',borrower:'คุณตัวอย่าง สอง',company:'ร้านตัวอย่าง บี',purpose:'สาธิตให้ลูกค้า',days:7,c1:'#3b6a8a',c2:'#4a7a9a',signed:true}),
+   mk(20,{machine:'เครื่องหล่อสุญญากาศ (ตัวอย่าง)',serial:'DEMO-SN-L03',borrower:'คุณตัวอย่าง สาม',company:'บริษัท ตัวอย่าง ซี จำกัด',purpose:'ทดลองใช้งาน 1 สัปดาห์',days:7,back:14,c1:'#7a5a3b',c2:'#8a6a4b',signed:true}),
+   mk(15,{machine:'เครื่องพิมพ์เรซิน 3 มิติ (ตัวอย่าง)',serial:'DEMO-SN-L04',borrower:'คุณตัวอย่าง สี่',company:'ร้านตัวอย่าง ดี',purpose:'สาธิตที่หน้างาน',days:5,back:9,missing:1,c1:'#5a3b7a',c2:'#6a4b8a',c3:'#7a4b4b'})
+  );
+  persist();return {ok:true};
+ }
+};
+
+/* ---------- หน้ารายการ ---------- */
+function loanActions(){
+ return `${can('loan')?`<button class="btn outline" data-action="lnTemplate">${icon('list')}แก้เช็คลิสต์มาตรฐาน</button><button class="btn primary" data-action="lnNew">${icon('plus')}บันทึกการยืม</button>`:''}`;
+}
+function loanData(){
+ const q=norm(ui.loanSearch),f=ui.loanStatus;
+ const rank={overdue:0,out:1,returned:2};
+ return db.loans.filter(l=>{
+  const s=loanState(l).key;
+  return (f==='all'||(f==='active'?s!=='returned':f===s))
+   &&(!q||[l.no,l.machine,l.serial,l.borrower,l.company,l.phone,l.purpose].some(x=>norm(x).includes(q)));
+ }).sort((a,b)=>{
+  const ra=rank[loanState(a).key],rb=rank[loanState(b).key];
+  if(ra!==rb)return ra-rb;
+  return ra===2?String(b.returnDate).localeCompare(String(a.returnDate)):String(a.dueDate).localeCompare(String(b.dueDate));
+ });
+}
+function loanTable(data){
+ if(!db.loans.length)return `<div class="empty"><div class="empty-icon">${icon('loan')}</div><strong>ยังไม่มีรายการยืมเครื่อง Demo</strong><p>บันทึกว่าใครยืมเครื่องไปบ้าง พร้อมเช็คลิสต์อุปกรณ์ รูปก่อน/หลังยืม และใบเซ็นรับ</p>${can('loan')?`<div class="form-submit" style="justify-content:center"><button class="btn outline" data-action="lnSamples">${icon('boxes')}โหลดตัวอย่างการยืม</button><button class="btn primary" data-action="lnNew">${icon('plus')}บันทึกการยืม</button></div>`:''}</div>`;
+ if(!data.length)return `<div class="empty"><div class="empty-icon">${icon('search')}</div><strong>ไม่พบรายการที่ตรงกับเงื่อนไข</strong></div>`;
+ return `<div class="table-scroller flush"><table class="data-table"><thead><tr><th>เลขที่</th><th>เครื่อง Demo</th><th>ผู้ยืม</th><th>วันที่ยืม → กำหนดคืน</th><th>อุปกรณ์</th><th>เอกสาร</th><th>สถานะ</th><th></th></tr></thead><tbody>${data.map(l=>{
+  const s=loanState(l),n=l.items.length,miss=l.items.filter(i=>i.backOk===false).length;
+  return `<tr data-action="lnView" data-id="${l.id}"><td><b class="code">${esc(l.no)}</b>${l.demo?` <span class="pill orange">ตัวอย่าง</span>`:''}</td><td><b>${esc(l.machine)}</b><div class="sub">${esc(l.serial||'ไม่ระบุเลขเครื่อง')}</div></td><td>${esc(l.borrower)}<div class="sub">${esc(l.company||'–')}</div></td><td>${dOnly(l.lentDate)} → ${dOnly(l.dueDate)}<div class="sub">ยืม ${nfmt(l.days)} วัน${l.status==='returned'?` • คืนเมื่อ ${dOnly(l.returnDate)}`:''}</div></td><td>${nfmt(n)} รายการ${miss?`<div class="sub" style="color:var(--bad)">ไม่ครบ ${miss}</div>`:''}</td><td>${l.signed.done?'<span class="mstatus done">เซ็นแล้ว</span>':'<span class="mstatus pending">รอเอกสารเซ็น</span>'}</td><td><span class="mstatus ${s.cls}">${esc(s.label)}</span></td><td class="c-act"><button class="tiny-action" title="ดูรายละเอียด" aria-label="ดูรายละเอียด ${esc(l.no)}" data-action="lnView" data-id="${l.id}">${icon('eye')}</button></td></tr>`;}).join('')}</tbody></table></div><div class="table-footer"><span>ทั้งหมด ${nfmt(data.length)} รายการ</span></div>`;
+}
+function loansView(){
+ const act=loansActive().length,od=loansOverdue().length,soon=loansActive().filter(l=>{const s=loanState(l);return s.key==='out'&&s.left<=2;}).length,ret=db.loans.filter(l=>l.status==='returned').length;
+ const opt=(v,t)=>`<option value="${v}" ${ui.loanStatus===v?'selected':''}>${t}</option>`;
+ return `${loanBanner()}<div class="kpi-grid loan-kpis">
+  ${kpi('กำลังยืมอยู่',nfmt(act),'เครื่องที่ยังไม่คืน','loan','blue')}
+  ${kpi('เลยกำหนดคืน',nfmt(od),'ต้องติดตาม','alert','red','red-text')}
+  ${kpi('ใกล้ครบกำหนด',nfmt(soon),'ภายใน 2 วัน','calendar','amber','orange-text')}
+  ${kpi('คืนแล้ว',nfmt(ret),'ทั้งหมดในระบบ','check','green','green-text')}
+ </div><section class="card content-panel"><div class="filter-line"><div class="search-holder">${icon('search')}<input data-filter="loanSearch" value="${esc(ui.loanSearch)}" placeholder="ค้นหาเลขที่ เครื่อง เลขเครื่อง ผู้ยืม หรือบริษัท" aria-label="ค้นหารายการยืม" autocomplete="off"></div><select class="form-control" id="loanStatusFilter" aria-label="กรองตามสถานะ">${opt('all','ทุกสถานะ')}${opt('active','ยังไม่คืน')}${opt('overdue','เลยกำหนด')}${opt('returned','คืนแล้ว')}</select></div><div id="loanTable">${loanTable(loanData())}</div></section>`;
+}
+function refreshLoans(){if($('#loanTable'))$('#loanTable').innerHTML=loanTable(loanData());}
+
+/* ---------- ตัวช่วยรูป / แถวเช็คลิสต์ ---------- */
+function picsHtml(set){
+ const arr=ui.loanPics?.[set]||[];
+ return `<div class="ln-pics" id="lp-${set}">${arr.map((src,i)=>`<div class="ln-pic"><img src="${src}" alt="รูปที่ ${i+1}"><button type="button" class="rm" data-action="lnRmPic" data-set="${set}" data-i="${i}" aria-label="ลบรูปที่ ${i+1}">${icon('close')}</button></div>`).join('')}${arr.length<LOAN_MAX_PICS?`<label class="ln-add">${icon('camera')}เพิ่มรูป<input type="file" accept="image/*" multiple hidden data-ln-pic="${set}"></label>`:''}</div>`;
+}
+function refreshPics(set){const n=$('#lp-'+set);if(n)n.outerHTML=picsHtml(set);}
+const rowHtml=(it={})=>`<div class="row" data-id="${esc(it.id||'')}"><input class="form-control" data-ln-name maxlength="80" value="${esc(it.name||'')}" placeholder="ชื่ออุปกรณ์ เช่น สายไฟ" aria-label="ชื่ออุปกรณ์"><input class="form-control" data-ln-qty type="number" min="1" step="1" value="${esc(it.qty||1)}" aria-label="จำนวน"><button type="button" class="tiny-action" data-action="lnRmRow" aria-label="ลบรายการ">${icon('trash')}</button></div>`;
+const readRows=root=>[...root.querySelectorAll('.ln-rows .row')].map(r=>({id:r.dataset.id||'',name:r.querySelector('[data-ln-name]').value,qty:r.querySelector('[data-ln-qty]').value}));
+const dueText=(d,n)=>/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number(n)>0?`กำหนดคืน: ${dOnly(addDays(d,n))}`:'';
+
+/* ---------- ฟอร์มยืม ---------- */
+function loanModal(id=null){
+ if(!can('loan'))return toast('บทบาทนี้ไม่มีสิทธิ์บันทึกการยืมเครื่อง','bad');
+ const l=id?db.loans.find(x=>x.id===id):null;if(id&&!l)return toast('ไม่พบรายการยืม','bad');
+ const v=l||{productId:'',machine:'',serial:'',borrower:'',company:'',phone:'',purpose:'',lentDate:dayKey(new Date()),days:7,lentBy:actor(),note:'',before:[],items:db.loanTemplate};
+ ui.loanPics={before:[...(v.before||[])],after:[]};
+ const machines=db.products.filter(p=>p.category==='machines');
+ const f=(label,inner,cls='',req=false)=>`<div class="field ${cls}"><label class="label">${label}${req?' <span class="required" aria-hidden="true">*</span>':''}</label>${inner}</div>`;
+ openModal(l?`แก้ไขรายการยืม ${l.no}`:'บันทึกการยืมเครื่อง Demo',`<form id="loanForm" data-id="${l?.id||''}" novalidate><div class="form-layout">
+  ${f('เลือกจากเครื่องในสต๊อก (ไม่บังคับ)',`<select class="form-control" id="lnProduct" name="productId"><option value="">— พิมพ์ชื่อเครื่องเอง —</option>${machines.map(p=>`<option value="${p.id}" data-name="${esc(p.name)}" data-serial="${esc(p.serial)}" ${v.productId===p.id?'selected':''}>${esc(p.name)} • ${esc(p.serial||p.code)}</option>`).join('')}</select>`,'wide')}
+  ${f('ชื่อเครื่อง Demo',`<input class="form-control" id="lnMachine" name="machine" maxlength="120" value="${esc(v.machine)}" placeholder="เช่น เครื่องล้างอัลตราโซนิก" required autofocus>`,'',true)}
+  ${f('เลขประจำเครื่อง (S/N)',`<input class="form-control" id="lnSerial" name="serial" maxlength="100" value="${esc(v.serial)}" placeholder="เลข S/N ของเครื่อง">`)}
+  ${f('ชื่อผู้ยืม',`<input class="form-control" name="borrower" maxlength="100" value="${esc(v.borrower)}" placeholder="ชื่อ-นามสกุล" required>`,'',true)}
+  ${f('บริษัท / ร้าน',`<input class="form-control" name="company" maxlength="120" value="${esc(v.company)}">`)}
+  ${f('เบอร์โทร',`<input class="form-control" name="phone" maxlength="40" value="${esc(v.phone)}" inputmode="tel">`)}
+  ${f('วัตถุประสงค์',`<input class="form-control" name="purpose" maxlength="160" value="${esc(v.purpose)}" placeholder="เช่น ทดลองใช้ก่อนซื้อ">`)}
+  ${f('วันที่ยืม',`<input class="form-control" type="date" id="lnDate" name="lentDate" value="${esc(v.lentDate)}" required>`,'',true)}
+  ${f('ยืมกี่วัน',`<input class="form-control" type="number" id="lnDays" name="days" min="1" max="365" step="1" value="${esc(v.days)}" inputmode="numeric" required><div class="ln-due" id="lnDue">${dueText(v.lentDate,v.days)}</div>`,'',true)}
+  ${f('ผู้ให้ยืม (พนักงาน)',`<input class="form-control" name="lentBy" maxlength="100" value="${esc(v.lentBy)}">`,'wide')}
+  <div class="field wide"><label class="label">เช็คลิสต์อุปกรณ์ที่ให้ยืม <span class="label-note">แก้ไข เพิ่ม ลบ ได้เฉพาะใบนี้</span></label><div class="ln-rows">${v.items.map(rowHtml).join('')}</div><button type="button" class="btn outline small" data-action="lnAddRow">${icon('plus')}เพิ่มรายการ</button></div>
+  <div class="field wide"><label class="label">รูปก่อนให้ยืม <span class="label-note">ไม่เกิน ${LOAN_MAX_PICS} รูป</span></label>${picsHtml('before')}</div>
+  ${f('หมายเหตุ',`<textarea class="form-control" name="note" rows="2" maxlength="400">${esc(v.note)}</textarea>`,'wide')}
+ </div><div class="form-submit"><button type="button" class="btn outline" data-action="closeModal">ยกเลิก</button><button class="btn primary" type="submit">${icon('check')}${l?'บันทึกการแก้ไข':'บันทึกการยืม'}</button></div></form>`);
+}
+function submitLoan(form){
+ const f=Object.fromEntries(new FormData(form));
+ f.items=readRows(form);f.before=ui.loanPics?.before||[];
+ const editId=form.dataset.id||null,res=loanApi.save(f,editId);
+ if(!done(res,editId?'บันทึกการแก้ไขแล้ว':'บันทึกการยืมแล้ว'))return;
+ closeModal();render();loanDetails(res.data.id);
+}
+
+/* ---------- รายละเอียด ---------- */
+const picGrid=(l,set)=>{const arr=l[set]||[];return arr.length?`<div class="ln-pics">${arr.map((s,i)=>`<button type="button" class="ln-pic" data-action="lnPhoto" data-id="${l.id}" data-set="${set}" data-i="${i}" aria-label="ดูรูปที่ ${i+1}"><img src="${s}" alt="รูปที่ ${i+1}"></button>`).join('')}</div>`:`<div class="ln-none">ยังไม่มีรูป</div>`;};
+function loanDetails(id){
+ const l=db.loans.find(x=>x.id===id);if(!l)return toast('ไม่พบรายการยืม','bad');
+ const s=loanState(l),w=can('loan'),ret=l.status==='returned';
+ const back=i=>i.backOk===true?'<span class="ok">ครบ</span>':i.backOk===false?'<span class="no">ไม่ครบ</span>':'<span class="na">ยังไม่ตรวจ</span>';
+ const kv=(k,v)=>`<div><div class="k">${k}</div><div class="v">${v||'–'}</div></div>`;
+ openModal(`รายการยืม ${l.no}`,`
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><span class="mstatus ${s.cls}">${esc(s.label)}</span>${l.demo?'<span class="pill orange">ตัวอย่าง</span>':''}</div>
+  <div class="ln-grid">${kv('เครื่อง Demo',`<b>${esc(l.machine)}</b>`)}${kv('เลขประจำเครื่อง',esc(l.serial))}
+   ${kv('ผู้ยืม',esc(l.borrower))}${kv('บริษัท / ร้าน',esc(l.company))}${kv('เบอร์โทร',esc(l.phone))}${kv('วัตถุประสงค์',esc(l.purpose))}
+   ${kv('วันที่ยืม',dOnly(l.lentDate))}${kv('ยืมกี่วัน / กำหนดคืน',`${nfmt(l.days)} วัน • ${dOnly(l.dueDate)}`)}
+   ${kv('ผู้ให้ยืม',esc(l.lentBy))}${ret?kv('คืนเมื่อ / ผู้รับคืน',`${dOnly(l.returnDate)} • ${esc(l.receivedBy)}`):kv('บันทึกโดย',esc(l.createdBy))}
+   ${l.note?`<div style="grid-column:1/-1">${kv('หมายเหตุ',esc(l.note))}</div>`:''}${l.returnNote?`<div style="grid-column:1/-1">${kv('หมายเหตุตอนคืน',esc(l.returnNote))}</div>`:''}</div>
+  <div class="ln-sec">${icon('clipboard')}เช็คลิสต์อุปกรณ์</div>
+  <div class="table-scroller flush"><table class="ln-items"><thead><tr><th>รายการ</th><th>จำนวน</th><th>ตอนให้ยืม</th><th>ตอนรับคืน</th></tr></thead><tbody>${l.items.map(i=>`<tr><td>${esc(i.name)}${i.note?`<div class="sub">${esc(i.note)}</div>`:''}</td><td>${nfmt(i.qty)}</td><td><span class="ok">ครบ</span></td><td>${back(i)}</td></tr>`).join('')}</tbody></table></div>
+  <div class="ln-sec">${icon('camera')}รูปก่อนให้ยืม</div>${picGrid(l,'before')}
+  <div class="ln-sec">${icon('camera')}รูปหลังรับคืน</div>${picGrid(l,'after')}
+  <div class="ln-sec">${icon('edit')}เอกสารเซ็นรับ</div>
+  <div class="ln-sign ${l.signed.done?'done':''}"><span style="flex:1;min-width:180px">${l.signed.done?`<b>ได้รับเอกสารเซ็นแล้ว</b> ${l.signed.at?`• ${esc(dateText(l.signed.at))}`:''}`:'<b>ยังไม่ได้รับเอกสารเซ็น</b> พิมพ์ใบยืมให้ผู้ยืมเซ็น แล้วติ๊กหรือแนบรูปสแกนที่นี่'}</span>
+   <button class="btn outline small" data-action="lnPrint" data-id="${l.id}">${icon('print')}พิมพ์ใบยืม (A4)</button>
+   ${w?`<button class="btn outline small" data-action="lnSigned" data-id="${l.id}">${l.signed.done?'ยกเลิกสถานะเซ็นแล้ว':'ติ๊กว่าเซ็นแล้ว'}</button><label class="btn outline small" style="cursor:pointer">${icon('upload')}แนบรูปใบเซ็น<input type="file" accept="image/*" hidden data-ln-scan="${l.id}"></label>`:''}</div>
+  ${l.signed.scan?`<div style="margin-top:8px"><button type="button" class="ln-pic" style="max-width:150px" data-action="lnPhoto" data-id="${l.id}" data-set="scan" data-i="0" aria-label="ดูรูปใบเซ็น"><img src="${l.signed.scan}" alt="ใบเซ็นรับ"></button></div>`:''}
+  <div class="form-submit wrap" style="margin-top:16px">${w&&!ret?`<button class="btn primary" data-action="lnReturn" data-id="${l.id}">${icon('in')}บันทึกการรับคืน</button>`:''}${w?`<button class="btn outline" data-action="lnEdit" data-id="${l.id}">${icon('edit')}แก้ไข</button>`:''}${can('approve')?`<button class="btn danger" data-action="lnDelete" data-id="${l.id}">${icon('trash')}ลบ</button>`:''}<span class="spacer"></span><button class="btn outline" data-action="closeModal">ปิด</button></div>`);
+}
+function loanPhoto(id,set,i){
+ const l=db.loans.find(x=>x.id===id);if(!l)return;
+ const src=set==='scan'?l.signed.scan:l[set]?.[i];if(!src)return;
+ openModal(set==='scan'?'รูปใบเซ็นรับ':set==='before'?`รูปก่อนให้ยืม ${Number(i)+1}`:`รูปหลังรับคืน ${Number(i)+1}`,`<img class="ln-photo-big" src="${src}" alt=""><div class="form-submit"><button class="btn outline" data-action="lnView" data-id="${id}">กลับ</button></div>`);
+}
+
+/* ---------- รับคืน ---------- */
+function returnModal(id){
+ if(!can('loan'))return toast('บทบาทนี้ไม่มีสิทธิ์บันทึกการรับคืน','bad');
+ const l=db.loans.find(x=>x.id===id);if(!l||l.status!=='out')return toast('รายการนี้ไม่ได้อยู่ในสถานะกำลังยืม','bad');
+ ui.loanPics={before:[],after:[]};
+ openModal(`บันทึกการรับคืน ${l.no}`,`<form id="returnForm" data-id="${l.id}" novalidate>
+  <p class="helper-note" style="margin-bottom:10px">${esc(l.machine)} • ผู้ยืม ${esc(l.borrower)} • กำหนดคืน ${dOnly(l.dueDate)}</p>
+  <div class="ln-sec" style="margin-top:0">${icon('clipboard')}ตรวจเช็คลิสต์ตอนรับคืน</div>
+  <div class="table-scroller flush"><table class="ln-items"><thead><tr><th>รายการ</th><th>จำนวน</th><th>ผลตรวจ</th><th>หมายเหตุ</th></tr></thead><tbody>${l.items.map(i=>`<tr data-id="${i.id}"><td>${esc(i.name)}</td><td>${nfmt(i.qty)}</td><td><label><input type="radio" name="b-${i.id}" value="1" checked> ครบ</label> &nbsp; <label><input type="radio" name="b-${i.id}" value="0"> ไม่ครบ</label></td><td><input class="form-control" name="n-${i.id}" maxlength="120" placeholder="เช่น ขาด / ชำรุด" aria-label="หมายเหตุ ${esc(i.name)}"></td></tr>`).join('')}</tbody></table></div>
+  <div class="form-layout" style="margin-top:14px">
+   <div class="field"><label class="label">วันที่รับคืน <span class="required" aria-hidden="true">*</span></label><input class="form-control" type="date" name="returnDate" value="${dayKey(new Date())}" required></div>
+   <div class="field"><label class="label">ผู้รับคืน</label><input class="form-control" name="receivedBy" maxlength="100" value="${esc(actor())}"></div>
+   <div class="field wide"><label class="label">รูปหลังรับคืน <span class="label-note">ไม่เกิน ${LOAN_MAX_PICS} รูป</span></label>${picsHtml('after')}</div>
+   <div class="field wide"><label class="label">หมายเหตุ</label><textarea class="form-control" name="note" rows="2" maxlength="400" placeholder="สภาพเครื่อง ความเสียหาย ฯลฯ"></textarea></div>
+  </div><div class="form-submit"><button type="button" class="btn outline" data-action="lnView" data-id="${l.id}">ยกเลิก</button><button class="btn primary" type="submit">${icon('check')}ยืนยันรับคืน</button></div></form>`);
+}
+function submitReturn(form){
+ const fd=new FormData(form),id=form.dataset.id,l=db.loans.find(x=>x.id===id);if(!l)return;
+ const items=l.items.map(i=>({id:i.id,ok:fd.get('b-'+i.id)!=='0',note:String(fd.get('n-'+i.id)||'').trim()}));
+ const res=loanApi.giveBack(id,{items,returnDate:fd.get('returnDate'),receivedBy:fd.get('receivedBy'),note:fd.get('note'),after:ui.loanPics?.after||[]});
+ if(!done(res,'บันทึกการรับคืนแล้ว'))return;
+ closeModal();render();loanDetails(id);
+}
+
+/* ---------- เช็คลิสต์มาตรฐาน ---------- */
+function templateModal(){
+ if(!can('loan'))return toast('บทบาทนี้ไม่มีสิทธิ์แก้ไขเช็คลิสต์','bad');
+ openModal('เช็คลิสต์อุปกรณ์มาตรฐาน',`<form id="loanTplForm" novalidate><p class="helper-note" style="margin-bottom:10px">รายการนี้จะถูกใส่ให้อัตโนมัติทุกครั้งที่บันทึกการยืมใหม่ (ใบที่ยืมไปแล้วไม่เปลี่ยน) และแก้เพิ่มเฉพาะใบได้อีก</p>
+  <div class="ln-rows">${db.loanTemplate.map(rowHtml).join('')}</div><button type="button" class="btn outline small" data-action="lnAddRow">${icon('plus')}เพิ่มรายการ</button>
+  <div class="form-submit" style="margin-top:14px"><button type="button" class="btn outline" data-action="closeModal">ยกเลิก</button><button class="btn primary" type="submit">${icon('check')}บันทึกเช็คลิสต์</button></div></form>`);
+}
+
+/* ---------- ใบยืม A4 สำหรับพิมพ์ ---------- */
+const LOAN_TERMS=['ผู้ยืมรับผิดชอบดูแลเครื่องและอุปกรณ์ตามรายการข้างต้นให้อยู่ในสภาพเรียบร้อยตลอดระยะเวลาที่ยืม','ห้ามนำเครื่องไปให้บุคคลอื่นยืมต่อ ห้ามถอดแยกหรือดัดแปลงเครื่อง','หากเครื่องหรืออุปกรณ์สูญหายหรือเสียหายจากการใช้งานผิดวิธี ผู้ยืมตกลงชดใช้ตามราคาที่บริษัทแจ้ง','ส่งคืนเครื่องและอุปกรณ์ครบชุดภายในกำหนดคืน'];
+function printLoan(id){
+ const l=db.loans.find(x=>x.id===id);if(!l)return;
+ const ret=l.status==='returned';
+ const box=(on,bad)=>bad?'☒':on?'☑':'☐';
+ const line=t=>`<div class="sig"><div class="ln"></div><div>${t}</div><div class="dt">วันที่ ........ / ........ / ............</div></div>`;
+ const w=window.open('','_blank','width=900,height=1000');if(!w){toast('เบราว์เซอร์ปิดกั้นหน้าต่างพิมพ์','bad');return;}
+ w.document.write(`<!doctype html><html lang="th"><head><meta charset="UTF-8"><title>ใบยืมเครื่อง Demo ${esc(l.no)}</title><style>
+ @page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Kanit,Tahoma,sans-serif;color:#111;font-size:13px;margin:0;line-height:1.5}
+ h1{font-size:20px;margin:0}.top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #15379c;padding-bottom:8px;margin-bottom:10px}
+ .brand{font-weight:700;color:#15379c;font-size:18px}.no{text-align:right;font-size:12px}
+ table{width:100%;border-collapse:collapse;margin:6px 0 10px}th,td{border:1px solid #888;padding:4px 7px;text-align:left;vertical-align:top}th{background:#eef2fb}
+ .g{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;margin-bottom:8px}.g b{color:#445}h2{font-size:14px;margin:10px 0 3px}
+ .photos{display:flex;gap:6px;flex-wrap:wrap}.photos img{height:70px;border:1px solid #aaa;border-radius:3px}
+ ol{margin:3px 0 8px;padding-left:20px}.sigs{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:20px;page-break-inside:avoid}
+ .sig{text-align:center}.sig .ln{border-bottom:1px solid #000;height:38px;margin:0 10px 4px}.sig .dt{font-size:11px;color:#444;margin-top:2px}
+ .note{font-size:11px;color:#a33;margin-top:8px}.part{border-top:1px dashed #888;margin-top:14px;padding-top:4px}
+ </style></head><body>
+ <div class="top"><div><div class="brand">I-MODE</div><h1>ใบยืมเครื่อง Demo</h1><div style="font-size:12px;color:#444">Demo Unit Loan Form</div></div><div class="no"><b>เลขที่ ${esc(l.no)}</b><br>วันที่ยืม ${dOnly(l.lentDate)}</div></div>
+ <h2>ข้อมูลเครื่อง</h2><div class="g"><div><b>เครื่อง:</b> ${esc(l.machine)}</div><div><b>เลขประจำเครื่อง (S/N):</b> ${esc(l.serial||'-')}</div><div><b>ระยะเวลายืม:</b> ${nfmt(l.days)} วัน</div><div><b>กำหนดคืน:</b> ${dOnly(l.dueDate)}</div></div>
+ <h2>ข้อมูลผู้ยืม</h2><div class="g"><div><b>ชื่อผู้ยืม:</b> ${esc(l.borrower)}</div><div><b>บริษัท / ร้าน:</b> ${esc(l.company||'-')}</div><div><b>เบอร์โทร:</b> ${esc(l.phone||'-')}</div><div><b>วัตถุประสงค์:</b> ${esc(l.purpose||'-')}</div></div>
+ <h2>เช็คลิสต์อุปกรณ์</h2><table><thead><tr><th style="width:30px">#</th><th>รายการ</th><th style="width:50px">จำนวน</th><th style="width:70px">ตอนยืม</th><th style="width:120px">ตอนรับคืน</th><th>หมายเหตุ</th></tr></thead><tbody>${l.items.map((i,k)=>`<tr><td>${k+1}</td><td>${esc(i.name)}</td><td>${nfmt(i.qty)}</td><td>${box(true)} ครบ</td><td>${ret?`${box(i.backOk===true,i.backOk===false)} ${i.backOk===false?'ไม่ครบ':'ครบ'}`:'☐ ครบ &nbsp;☐ ไม่ครบ'}</td><td>${esc(i.note||'')}</td></tr>`).join('')}</tbody></table>
+ ${l.before.length?`<h2>รูปก่อนให้ยืม</h2><div class="photos">${l.before.slice(0,4).map(s=>`<img src="${s}" alt="">`).join('')}</div>`:''}
+ <h2>เงื่อนไขการยืม</h2><ol>${LOAN_TERMS.map(t=>`<li>${esc(t)}</li>`).join('')}</ol>
+ <div class="sigs">${line('ผู้ยืม<br>( '+esc(l.borrower)+' )')}${line('ผู้ให้ยืม / เจ้าหน้าที่<br>( '+esc(l.lentBy||'.....................')+' )')}</div>
+ <div class="part"><h2>การรับคืน</h2>${ret?`<div class="g"><div><b>วันที่รับคืน:</b> ${dOnly(l.returnDate)}</div><div><b>ผู้รับคืน:</b> ${esc(l.receivedBy)}</div></div>${l.returnNote?`<div><b>หมายเหตุ:</b> ${esc(l.returnNote)}</div>`:''}`:'<div>วันที่รับคืน ........ / ........ / ............ &nbsp; สภาพเครื่อง ........................................................</div>'}
+ <div class="sigs">${line('ผู้คืน<br>( .............................. )')}${line('ผู้รับคืน / เจ้าหน้าที่<br>( '+(ret?esc(l.receivedBy):'..............................')+' )')}</div></div>
+ <div class="note">* ข้อความเงื่อนไขข้างต้นเป็นตัวอย่าง รอแก้ไขให้ตรงกับเอกสารจริงของบริษัท</div>
+ <script>window.onload=()=>window.print()<\/script></body></html>`);
+ w.document.close();
+}
+
+/* ---------- เหตุการณ์ของส่วนยืม-คืน ---------- */
+document.addEventListener('click',e=>{
+ const el=e.target.closest('[data-action^="ln"]');if(!el)return;
+ const {action:a,id,set,i}=el.dataset;
+ switch(a){
+  case 'lnNew':closeModal();loanModal();break;
+  case 'lnEdit':closeModal();loanModal(id);break;
+  case 'lnView':closeModal();loanDetails(id);break;
+  case 'lnReturn':closeModal();returnModal(id);break;
+  case 'lnPrint':printLoan(id);break;
+  case 'lnPhoto':closeModal();loanPhoto(id,set,i);break;
+  case 'lnTemplate':closeModal();templateModal();break;
+  case 'lnSamples':if(done(loanApi.loadSamples(),'โหลดตัวอย่างการยืมแล้ว'))render();break;
+  case 'lnDelete':if(confirm('ลบรายการยืมนี้ถาวร? (รูปและเช็คลิสต์จะหายไปด้วย)')&&done(loanApi.remove(id),'ลบรายการยืมแล้ว')){closeModal();render();}break;
+  case 'lnSigned':{const l=db.loans.find(x=>x.id===id);if(l&&done(loanApi.setSigned(id,!l.signed.done,l.signed.done?null:undefined))){closeModal();render();loanDetails(id);}break;}
+  case 'lnAddRow':{const box=el.closest('form').querySelector('.ln-rows');box.insertAdjacentHTML('beforeend',rowHtml());box.lastElementChild.querySelector('input').focus();break;}
+  case 'lnRmRow':{const rows=el.closest('.ln-rows');if(rows.children.length>1)el.closest('.row').remove();else toast('ต้องมีอย่างน้อย 1 รายการ','bad');break;}
+  case 'lnRmPic':ui.loanPics[set].splice(Number(i),1);refreshPics(set);break;
+ }
+});
+document.addEventListener('submit',e=>{
+ const form=e.target;
+ if(form.id==='loanForm'){e.preventDefault();submitLoan(form);}
+ else if(form.id==='returnForm'){e.preventDefault();submitReturn(form);}
+ else if(form.id==='loanTplForm'){e.preventDefault();if(done(loanApi.saveTemplate(readRows(form)),'บันทึกเช็คลิสต์มาตรฐานแล้ว'))closeModal();}
+});
+document.addEventListener('change',e=>{
+ const t=e.target;
+ if(t.id==='lnProduct'){const o=t.selectedOptions[0];if(o?.value){$('#lnMachine').value=o.dataset.name||'';$('#lnSerial').value=o.dataset.serial||'';}}
+ if(t.id==='lnDate'||t.id==='lnDays'){const d=$('#lnDue');if(d)d.textContent=dueText($('#lnDate').value,$('#lnDays').value);}
+ if(t.id==='loanStatusFilter'){ui.loanStatus=t.value;refreshLoans();}
+ if(t.dataset.lnPic&&t.files?.length){
+  const set=t.dataset.lnPic,room=LOAN_MAX_PICS-(ui.loanPics[set]||[]).length,files=[...t.files].slice(0,room);
+  if(t.files.length>room)toast(`เพิ่มได้อีก ${room} รูป (สูงสุด ${LOAN_MAX_PICS} รูป)`,'bad');
+  Promise.all(files.map(f=>resizeImage(f,800))).then(urls=>{ui.loanPics[set].push(...urls);refreshPics(set);}).catch(()=>toast('อ่านไฟล์รูปไม่ได้ กรุณาเลือกไฟล์รูปภาพ','bad'));
+ }
+ if(t.dataset.lnScan&&t.files?.[0]){
+  const id=t.dataset.lnScan;
+  resizeImage(t.files[0],1400).then(url=>{if(done(loanApi.setSigned(id,undefined,url),'แนบรูปใบเซ็นแล้ว')){closeModal();render();loanDetails(id);}}).catch(()=>toast('อ่านไฟล์รูปไม่ได้ กรุณาเลือกไฟล์รูปภาพ','bad'));
+ }
+});
+document.addEventListener('input',e=>{
+ if(e.target.dataset.filter==='loanSearch'){ui.loanSearch=e.target.value;refreshLoans();}
+});
 
 /* ---------- 4. เหตุการณ์ ---------- */
 document.addEventListener('click',e=>{

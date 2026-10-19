@@ -164,6 +164,8 @@ button.sh-kpi[aria-pressed="true"] { border-color: var(--blue); background: #f5f
 .sh-table tbody tr { transition: background-color .12s ease-out; }
 .sh-table tbody tr:hover { background: #f8fafd; }
 .sh-table tbody tr:last-child td { border-bottom: 0; }
+.sh-table tbody tr.is-link { cursor: pointer; }
+.sh-table tbody tr.is-link:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
 .sh-table td.is-key { font-weight: 600; color: var(--navy-2); white-space: nowrap; }
 .sh-table td.is-empty { color: #9aa7bd; }
 .sh-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; line-height: 1.5; }

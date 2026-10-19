@@ -165,7 +165,8 @@
   }
 
   /* opt: { title, subtitle, columns: [{ key, label, isKey }], rows, statusKey, statusTone: { status: tone },
-            searchKeys, empty: { title, text }, footNote, loading }
+            searchKeys, empty: { title, text }, footNote, loading, onRowClick: fn(row), rowLabel: fn(row) }
+     With onRowClick every row opens on click or Enter (rowLabel gives its accessible name).
      returns { setRows(rows), setFilter({label, fn}|null), onClearFilter(cb), csv(filename) } */
   function list(target, opt) {
     var rows = opt.rows || [], extra = null, clearCb = null, loading = !!opt.loading;
@@ -213,7 +214,9 @@
       }
       var list = shown();
       if (list.length) {
-        tbody.innerHTML = list.map(function (r) { return '<tr>' + opt.columns.map(function (c) { return cell(c, r); }).join('') + '</tr>'; }).join('');
+        var open = opt.onRowClick ? function (r) { return ' class="is-link" tabindex="0" title="' + esc(opt.rowLabel ? opt.rowLabel(r) : 'เปิดรายการ') + '"'; } : function () { return ''; };
+        tbody.innerHTML = list.map(function (r, i) { return '<tr data-i="' + i + '"' + open(r) + '>' + opt.columns.map(function (c) { return cell(c, r); }).join('') + '</tr>'; }).join('');
+        drawn = list;
       } else {
         var none = !rows.length, e = opt.empty || {};
         tbody.innerHTML = '<tr class="sh-empty-row"><td colspan="' + opt.columns.length + '"><div class="sh-empty">' + line(none ? 'inbox' : 'search') +
@@ -221,6 +224,12 @@
           '<span>' + esc(none ? (e.text || '') : 'ลองเปลี่ยนคำค้นหา หรือล้างตัวกรอง') + '</span></div></td></tr>';
       }
       card.querySelector('.sh-count').textContent = 'แสดง ' + list.length + ' จาก ' + rows.length + ' รายการ';
+    }
+    var drawn = [];
+    function rowOf(e) { var tr = e.target.closest && e.target.closest('tr.is-link'); return tr ? drawn[+tr.getAttribute('data-i')] : null; }
+    if (opt.onRowClick) {
+      tbody.addEventListener('click', function (e) { var r = rowOf(e); if (r) opt.onRowClick(r); });
+      tbody.addEventListener('keydown', function (e) { if (e.key !== 'Enter' && e.key !== ' ') return; var r = rowOf(e); if (r) { e.preventDefault(); opt.onRowClick(r); } });
     }
     q.addEventListener('input', draw);
     if (sel) sel.addEventListener('change', draw);

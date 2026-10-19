@@ -6,7 +6,7 @@ window.IMODE_MODULES = [
     icon: '<rect x="8" y="24" width="8" height="16" rx="2" fill="#0b63e5"/><rect x="20" y="14" width="8" height="26" rx="2" fill="#f79009"/><rect x="32" y="8" width="8" height="32" rx="2" fill="#0c225e"/>' },
   { id: 'service', name: 'Service', fullName: 'บริการและบำรุงรักษา', group: 'ops', href: 'modules/service/index.html',
     icon: '<path d="M30 8a10 10 0 0 0-9.6 12.8L8 33.2a4 4 0 0 0 5.7 5.7l12.4-12.4A10 10 0 0 0 39 16.6l-6 6-6.4-1.7L24.9 15l6-6A10 10 0 0 0 30 8z" fill="#0b63e5"/><circle cx="11" cy="36" r="2" fill="#fff"/><circle cx="38" cy="36" r="7" fill="#f79009"/>' },
-  { id: 'qc', name: 'QC & R&D', fullName: 'ควบคุมคุณภาพและวิจัยพัฒนา', group: 'ops', href: '',
+  { id: 'qc', name: 'QC & R&D', fullName: 'ควบคุมคุณภาพและวิจัยพัฒนา', group: 'ops', href: 'modules/qc-rnd/index.html',
     icon: '<rect x="8" y="8" width="32" height="32" rx="7" fill="#12a06a"/><path d="M16 24.5l5.5 5.5L33 18.5" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>' },
   { id: 'inventory', name: 'Inventory', fullName: 'คลังสินค้าและสต๊อก', group: 'ops', href: 'modules/inventory/index.html',
     icon: '<path d="M24 6l16 9v18l-16 9-16-9V15z" fill="#f79009"/><path d="M8 15l16 9 16-9" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M24 24v18" stroke="#fff" stroke-width="3"/><path d="M24 24l16-9v18l-16 9z" fill="#c25e00"/>' },

@@ -152,3 +152,43 @@ html[data-theme="dark"] .app.is-soon .app-icon { background: #1f1f1f; border-col
 html[data-theme="dark"] .app.is-soon .app-name { color: #9a9a9a; }
 html[data-theme="dark"] .grid-note i { background: #1f1f1f; border-color: #6a6a6a; }
 html[data-theme="dark"] .toast { background: #333; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+
+/* ---------- reorder + change icon (edit mode) ---------- */
+.app-grid.is-editing .app { touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.app-grid.is-editing .app-icon { outline: 2px dashed var(--blue, #0b63e5); outline-offset: 3px; }
+.app-grid.is-editing .app.is-soon .app-icon svg { opacity: 1; filter: none; }
+.app-grid.is-editing li:not(.is-drag) .app-icon { animation: tile-wiggle .28s ease-in-out infinite alternate; }
+.app-grid.is-editing li:nth-child(even):not(.is-drag) .app-icon { animation-direction: alternate-reverse; }
+@keyframes tile-wiggle { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }
+@media (prefers-reduced-motion: reduce) { .app-grid.is-editing li .app-icon { animation: none !important; } }
+.app-grid li.is-drag { opacity: .25; }
+.drag-ghost { position: fixed; z-index: 40; pointer-events: none; margin: 0; list-style: none; transform: scale(1.08); filter: drop-shadow(0 10px 18px rgba(12,34,94,.3)); }
+.drag-ghost .app-icon { animation: none; }
+.edit-bar {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 30; max-width: calc(100vw - 24px);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+  background: var(--surface, #fff); border: 1px solid var(--line, #dfe6f2); border-radius: 16px; padding: 10px 14px;
+  box-shadow: 0 8px 28px rgba(12,34,94,.2);
+}
+.edit-bar[hidden] { display: none; }
+.edit-hint { font-size: 14px; color: var(--ink-2); }
+.edit-btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line, #dfe6f2); background: transparent; color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; }
+.edit-btn.is-primary { background: var(--blue, #0b63e5); border-color: var(--blue, #0b63e5); color: #fff; font-weight: 600; }
+.icon-dlg-back { position: fixed; inset: 0; z-index: 50; background: rgba(12,34,94,.4); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.icon-dlg { width: 100%; max-width: 420px; max-height: calc(100vh - 32px); overflow: auto; background: var(--surface, #fff); color: var(--ink); border-radius: 18px; padding: 20px; box-shadow: 0 16px 48px rgba(12,34,94,.35); display: flex; flex-direction: column; gap: 14px; }
+.icon-dlg h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.icon-dlg h3 { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.icon-prev { display: flex; align-items: center; gap: 12px; }
+.icon-prev .app-icon { flex: none; }
+.glyph-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.glyph-btn { aspect-ratio: 1; min-height: 44px; border: 2px solid transparent; border-radius: 12px; background: rgba(12,34,94,.06); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; color: var(--ink); }
+.glyph-btn svg { width: 26px; height: 26px; }
+.glyph-btn[aria-pressed="true"] { border-color: var(--blue, #0b63e5); }
+.color-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.color-btn { width: 44px; height: 44px; border-radius: 50%; border: 3px solid transparent; box-shadow: inset 0 0 0 2px var(--surface, #fff); cursor: pointer; padding: 0; }
+.color-btn[aria-pressed="true"] { border-color: var(--ink); }
+.dlg-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+html[data-theme="dark"] .glyph-btn { background: rgba(255,255,255,.08); }
+html[data-theme="dark"] .edit-bar, html[data-theme="dark"] .icon-dlg { border-color: #3a3a3a; }
+html[data-theme="dark"] .icon-dlg-back { background: rgba(0,0,0,.6); }
+@media (max-width: 560px) { .edit-bar { bottom: 12px; width: calc(100vw - 24px); } .edit-hint { width: 100%; text-align: center; } }
