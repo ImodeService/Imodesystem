@@ -8,8 +8,9 @@
        member sees the same list — Service kept them in one browser's localStorage only;
      - customers, machines and cases are read from the same tables Service uses;
      - QC that a browser still holds from Service can be copied up once (import banner).
-   Service's QC menu, machine QC buttons and the Workshop "ทำ QC ก่อนส่งคืน" button now open
-   this page (Service js/136). Links: ?new=1&machine=&case=&type=  ?edit=<id>  ?open=<id>
+   2026-10-20: Service and QC & R&D are separate (two admins); neither links to the other and
+   both open from the launcher. Service js/136 hid its QC menu and buttons; this page's sidebar
+   leaves Service out. Links still understood: ?new=1&machine=&case=&type=  ?edit=<id>  ?open=<id>
 
    The Workshop case page (service-case-detail.html) still checks Pre-Delivery QC through the
    localStorage key imode_v66_qc_records, so every load and save here writes a copy of the
@@ -135,6 +136,7 @@
   /* ---------- page ---------- */
   page = await ImodeShell.start({
     module: 'qc', root: '../../',
+    hide: ['service'], // separate admins (2026-10-20): reach Service from the launcher only
     subtitle: 'ใบตรวจ QC เครื่องจักร: ตรวจรับเข้า ก่อนส่งมอบ หลังซ่อม รับหลังติดตั้ง และยืนยัน PM',
     actions: [
       { label: 'ส่งออก CSV', icon: 'download', onClick: function () {
@@ -228,7 +230,7 @@
     });
   }
 
-  /* ---------- links from Service ---------- */
+  /* ---------- links into this page (bookmarks; Service no longer sends people here) ---------- */
   function handleLink() {
     var p = new URLSearchParams(location.search);
     var id = p.get('open') || p.get('edit');

@@ -11,6 +11,13 @@
    name in orange), and a message that tags you shows in the bell on index.html for 14 days, even on
    a case you are not assigned to. The tag is the text itself, matched against profiles.full_name
    (or username), the same name the server stamps as author_name, so no new column is needed.
+   2026-10-20 ("ตอนอัปเดตเคส ให้ส่งแจ้งเตือนเข้าไปในแชทเคส", "ย้อนสถานะได้ ... แจ้งทั้งตอนอัปและดาวน์"): every
+   update — status up or back (↩️), crew, the technician's field status, Workshop progress, files,
+   case details — is posted into the chat as an ordinary message by the person who made it, through
+   window.imodeCaseChatNotify(caseId, text), defined in both documents. On index.html it is fired by
+   wrapping the functions a person uses to change a case (not by watching the status log, which also
+   moves when a sync or realtime brings someone else's change in). Those lines are drawn lighter, and
+   the grey status-log line they repeat is not drawn twice.
    Messages live in Supabase public.case_messages (supabase/14-case-chat.sql): staff only, never
    customers. Until that SQL is run the panel says so and nothing else changes.
 
@@ -22,6 +29,7 @@
  var TABLE='case_messages',VIEW='case_message_last';
  var CLOSED=['เสร็จสิ้น','ปิดเคส','ยกเลิก'];
  var DAY=86400000;
+ var AUTO=/^(🔄|↩️|👷|🔧|🏭|📎|✏️)/;   /* lines posted by imodeCaseChatNotify */
  var MAX_PHOTOS=4,MAX_SIDE=1280,JPEG_Q=0.72;
 
  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){
@@ -122,6 +130,72 @@
    });
    return out;
   }
+
+  /* -------------------------------------- updates → chat (2026-10-20, ข้อ 5/9) ---- */
+  var GROUPS=[['เคสใหม่'],['มอบหมายแล้ว','นัดหมายแล้ว'],['กำลังดำเนินการ','รออะไหล่'],['รอส่งงาน','เสร็จสิ้น'],['ปิดเคส']];
+  function stepOf(s){for(var i=0;i<GROUPS.length;i++)if(GROUPS[i].indexOf(s)>=0)return i;return 0}
+  var queue=Promise.resolve();
+  function notify(id,text){
+   var c=db();
+   if(!c||!id||!text||missing||!user())return Promise.resolve(false);
+   queue=queue.then(function(){
+    return Promise.resolve(c.from(TABLE).insert({case_id:id,body:String(text).slice(0,4000),photos:[]})).then(function(r){
+     if(r&&r.error){if(missingTable(r.error))missing=true;return false}
+     last[id]=new Date().toISOString();
+     return true;
+    },function(){return false});
+   });
+   return queue;
+  }
+  window.imodeCaseChatNotify=notify;
+  function techName(id){
+   try{var t=(technicians||[]).filter(function(x){return x&&x.id===id})[0];return (t&&t.name)||id}catch(e){return id}
+  }
+  function crewOf(c){
+   var l=Array.isArray(c.assignees)&&c.assignees.length?c.assignees:String(c.assignee||'').split(',');
+   return l.map(function(x){return String(x||'').trim()}).filter(Boolean);
+  }
+  function snapAll(){
+   var m={};
+   try{(Array.isArray(cases)?cases:[]).forEach(function(c){
+    if(c&&c.id)m[c.id]={s:String(c.status||''),f:String(c.fieldStatus||''),a:crewOf(c).join(',')};
+   })}catch(e){}
+   return m;
+  }
+  function diffPost(before){
+   var now=snapAll();
+   Object.keys(now).forEach(function(id){
+    var b=before[id],n=now[id];
+    if(!b)return;                       /* a case just created is not an update */
+    if(n.a!==b.a&&n.a)notify(id,'👷 มอบหมายช่าง: '+n.a.split(',').map(techName).join(', '));
+    if(n.f!==b.f&&n.f)notify(id,'🔧 ช่างอัปเดตหน้างาน: '+n.f);
+    if(n.s!==b.s)notify(id,(stepOf(n.s)<stepOf(b.s)?'↩️ ย้อนสถานะเคส: ':'🔄 เปลี่ยนสถานะเคส: ')+(b.s||'-')+' → '+(n.s||'-'));
+   });
+  }
+  /* Only the outermost call is measured: saveCase may call imodeAssignCase on its way through. */
+  var depth=0;
+  function watch(name){
+   var base=window[name];
+   if(typeof base!=='function'||base.__ccWatch)return;
+   var w=function(){
+    if(depth>0)return base.apply(this,arguments);
+    var before=snapAll(),out;
+    depth++;
+    try{out=base.apply(this,arguments)}catch(e){depth--;throw e}
+    if(out&&typeof out.then==='function'){
+     return out.then(function(v){depth--;diffPost(before);return v},function(e){depth--;diffPost(before);throw e});
+    }
+    depth--;diffPost(before);
+    return out;
+   };
+   w.__ccWatch=true;
+   window[name]=w;
+  }
+  var WATCH=['advanceCase','saveCase','imodeAssignCase','saveSchedule','saveFieldStatus','fieldCheckIn','saveServiceReport'];
+  function watchAll(){WATCH.forEach(watch)}
+  watchAll();
+  window.addEventListener('load',watchAll,{once:true});
+
   function install(){
    var base=window.buildNotifications;
    if(typeof base!=='function'||base.__caseChat)return false;
@@ -243,6 +317,7 @@
    '.cc-msg:hover .cc-del,.cc-del:focus{opacity:1}',
    '.cc-sys{display:flex;gap:8px;align-items:baseline;padding:4px 6px 4px 50px;color:var(--muted,#6b7d9e);font-size:12.5px}',
    '.cc-sys b{color:#3a4a6b;font-weight:600}',
+   '.cc-msg.is-auto .cc-body{display:inline-block;background:#f3f6fb;border:1px solid var(--line,#e2ecfb);border-radius:10px;padding:5px 10px;color:#3a4a6b;font-size:13px}',
    '.cc-empty{text-align:center;color:var(--muted,#6b7d9e);padding:36px 12px;font-size:13px;line-height:1.6}',
    '.cc-compose{border-top:1px solid var(--line,#e2ecfb);padding:10px 12px 12px;flex:none;background:#fff}',
    '.cc-prev{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}',
@@ -425,7 +500,13 @@
    if(state==='offline'){feed.innerHTML='<div class="cc-empty">เชื่อมต่อฐานข้อมูลไม่ได้'+(errText?'<br><small>'+esc(errText)+'</small>':'')+'</div>';return}
 
    var items=msgs.map(function(m){return {t:Date.parse(m.created_at),m:m}});
-   statusLog().forEach(function(e){var t=Date.parse(e.at);if(t)items.push({t:t,s:e})});
+   var said=items.filter(function(it){return /^(🔄|↩️)/.test(String(it.m.body||''))});
+   statusLog().forEach(function(e){
+    var t=Date.parse(e.at);if(!t)return;
+    /* the same change already posted as a message: draw it once */
+    if(said.some(function(it){return Math.abs(it.t-t)<600000&&String(it.m.body).indexOf('→ '+e.to)>=0}))return;
+    items.push({t:t,s:e});
+   });
    items.sort(function(a,b){return a.t-b.t});
    if(!items.length){
     feed.innerHTML='<div class="cc-empty">ยังไม่มีข้อความในเคสนี้<br>เริ่มอัปเดตงานให้ทีมได้เลย</div>';fabCount();return;
@@ -441,7 +522,7 @@
     }
     var m=it.m,mine=!!me.id&&m.author_id===me.id,name=m.author_name||'พนักงาน';
     var ph=Array.isArray(m.photos)?m.photos.filter(function(p){return typeof p==='string'&&/^data:image\//.test(p)}):[];
-    html+='<div class="cc-msg'+(mine?' is-mine':'')+(!mine&&tagsMe(m.body)?' is-tagged':'')+'" data-id="'+esc(m.id)+'">'
+    html+='<div class="cc-msg'+(mine?' is-mine':'')+(!mine&&tagsMe(m.body)?' is-tagged':'')+(AUTO.test(String(m.body||''))?' is-auto':'')+'" data-id="'+esc(m.id)+'">'
      +'<div class="cc-av" style="background:'+color(name)+'" aria-hidden="true">'+esc(initials(name))+'</div>'
      +'<div><div class="cc-top"><span class="cc-name">'+esc(name)+(mine?' (คุณ)':'')+'</span>'
      +'<span class="cc-time" tabindex="0" data-full="'+esc(full(it.t))+'" aria-label="'+esc(full(it.t))+'">'+hhmm(it.t)+'</span></div>'
@@ -689,6 +770,21 @@
     alert('ส่งไม่ได้: '+(err&&err.message||'เชื่อมต่อไม่ได้'));
    });
   }
+
+  /* ----------------------------------------- updates → chat (2026-10-20) ---- */
+  var queue=Promise.resolve();
+  window.imodeCaseChatNotify=function(id,text){
+   var c=db();id=id||caseId;
+   if(!c||!text||state==='nosql'||state==='nologin')return Promise.resolve(false);
+   queue=queue.then(function(){
+    return Promise.resolve(c.from(TABLE).insert({case_id:id,body:String(text).slice(0,4000),photos:[]}).select(COLS)).then(function(r){
+     if(r&&r.error)return false;
+     if(id===caseId&&state==='ok'&&add(r&&r.data)){render();scrollEnd();markSeen()}
+     return true;
+    },function(){return false});
+   });
+   return queue;
+  };
 
   /* ------------------------------------------------------------------ boot ---- */
   layout();

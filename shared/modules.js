@@ -12,7 +12,8 @@ window.IMODE_MODULES = [
     icon: '<path d="M24 6l16 9v18l-16 9-16-9V15z" fill="#f79009"/><path d="M8 15l16 9 16-9" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M24 24v18" stroke="#fff" stroke-width="3"/><path d="M24 24l16-9v18l-16 9z" fill="#c25e00"/>' },
   { id: 'planner', name: 'Installation Planner', fullName: 'งานติดตั้งเครื่องจักร', group: 'ops', href: '',
     icon: '<rect x="7" y="9" width="34" height="30" rx="4" fill="#6a4fd6"/><rect x="12" y="15" width="10" height="8" rx="1.5" fill="#fff"/><rect x="26" y="15" width="10" height="18" rx="1.5" fill="#fff" opacity=".85"/><rect x="12" y="27" width="10" height="6" rx="1.5" fill="#f79009"/>' },
-  { id: 'hr', name: 'บุคลากร', fullName: 'ทรัพยากรบุคคล', group: 'org', href: '',
+  /* 2026-10-20: until the HR module exists, บุคลากร opens the staff list in Service (ทีมงาน → บุคลากรทั้งหมด) */
+  { id: 'hr', name: 'บุคลากร', fullName: 'ทรัพยากรบุคคล', group: 'org', href: 'modules/service/index.html?page=technicians&view=people',
     icon: '<circle cx="17" cy="16" r="7" fill="#c2417a"/><path d="M4 40a13 13 0 0 1 26 0z" fill="#c2417a"/><circle cx="33" cy="18" r="5.5" fill="#f79009"/><path d="M27 31a10 10 0 0 1 17 9H31z" fill="#f79009"/>' },
   { id: 'accounts', name: 'บัญชีและสิทธิ์', fullName: 'ตั้งค่าระบบและสิทธิ์', group: 'report', href: '',
     icon: '<circle cx="20" cy="16" r="8" fill="#3b4a66"/><path d="M6 40a14 14 0 0 1 22-11.5V40z" fill="#3b4a66"/><circle cx="35" cy="34" r="9" fill="#0b63e5"/><path d="M31 34l3 3 5-5.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' },

@@ -129,10 +129,13 @@
     หน้าคำขอ". For a quote request that moment is the ส่งให้ลูกค้า press, which js/62 turns into
     status เสร็จสิ้น on this row; for anything else it is somebody marking it done by hand.
     Nothing is lost: ประวัติคำขอ (js/61) keeps every request ever received. */
+ /* 2026-10-20: "อยากให้เวลากดตอบกลับเคสแล้วคำขอหาย" — pressing ตอบกลับแล้ว (js/48 stamps
+    c.respondedAt) is acting on the case too, so it takes the request off this page the same
+    way assigning does. */
  function pickedUp(r){
   if(isDone(r))return true;
   var c=caseOf(r);
-  return !!(c&&String(c.status||'')!=='เคสใหม่');
+  return !!(c&&(String(c.status||'')!=='เคสใหม่'||c.respondedAt));
  }
 
  /* ------------------------------------------------------------- filters ---- */
@@ -257,7 +260,7 @@
      ประวัติคำขอ delete the same way. Same key js/61 checks: line.manage. */
   if(can('line.manage')&&typeof window.imodeDeleteRequest==='function')
    out+='<button type="button" class="req-act req-act-del" onclick="event.stopPropagation();'
-    +'imodeRequestsDelete('+imodeJsArg(r.id)+')">🗑 '+esc2(tl('ลบ','Delete'))+'</button>';
+    +'imodeRequestsDelete('+imodeJsArg(r.id)+')">🗑 '+esc2(tl('ลบคำขอ','Delete request'))+'</button>';
   return out;
  }
  window.imodeRequestsDelete=function(id){
@@ -288,7 +291,9 @@
    +(r.contact?' · '+esc2(r.contact):'')+(r.phone?' · '+esc2(r.phone):'')+'</small>'
    +'</div>'
    +'</div>'
-   +'<div class="req-row-side">'+actionsHTML(r)+'</div>'
+   /* 2026-10-20: "เอาปุ่มที่อยู่ตรงบาร์ออก ปุ่มเปิดเคสกับลบเคส เหลือไว้แค่ในหน้ารายละเอียดคำขอ".
+      The row is one big button that opens the request; its actions live in that popup only. */
+   +'<div class="req-row-side"><span class="req-open-cue" aria-hidden="true">'+esc2(tl('ดูรายละเอียด','Details'))+' ›</span></div>'
    +'</div>';
  }
 
@@ -430,7 +435,7 @@
    +'<div class="detail-box full"><small>'+esc2(tl('รายละเอียดจากลูกค้า','What the customer wrote'))
    +'</small><b>'+esc2(r.message||'-')+'</b></div></div>'
    +media
-   +'<div class="button-row" style="margin-top:14px">'+actionsHTML(r)+'</div>');
+   +'<div class="req-detail-actions">'+actionsHTML(r)+'</div>');
  };
 
  /* --------------------------------------------------------------- wiring ---- */
@@ -568,6 +573,15 @@
  +'.req-act.is-primary:hover{background:#0a54c4;color:#fff}'
  +'.req-act:focus-visible{outline:2px solid #0b63e5;outline-offset:2px}'
  +'.req-more{padding:0 14px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}'
+ /* the row's only cue now; the actions are in the request popup, bigger */
+ +'.req-row-side{align-self:center}'
+ +'.req-open-cue{font-size:12.5px;font-weight:800;color:#0b63e5;white-space:nowrap}'
+ +'.req-detail-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}'
+ +'.req-detail-actions .req-act{flex:1 1 180px;min-height:52px;font-size:15.5px;padding:12px 18px;'
+ +'border-radius:14px;border-width:2px}'
+ +'.req-detail-actions .req-act:not(.req-act-del){background:#0b63e5;border-color:#0b63e5;color:#fff}'
+ +'.req-detail-actions .req-act:not(.req-act-del):hover{background:#0a54c4;color:#fff}'
+ +'.req-detail-actions .req-act-del{border-color:#e9a39d;background:#fff5f4;color:#b42318}'
  +'@media (max-width:640px){'
  +'.req-row{flex-direction:column;align-items:stretch}'
  +'.req-row-side{flex-direction:row;flex-wrap:wrap}'

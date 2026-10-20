@@ -1,69 +1,65 @@
 /* 2026-10-16: QC moved out of Service into the QC & R&D module (modules/qc-rnd).
-   "อยากจะแบ่งโมดุลใน service เอาไปแบ่งในโมดุล QC R&D" → "ลองย้ายดู"
+   2026-10-20: the two modules are now fully separate — no way from Service into QC.
+   "ในระบบQC ... มันยังลิงค์ไป service อยูู่ ซึ่งมันควรแยกกันตาม Flow ... มีแอดมิน 2 คน
+    2 อันนี้ไม่ควรกดแล้วเข้าอีกอันครับเพราะว่ามันจะทำให้แอดมินสับสน"
+   Org chart: Admin Technician > Supervisor > Tech runs Service; Admin QC,R&D > Supervisor
+   QC,R&D > QC,R&D Technician runs QC & R&D. Each module is opened from the launcher only.
 
    Only when Service runs as a platform module (js/00 set IMODE_PLATFORM); the old standalone
-   copy keeps its own QC page. Every way into QC now opens the module instead:
-     1. the sidebar / bottom-bar item "QC เครื่อง" (data-page="qc") and anything else calling
-        goPage('qc');
-     2. openQcModal(id, machineId) — the machine list's QC buttons (js/07) and edit buttons;
-        previewQc(id) — view / print;
-     3. imodeOpenCaseQc(caseId) — Workshop "ทำ QC ก่อนส่งคืน" in the หน้างาน screen (js/81);
-     4. index.html?page=qc&caseId=…&intent=qc-predelivery — the same button on the standalone
-        case page (service-case-detail.html wsQc()), and old bookmarks.
-   QC records Service still holds in this browser are offered for upload on the module page. */
+   copy keeps its own QC page. In the platform:
+     1. the "QC เครื่อง" menu item, role-home tile and quick-menu entry (data-page="qc",
+        goPage('qc')) are hidden, and goPage('qc') goes nowhere;
+     2. the machine list's QC buttons and every "ดู / พิมพ์ QC" (openQcModal, previewQc) are
+        hidden and do nothing;
+     3. imodeOpenCaseQc(caseId) — Workshop "ทำ QC ก่อนส่งคืน" in the หน้างาน screen (js/81) —
+        only says the QC team does it;
+     4. index.html?page=qc… (old bookmarks, the case page before 2026-10-20) just opens Service.
+   The Workshop hand-back gate still reads the QC result: js/137 copies it from qc_records. */
 (function(){
  'use strict';
  var P=window.IMODE_PLATFORM;
  if(!P)return;
- var BASE=new URL('../qc-rnd/index.html',location.href).href;
- function qs(o){return Object.keys(o).filter(function(k){return o[k]}).map(function(k){return k+'='+encodeURIComponent(o[k])}).join('&')}
- function go(o){var q=qs(o||{});location.href=BASE+(q?'?'+q:'')}
+ var MSG='งาน QC ทำในโมดูล QC & R&D โดยทีม QC — เปิดจากหน้ารวมโมดูล';
+ function say(){
+  if(typeof window.toastMsg==='function')window.toastMsg(MSG);
+  else if(typeof window.toast==='function')window.toast(MSG);
+ }
 
  /* 4 */
  var p=new URLSearchParams(location.search);
- if(p.get('page')==='qc'){
-  var cid=p.get('caseId')||p.get('case')||'';
-  var pre=/qc-predelivery/.test(p.get('intent')||'');
-  location.replace(BASE+'?'+qs({new:cid?'1':'',case:cid,type:pre?'Pre-Delivery QC':''}));
-  return;
+ if(p.get('page')==='qc'||/^qc-/.test(p.get('intent')||'')){
+  ['page','intent','qcId'].forEach(function(k){p.delete(k)});
+  var q=p.toString();
+  history.replaceState(history.state,'',location.pathname+(q?'?'+q:'')+location.hash);
  }
 
+ /* 1 + 2: hidden everywhere they are drawn, now and later */
+ var st=document.createElement('style');
+ st.id='imodeNoQcStyle';
+ st.textContent='[data-page="qc"],[onclick*="goPage(\'qc\')"],[onclick*="openQcModal"],[onclick*="previewQc"]{display:none!important}';
+ (document.head||document.documentElement).appendChild(st);
+
  /* 2 */
- window.openQcModal=function(id,machineId){
-  if(id)go({edit:id});else go({new:'1',machine:machineId||''});
- };
- window.previewQc=function(id){go({open:id})};
- window.openQcPreviewRecord=function(q){if(q&&q.id)go({open:q.id})};
+ window.openQcModal=function(){say()};
+ window.previewQc=function(){say()};
+ window.openQcPreviewRecord=function(){say()};
 
  /* 3 */
- window.imodeOpenCaseQc=function(cid){
-  var c=null;
-  try{c=typeof caseById==='function'?caseById(cid):null}catch(e){}
-  go({new:'1',case:cid,machine:(c&&c.machineId)||'',type:'Pre-Delivery QC'});
-  return true;
- };
+ window.imodeOpenCaseQc=function(){say();return true};
 
  /* 1 */
  var orig=window.goPage;
  if(typeof orig==='function'){
   window.goPage=function(name){
-   if(name==='qc'){go();return}
+   if(name==='qc'){say();return}
    return orig.apply(this,arguments);
   };
  }
  /* belt and braces: handlers bound to the old goPage before this file ran */
  document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('[data-page="qc"]'):null;
-  if(!b)return;
+  if(!b||b.classList.contains('page'))return;
   e.preventDefault();e.stopPropagation();
-  go();
+  say();
  },true);
- function label(){
-  document.querySelectorAll('.nav-item[data-page="qc"] b').forEach(function(b){
-   if(b.textContent!=='QC & R&D')b.textContent='QC & R&D';
-  });
-  document.querySelectorAll('.nav-item[data-page="qc"]').forEach(function(a){a.title='เปิดโมดูล QC & R&D'});
- }
- label();
- setTimeout(label,800);
 })();

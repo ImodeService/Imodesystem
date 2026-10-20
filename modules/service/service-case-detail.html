@@ -231,6 +231,10 @@ a{color:var(--imode-blue)}
   font:inherit;font-size:12.5px;font-weight:700;color:var(--imode-navy);cursor:pointer}
 .sd-go:hover{border-color:var(--imode-blue);color:var(--imode-blue)}
 .sd-go:focus-visible{outline:2px solid var(--imode-blue);outline-offset:2px}
+.sd-revert{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line-2)}
+.sd-revert small{color:var(--muted);font-size:12px}
+.sd-go.sd-back{border-color:#f3c9a3;color:#9a4a00;background:#fffaf4}
+.sd-go.sd-back:hover{border-color:#e07b1f;color:#7a3a00}
 
 /* the technician's own nine-status track, under step 4 */
 .sd-field{list-style:none;margin:0;padding:6px 4px 8px;display:flex;gap:0;overflow-x:auto;min-width:0}
@@ -432,6 +436,27 @@ a{color:var(--imode-blue)}
 .cmp-tile:focus-visible{outline:2px solid var(--imode-blue);outline-offset:2px}
 .cmp-tile.is-video{position:relative}
 .cmp-grid .media-add{margin:0;line-height:1.3}
+/* 2026-10-20: files staff added to the problem, and PDFs */
+.cmp-tile.is-staff{box-shadow:inset 0 0 0 2px #f2810c}
+.cmp-tile{position:relative}
+.cmp-tile-name{position:absolute;left:4px;right:4px;bottom:4px;font-size:10px;line-height:1.2;color:#22355c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp-file{display:flex;flex-direction:column;gap:10px;align-items:center;padding:12px}
+.cmp-file iframe{width:min(860px,88vw);height:min(76vh,1000px);border:0;background:#fff;border-radius:8px}
+.cmp-file-dl{color:#fff;font-weight:700;text-decoration:underline}
+.scd-ce-files{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.scd-ce-files .scd-ce-file{display:inline-flex;align-items:center;gap:6px;border:1px solid #cfe0fb;border-radius:10px;padding:5px 9px;background:#fff;font-size:12px;font-weight:600;color:var(--imode-navy)}
+.scd-ce-files .scd-ce-file img{width:34px;height:34px;object-fit:cover;border-radius:6px}
+.scd-ce-files .scd-ce-file button{border:0;background:none;color:#b42318;cursor:pointer;font-size:14px;padding:0 2px}
+.scd-ce-addfile{border:1.5px dashed #c9d8ef;background:#fbfdff;color:var(--imode-blue);border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:13px}
+.scd-ce-f .cbx-input{min-height:42px}
+.scd-mm{position:fixed;inset:0;z-index:12500;background:rgba(9,22,52,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.scd-mm-card{background:#fff;border-radius:18px;max-width:420px;width:100%;padding:22px 20px 18px;text-align:center;box-shadow:0 24px 60px rgba(9,22,52,.35)}
+.scd-mm-ic{font-size:30px;line-height:1;margin-bottom:6px;color:#d97706}
+.scd-mm-card h3{margin:0 0 6px;font-size:18px;color:var(--imode-navy)}
+.scd-mm-card p{margin:0 0 16px;font-size:14px;color:#3b4d6e;line-height:1.6;overflow-wrap:anywhere}
+.scd-mm-btns{display:flex;gap:10px}
+.scd-mm-btns button{flex:1;min-height:46px;border-radius:12px;border:1.5px solid #cfe0fb;background:#fff;color:var(--imode-navy);font-size:15px;font-weight:700;cursor:pointer}
+.scd-mm-btns button.is-primary{background:var(--imode-blue);border-color:var(--imode-blue);color:#fff}
 /* The page's drawers are popups. #scdPanel is empty and inert until panel() fills it, so it
    must not paint anything of its own until then — hence everything hangs off .is-open. */
 #scdPanel.is-open{position:fixed;inset:0;z-index:11000;display:grid;place-items:center;padding:18px}
@@ -818,6 +843,8 @@ body.scd-modal-open{overflow:hidden}
 <script src="./js/51-v70Time24Script.js"></script>
 <!-- 2026-09-25: status bars animate when the status moves on — the same file index.html loads. -->
 <script src="./js/121-v70TrackAnimScript.js"></script>
+<!-- 2026-10-20: type-to-search ลูกค้า / เครื่องจักร in ลงรายละเอียดเคส — the application's own combo (js/35). -->
+<script src="./js/35-v70ComboBoxScript.js"></script>
 <script>
 (function(){
 'use strict';
@@ -1079,9 +1106,13 @@ var CaseDetailData=(function(){
         }catch(e){}
         return [];
       })();
+      /* 2026-10-20: staff can add files to the problem too (from:'staff', with who and when);
+         they are drawn in the same block as the customer's. */
       media.forEach(function(m){
-        out.push({type:/^video\//i.test(String(m.type||''))?'video':'image',
-          name:m.name||'',data:m.data||'',at:c.createdAt,from:'customer'});
+        var t=String(m.type||'');
+        out.push({type:/^video\//i.test(t)?'video':/^audio\//i.test(t)?'audio':/pdf$/i.test(t)?'file':'image',
+          name:m.name||'',data:m.data||'',at:m.at||c.createdAt,
+          from:m.from==='staff'?'staff':'customer',by:m.by||''});
       });
       (c&&c.fieldStatusLog||[]).forEach(function(entry){
         /* The log stores a MIME type ("image/jpeg"); every reader on this page compares
@@ -1331,7 +1362,33 @@ var CaseWrite=(function(){
   function localCases(){return readJSON(K.cases,[])||[]}
   /* Returns a promise that resolves {ok, cloud} — cloud:false means it is on this device
      only, which the caller says out loud. */
+  /* 2026-10-20 (ข้อ 5): the chat line for this change goes out once the write has landed. */
   function patch(caseId,changes,why){
+    var before=null;
+    localCases().forEach(function(x){if(x&&x.id===caseId)before=x});
+    var notes=[],moved='';
+    if(before&&'status' in changes&&changes.status!==before.status){
+      moved=(statusChatText(before.status,changes.status,
+        why||(('assignees' in changes||'assignee' in changes)?'มอบหมายช่าง':'')));
+    }
+    if(before&&'assignees' in changes){
+      var was=String(before.assignee||'')+'|'+((before.assignees||[]).join(','));
+      var now=String(changes.assignee||'')+'|'+((changes.assignees||[]).join(','));
+      if(was!==now&&(changes.assignees||[]).length){
+        var names=(changes.assignees||[]).map(function(id){
+          var t=null;try{t=CaseDetailData.allTechnicians().filter(function(x){return x.id===id})[0]}catch(e){}
+          return (t&&t.name)||id;
+        });
+        notes.push('👷 มอบหมายช่าง: '+names.join(', ')+(changes.appointment?' · นัดหมาย '+fmtDateTime(changes.appointment):''));
+      }
+    }
+    if(moved)notes.push(moved);        /* who got the job first, then where the case went */
+    return patchNow(caseId,changes,why).then(function(r){
+      if(r&&r.ok)notes.forEach(function(t){chatNote(caseId,t)});
+      return r;
+    });
+  }
+  function patchNow(caseId,changes,why){
     var list=localCases(),hit=null;
     for(var i=0;i<list.length;i++){
       if(list[i]&&list[i].id===caseId){hit=list[i];break}
@@ -1379,7 +1436,9 @@ var CaseWrite=(function(){
     var COLS={customerId:'customer_id',customer:'customer',contact:'contact',phone:'phone',email:'email',
       location:'location',branch:'branch',machineId:'machine_id',machine:'machine',model:'model',serial:'serial',
       machineSize:'machine_size',warranty:'warranty',channel:'channel',serviceType:'service_type',
-      priority:'priority',issue:'issue',note:'note',fieldStatusLog:'field_status_log'};
+      priority:'priority',issue:'issue',note:'note',fieldStatusLog:'field_status_log',
+      /* 2026-10-20: files staff add to the problem (ข้อ 11/12) — service_cases.media, 06-v70-case-media.sql */
+      media:'media'};
     for(var ck in COLS)if(Object.prototype.hasOwnProperty.call(changes,ck))row[COLS[ck]]=changes[ck];
     try{
       return Promise.resolve(sb.from('service_cases').update(row).eq('id',caseId))
@@ -1797,6 +1856,16 @@ function noteStatusChange(caseId,from,to,why){
     localStorage.setItem(K.settings,JSON.stringify(s));
   }catch(e){}
 }
+/* 2026-10-20 (ข้อ 5, 9): every update to the case is also posted into its team chat, going up
+   and coming back down alike. js/138 owns the chat and defines imodeCaseChatNotify; without
+   it (or before 14-case-chat.sql) this does nothing. */
+function chatNote(caseId,text){
+  try{if(typeof window.imodeCaseChatNotify==='function')window.imodeCaseChatNotify(caseId,text)}catch(e){}
+}
+function statusChatText(from,to,why){
+  var back=stepIndex(to)<stepIndex(from);
+  return (back?'↩️ ย้อนสถานะเคส: ':'🔄 เปลี่ยนสถานะเคส: ')+(from||'-')+' → '+(to||'-')+(why?' ('+why+')':'');
+}
 function statusLogHTML(m){
   var list=statusLogFor(m.case.id);
   if(!list.length){
@@ -1869,7 +1938,7 @@ function renderProgress(m){
     +'<ol class="scd-steps">'+lis+'</ol>'
     +onlineBannerHTML(m)
     +(openStep==null?'':slideWrap('sdStepDrawer','scd-stepdrawer')
-      +'<div class="scd-stepdrawer-in">'+stepDrawerHTML(m,openStep)+'</div></div>')
+      +'<div class="scd-stepdrawer-in">'+stepDrawerHTML(m,openStep)+revertHTML(m,openStep)+'</div></div>')
     +(subs?'<div class="scd-substates">'+subs+'</div>':'')
     +statusLogHTML(m)
     +'<div class="scd-after"><span class="mark">★</span>'
@@ -1881,6 +1950,32 @@ function renderProgress(m){
    One claim per step: what happened there, and where to go next. Step 4 is the one the
    sketch asks for — the technician's own nine-status track drawn underneath the six, so an
    admin can see exactly how far the job has got without leaving the page. */
+/* 2026-10-20 (ข้อ 9): a case can be sent back to an earlier step, from that step's drawer.
+   The status written is the step's first one; the chat hears about it as a ↩️ line. */
+function mayRevert(){return can('case.edit')||can('case.assign')}
+function revertHTML(m,i){
+  var idx=stepIndex(m.case.status);
+  if(i==null||i>=idx||!mayRevert())return '';
+  return '<div class="sd-revert"><button type="button" class="sd-go sd-back" data-revert-step="'+i+'">'
+    +'↩ ย้อนสถานะกลับมาขั้นนี้</button><small>ใช้เมื่อกดผิดหรืองานต้องกลับไปทำขั้นนี้ใหม่ ระบบจะแจ้งในแชทของเคส</small></div>';
+}
+function revertTo(i){
+  var m=caseDetailModel,c=m.case;
+  if(!mayRevert()){toast('บัญชีนี้ไม่มีสิทธิ์ย้อนสถานะเคส');return}
+  var idx=stepIndex(c.status);
+  if(!(i>=0&&i<idx))return;
+  var next=STEPS[i].statuses[0];
+  /* มอบหมาย / นัดหมาย: a case that still has its date goes back to นัดหมายแล้ว, not มอบหมายแล้ว */
+  if(i===S('assign')&&m.appointment&&m.appointment.date)next='นัดหมายแล้ว';
+  scdAsk({
+    title:'ย้อนสถานะเคส',
+    message:'เคส '+(c.caseNo||c.id)+'\nจาก “'+(c.status||'-')+'” กลับไปเป็น “'+next+'”\nทีมจะเห็นการย้อนสถานะนี้ในแชทของเคส',
+    okText:'ย้อนสถานะ'
+  }).then(function(ok){
+    if(!ok)return;
+    applyStatusNow(next);
+  });
+}
 function stepDrawerHTML(m,i){
   var c=m.case;
   var head=function(t,sub){
@@ -2545,9 +2640,10 @@ function mediaTiles(items){
   return items.map(function(x){
     var body=(x.a.type==='image'&&x.a.data)
       ? '<img src="'+esc(x.a.data)+'" alt="'+esc(x.a.name||'')+'" loading="lazy">'
-      : '<span>'+(x.a.type==='video'?'&#9654;':x.a.type==='audio'?'&#127925;':'&#128196;')+'</span>';
-    return '<button type="button" class="cmp-tile'+(x.a.type==='video'?' is-video':'')+'"'
-      +' data-media="'+x.i+'" title="'+esc(x.a.name||'')+'"'
+      : '<span>'+(x.a.type==='video'?'&#9654;':x.a.type==='audio'?'&#127925;':'&#128196;')+'</span>'
+        +(x.a.type==='file'?'<small class="cmp-tile-name">'+esc(x.a.name||'PDF')+'</small>':'');
+    return '<button type="button" class="cmp-tile'+(x.a.type==='video'?' is-video':'')+(x.a.from==='staff'?' is-staff':'')+'"'
+      +' data-media="'+x.i+'" title="'+esc((x.a.name||'')+(x.a.by?' · เพิ่มโดย '+x.a.by:''))+'"'
       +' aria-label="เปิดไฟล์แนบ '+(x.i+1)+'">'+body+'</button>';
   }).join('');
 }
@@ -2565,8 +2661,8 @@ function renderProblem(m){
   var vids=m.attachments.filter(function(a){return a.type==='video'});
   /* Keep the index, so a tile can point back into the full attachments array. */
   var indexed=m.attachments.map(function(a,i){return {a:a,i:i}});
-  var fromCustomer=indexed.filter(function(x){return x.a.from==='customer'});
-  var fromField=indexed.filter(function(x){return x.a.from!=='customer'});
+  var fromCustomer=indexed.filter(function(x){return x.a.from==='customer'||x.a.from==='staff'});
+  var fromField=indexed.filter(function(x){return x.a.from!=='customer'&&x.a.from!=='staff'});
   return '<section class="card problem" aria-label="ปัญหาที่ลูกค้าแจ้ง">'
     +'<div class="card-head"><span class="ic">❗</span><h2>ปัญหาที่ลูกค้าแจ้ง</h2><span class="spacer"></span>'
     +(c.priority==='ด่วนมาก'?'<span class="badge badge-prio is-urgent">เร่งด่วน</span>':'')+'</div>'
@@ -2577,12 +2673,12 @@ function renderProblem(m){
     +'</div>'
     /* What the customer attached, on the row the ＋ button used to have to itself — the
        photos are the evidence, the button is the afterthought, so it sits at the end. */
-    +'<div class="cmp-block"><small>📎 ไฟล์ที่ลูกค้าแนบมากับเคส'
+    +'<div class="cmp-block"><small>📎 ไฟล์แนบของปัญหา (ลูกค้า / เจ้าหน้าที่)'
       +(fromCustomer.length?' · '+fromCustomer.filter(function(x){return x.a.type==='image'}).length+' รูป'
         +(fromCustomer.filter(function(x){return x.a.type==='video'}).length
           ?' · '+fromCustomer.filter(function(x){return x.a.type==='video'}).length+' วิดีโอ':''):'')
       +'</small>'
-      +(fromCustomer.length?'':'<p class="scd-empty" style="margin:0 0 10px">ลูกค้าไม่ได้แนบรูปหรือวิดีโอมากับเคสนี้</p>')
+      +(fromCustomer.length?'':'<p class="scd-empty" style="margin:0 0 10px">ยังไม่มีรูปหรือไฟล์แนบในเคสนี้ กด ＋ เพิ่มไฟล์ เพื่อแนบได้</p>')
       +'<div class="cmp-grid">'+mediaTiles(fromCustomer)
         +'<button type="button" class="media-add" data-action="add-attachment">＋<br>เพิ่มไฟล์</button></div>'
     +'</div>'
@@ -3227,7 +3323,7 @@ var WS_TRACK=['รอตรวจ','กำลังตรวจ','กำลั�
    มอบหมาย+นัดหมาย moved them without a renumbering: the machine arriving IS that step now. */
 var WS_LABELS={};
 WS_LABELS[S('assign')]='รับเครื่องเข้าบริษัท';
-WS_LABELS[S('service')]='R&D ตรวจ / ซ่อม';
+WS_LABELS[S('service')]='ช่างตรวจ / ซ่อมในบริษัท';
 WS_LABELS[S('done')]='QC / ส่งคืนเครื่อง';
 var wsPending=[];
 function isWorkshopCase(raw){return !!raw&&String(raw.serviceType||'')===WS_TYPE}
@@ -3268,6 +3364,7 @@ function wsWrite(entry,status,keepStep,message){
   toast('กำลังบันทึก…');
   return CaseWrite.patch(c.id,changes,'Workshop').then(function(r){
     if(!r||!r.ok){toast(r&&r.reason==='storage'?'บันทึกไม่สำเร็จ — พื้นที่ในเครื่องเต็ม':'บันทึกไม่สำเร็จ');return false}
+    if(entry.status)chatNote(c.id,'🏭 '+entry.status+(entry.workshop==='received'&&entry.note?' · สภาพเครื่อง: '+entry.note:''));
     closePanel();
     openStep=keepStep;
     try{CaseDetailData.refresh()}catch(e){}
@@ -3312,7 +3409,7 @@ function wsDrawerHTML(m,i,head){
         +'<span class="fdot">'+(done?'✔':String(k+1))+'</span><b>'+esc(label)+'</b>'
         +(at[label]?'<small>'+esc(fmtDateTime(at[label]))+'</small>':'')+'</li>';
     }).join('');
-    return head(stepNo('service')+'. R&D ตรวจ / ซ่อม','สถานะงานในบริษัท — เริ่มได้ก่อนลูกค้าเซ็นใบเสนอราคา')
+    return head(stepNo('service')+'. ช่างตรวจ / ซ่อมในบริษัท','สถานะงานในบริษัท — เริ่มได้ก่อนลูกค้าเซ็นใบเสนอราคา')
       +'<ol class="sd-field">'+dots+'</ol>'
       +(now==='พร้อมส่งคืน'?'<p class="sd-ok">✔ พร้อมส่งคืน — กดวงกลมขั้นที่ '+stepNo('done')+' เพื่อไปทำ QC และส่งคืน</p>'
         :'<p class="sd-wait">⏳ '+(now?'ตอนนี้: '+esc(now):'ยังไม่ได้เริ่มงาน')+' — ไปขั้นที่ '+stepNo('done')+' ได้เมื่อถึง “พร้อมส่งคืน”</p>')
@@ -3564,6 +3661,140 @@ function protectedCaseNote(note){
   var text=String(note||''),m=/^(รับแจ้งจาก Customer Portal \/ Machine QR(?:\s*·\s*ลูกค้าเลือกประเภทเคส:\s*(?:Service|Maintenance|PM|Online|Workshop))?)(?:\s*·\s*|\n)?([\s\S]*)$/.exec(text);
   return m?{fixed:m[1],extra:m[2]||''}:{fixed:'',extra:text};
 }
+/* =======================================================================
+   ไฟล์แนบของปัญหา (2026-10-20, ข้อ 11 / 12)
+   "ปุ่มเพิ่มไฟล์ในรายละเอียดเคสอะมันกดไม่ได้ ผมอยากให้แอดมินหรือคนอื่นๆกดได้ เพิ่มไฟล์ตรงปัญหา
+   ที่ลูกค้าเจอ". The ＋ เพิ่มไฟล์ tile only showed a toast. Files now go into c.media — the
+   list the customer's own photos are in, which travels in service_cases.media
+   (06-v70-case-media.sql) — tagged from:'staff' with who added them and when.
+   ======================================================================= */
+var CASE_FILE_MAX=2.5*1024*1024,CASE_FILE_COUNT=20;
+function caseFileKind(t){
+  t=String(t||'');
+  return /^image\//.test(t)?'image':/^video\//.test(t)?'video':/^audio\//.test(t)?'audio':/pdf$/i.test(t)?'file':'';
+}
+function readCaseFiles(list){
+  var out=[],who=wsWho();
+  return [].slice.call(list||[]).reduce(function(p,file){
+    return p.then(function(){
+      var t=String(file.type||''),kind=caseFileKind(t);
+      if(!kind){toast(file.name+' — แนบได้เฉพาะรูป วิดีโอ ไฟล์เสียง หรือ PDF');return}
+      var job=kind==='image'?shrinkImageFile(file).then(function(d){return {data:d,type:'image/jpeg'}})
+                            :readFileData(file).then(function(d){return {data:d,type:t}});
+      return job.then(function(o){
+        var size=Math.round((o.data.length-o.data.indexOf(',')-1)*0.75);
+        if(size>CASE_FILE_MAX){toast(file.name+' ใหญ่เกิน 2.5 MB');return}
+        out.push({name:file.name,type:o.type,size:size,data:o.data,from:'staff',by:who,at:new Date().toISOString()});
+      },function(){toast('อ่านไฟล์ '+file.name+' ไม่ได้')});
+    });
+  },Promise.resolve()).then(function(){return out});
+}
+/* What the case already shows: its own list, or — for a case from before the media column —
+   the request it came from, copied over so adding one file does not hide the customer's. */
+function caseMediaBase(raw){
+  if(raw&&Array.isArray(raw.media)&&raw.media.length)return raw.media.slice();
+  try{
+    var reqs=readJSON(K.lineRequests,[])||[];
+    for(var i=0;i<reqs.length;i++){
+      var r=reqs[i];
+      if(r&&raw&&r.caseId===raw.id&&Array.isArray(r.media)&&r.media.length)return r.media.slice();
+    }
+  }catch(e){}
+  return [];
+}
+/* The new list, or null when nothing is left to add. */
+function caseMediaWith(raw,items){
+  var base=caseMediaBase(raw);
+  if(base.length+items.length>CASE_FILE_COUNT){
+    toast('แนบได้สูงสุด '+CASE_FILE_COUNT+' ไฟล์ต่อเคส');
+    items=items.slice(0,Math.max(0,CASE_FILE_COUNT-base.length));
+  }
+  return items.length?base.concat(items):null;
+}
+function pickCaseFiles(done){
+  var inp=document.createElement('input');
+  inp.type='file';inp.multiple=true;inp.accept='image/*,video/*,audio/*,application/pdf';
+  inp.style.display='none';
+  document.body.appendChild(inp);
+  inp.addEventListener('change',function(){
+    readCaseFiles(inp.files).then(function(items){
+      if(inp.parentNode)inp.parentNode.removeChild(inp);
+      if(items.length)done(items);
+    });
+  });
+  inp.click();
+}
+function addCaseFiles(){
+  var raw=caseDetailModel.raw||{};
+  if(!raw.id||caseDetailModel.isMock){toast('ไม่พบข้อมูลเคสในเครื่องนี้');return}
+  pickCaseFiles(function(items){
+    var media=caseMediaWith(raw,items);
+    if(!media)return;
+    toast('กำลังบันทึกไฟล์…');
+    CaseWrite.patch(raw.id,{media:media}).then(function(r){
+      if(!r||!r.ok){toast(r&&r.reason==='storage'?'พื้นที่ในเครื่องเต็ม บันทึกไฟล์ไม่ได้':'บันทึกไฟล์ไม่สำเร็จ');return}
+      if(typeof window.imodeCaseChatNotify==='function'){
+        try{window.imodeCaseChatNotify(raw.id,'📎 เพิ่มไฟล์แนบของปัญหา '+items.length+' ไฟล์: '
+          +items.map(function(x){return x.name}).join(', '))}catch(e){}
+      }
+      try{CaseDetailData.refresh()}catch(e){}
+      load().then(function(res){
+        if(res&&!res.error)renderPage(res);
+        toast(r.cloud?'เพิ่มไฟล์แล้ว '+items.length+' ไฟล์':'เพิ่มไฟล์แล้ว · ยังอยู่เฉพาะเครื่องนี้ ยังไม่ได้ส่งขึ้นระบบกลาง');
+      });
+    });
+  });
+}
+
+/* ---------- เครื่องที่ยังไม่มีในรายการ (2026-10-20, ข้อ 10) ----------
+   Typing a machine the customer does not have asks, in a popup, whether to add it. เพิ่มเครื่อง
+   hands off to the application's machine form (this page does not write machines) and comes
+   back here with the new machine already picked — see ?pickMachine below. */
+function missingMachinePopup(text,customerId){
+  var old=el('scdMissingMachine');if(old)old.parentNode.removeChild(old);
+  var box=document.createElement('div');
+  box.id='scdMissingMachine';box.className='scd-mm';
+  box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
+  box.innerHTML='<div class="scd-mm-card"><div class="scd-mm-ic">⚠</div>'
+    +'<h3>ไม่พบเครื่องนี้ในรายการ</h3>'
+    +'<p>"'+esc(text)+'" ยังไม่มีในเครื่องจักรของลูกค้ารายนี้ ต้องการเพิ่มเครื่องใหม่หรือไม่</p>'
+    +'<div class="scd-mm-btns"><button type="button" data-ask="close">ปิด</button>'
+    +'<button type="button" class="is-primary" data-ask="add">＋ เพิ่มเครื่อง</button></div></div>';
+  document.body.appendChild(box);
+  box.addEventListener('click',function(e){
+    var b=e.target.closest('[data-ask]');
+    if(e.target===box||(b&&b.getAttribute('data-ask')==='close')){box.parentNode.removeChild(box);return}
+    if(b&&b.getAttribute('data-ask')==='add'){
+      if(!customerId){toast('กรุณาเลือกลูกค้าก่อน');box.parentNode.removeChild(box);return}
+      goApp('machines','&intent=add-machine&customerId='+encodeURIComponent(customerId)
+        +'&machineName='+encodeURIComponent(text)
+        +'&returnCase='+encodeURIComponent((caseDetailModel.raw||{}).id||''));
+    }
+  });
+  var add=box.querySelector('[data-ask="add"]');if(add)add.focus();
+}
+function norm2(v){return String(v==null?'':v).toLowerCase().replace(/\s+/g,' ').trim()}
+/* ลูกค้า and เครื่องจักร in ลงรายละเอียดเคส become type-to-search boxes (ข้อ 12) — js/35's
+   imodeCombo, the same control the application uses; the <select> stays the source of truth. */
+function wireEditCombos(){
+  if(typeof window.imodeCombo!=='function')return;
+  var cs=el('ceCustomer'),ms=el('ceMachine');
+  var cc=cs&&window.imodeCombo(cs,{placeholder:'พิมพ์ชื่อลูกค้าเพื่อค้นหา…'});
+  var mc=ms&&window.imodeCombo(ms,{placeholder:'พิมพ์ชื่อเครื่อง / Model / Serial…',
+    allowCreate:true,
+    createLabel:function(t){return 'ไม่มีในรายการ — เพิ่มเครื่อง "'+t+'"'},
+    onCreate:function(t){missingMachinePopup(t,cs&&cs.value);return null}});
+  if(cs&&mc)cs.addEventListener('change',function(){setTimeout(function(){mc.refresh()},0)});
+  /* Leaving the box with text that matches nothing asks too, instead of silently going back. */
+  if(mc)mc.input.addEventListener('blur',function(){
+    var t=String(mc.input.value||'').trim();
+    if(!t)return;
+    var hit=[].slice.call(ms.options).some(function(o){return o.value&&norm2(o.textContent).indexOf(norm2(t))>=0});
+    if(!hit)setTimeout(function(){missingMachinePopup(t,cs&&cs.value)},30);
+  });
+  return {customer:cc,machine:mc};
+}
+
 function editCase(){
   if(!can('case.edit')){toast('บัญชีนี้ไม่มีสิทธิ์แก้ไขเคส');return}
   var c=caseDetailModel.raw||{};
@@ -3608,6 +3839,11 @@ function editCase(){
     +'<label class="scd-ce-f" style="display:none" aria-hidden="true">ประเภทงาน (ระบบ)<select id="ceType" tabindex="-1">'+ceOptions(ceList('serviceTypes',CE_TYPES),c.serviceType)+'</select></label>'
     +wsFormHTML(c,ccPair)
     +onlineSectionHTML(c,ccPair)
+    +'<section class="scd-ce-section"><div class="scd-ce-sec">ไฟล์แนบของปัญหา</div>'
+    +'<p class="scd-ce-hint" style="margin:0">รูป วิดีโอ ไฟล์เสียง หรือ PDF (ไม่เกิน 2.5 MB ต่อไฟล์) · มีอยู่แล้ว '
+      +caseMediaBase(c).length+' ไฟล์</p>'
+    +'<div class="scd-ce-files" id="ceFiles"><button type="button" class="scd-ce-addfile" id="ceAddFile">📎 เลือกไฟล์</button></div>'
+    +'</section>'
     +'<p class="scd-ce-hint">ช่างและวันนัดหมายเปลี่ยนได้จากปุ่ม <b>นัดหมาย</b> · สถานะเปลี่ยนจากวงกลมขั้นตอนด้านบน</p>'
     +'<div class="scd-ce-actions"><button type="button" class="scd-chip-btn" data-action="close-panel">ยกเลิก</button>'
     +'<button type="submit" class="scd-ce-save">บันทึกเคส</button></div>'
@@ -3626,7 +3862,26 @@ function editCase(){
   wireOnlineSection(c);
   wireWorkshopForm();
   wireCaseCategory();
+  wireEditCombos();
+  ceFilesPending=[];
+  var addBtn=el('ceAddFile');
+  if(addBtn)addBtn.addEventListener('click',function(){
+    pickCaseFiles(function(items){ceFilesPending=ceFilesPending.concat(items);drawCeFiles()});
+  });
   form.addEventListener('submit',function(e){e.preventDefault();saveCaseDetails(customers)});
+}
+var ceFilesPending=[];
+function drawCeFiles(){
+  var box=el('ceFiles');if(!box)return;
+  box.querySelectorAll('.scd-ce-file').forEach(function(n){n.parentNode.removeChild(n)});
+  var add=el('ceAddFile');
+  ceFilesPending.forEach(function(f,i){
+    var d=document.createElement('span');d.className='scd-ce-file';
+    d.innerHTML=(/^image\//.test(f.type)?'<img src="'+esc(f.data)+'" alt="">':'📄')
+      +'<span>'+esc(f.name)+'</span><button type="button" aria-label="เอาออก" data-rm="'+i+'">✕</button>';
+    d.querySelector('button').addEventListener('click',function(){ceFilesPending.splice(i,1);drawCeFiles()});
+    box.insertBefore(d,add);
+  });
 }
 function saveCaseDetails(customers){
   var c=caseDetailModel.raw||{};
@@ -3674,6 +3929,11 @@ function saveCaseDetails(customers){
     changes.machineId=mid;changes.machine=ceMachineName(m);changes.model=m.model||'';
     changes.serial=m.serial||'';changes.machineSize=m.size||'';changes.warranty=m.warranty||'ไม่ทราบ';
   }
+  if(ceFilesPending.length){
+    var withFiles=caseMediaWith(c,ceFilesPending);
+    if(withFiles)changes.media=withFiles;
+  }
+  var addedFiles=ceFilesPending.length;
   var btn=document.querySelector('#scdEditForm .scd-ce-save');
   if(btn){btn.disabled=true;btn.textContent='กำลังบันทึก…'}
   CaseWrite.setDetails(c.id,changes).then(function(r){
@@ -3682,6 +3942,10 @@ function saveCaseDetails(customers){
       toast('บันทึกไม่สำเร็จ');return;
     }
     closePanel();
+    ceFilesPending=[];
+    if(typeof window.imodeCaseChatNotify==='function'){
+      try{window.imodeCaseChatNotify(c.id,'✏️ แก้ไขรายละเอียดเคส'+(addedFiles?' · เพิ่มไฟล์แนบ '+addedFiles+' ไฟล์':''))}catch(e){}
+    }
     try{CaseDetailData.refresh()}catch(e){}
     load().then(function(res){
       if(res&&!res.error)renderPage(res);
@@ -3755,6 +4019,9 @@ function applyStatus(next,why){
   var c=caseDetailModel.case;
   if(!c||!c.id)return;
   if(next===c.status){toast('เคสอยู่ที่สถานะนี้อยู่แล้ว');return}
+  if(next!=='ปิดเคส'&&stepIndex(next)>stepIndex(c.status)&&stepIndex(next)>S('assign')&&!hasCrew(caseDetailModel)){
+    toast(GATE_CREW);assignTechnician();return;
+  }
   var closing=(next==='ปิดเคส');
   scdAsk({
     title:closing?'ปิดเคสนี้':'เปลี่ยนสถานะเคส',
@@ -3783,13 +4050,18 @@ function applyStatusNow(next){
 }
 
 /* Why the circle one step ahead cannot be pressed yet, or '' when it can. */
+/* 2026-10-20 (ข้อ 7): nobody gets past มอบหมาย without a technician on the case. */
+var GATE_CREW='ยังไม่ได้มอบหมายช่าง — มอบหมายงานก่อนจึงไปขั้นถัดไปได้';
+function hasCrew(m){return !!(m&&m.assignment&&(m.assignment.technician||(m.assignment.crew||[]).length))}
 function stepGate(m,idx){
   if(isWorkshopCase(m.raw)){
     if(idx===S('assign')&&!wsLast(m.raw,'received'))return 'ยังไม่ได้บันทึกรับเครื่องเข้าบริษัท';
-    if(idx===S('service')&&wsTrackNow(m.raw)!=='พร้อมส่งคืน')return 'รอ R&D อัปเดตให้ถึง “พร้อมส่งคืน”';
+    if(idx===S('assign')&&!hasCrew(m))return GATE_CREW;
+    if(idx===S('service')&&wsTrackNow(m.raw)!=='พร้อมส่งคืน')return 'รอช่างอัปเดตให้ถึง “พร้อมส่งคืน”';
     if(idx===S('done')&&!wsLast(m.raw,'returned'))return 'ต้องผ่าน QC และบันทึกส่งคืนเครื่องก่อน';
     return '';
   }
+  if(idx===S('assign')&&!hasCrew(m))return GATE_CREW;
   return (idx===S('service')&&!fieldDone(m))?'รอช่างอัปเดตให้จบกระบวนการก่อน':'';
 }
 /* A circle was pressed. */
@@ -3813,7 +4085,12 @@ function stepPressed(i,role){
      from รับแจ้งปัญหา rather than from มอบหมายแล้ว; assigning a technician on a Workshop case
      is done from the drawer or from the นัดหมาย button in the action bar. */
   if(isWorkshopCase(m.raw)&&idx===S('intake')&&i===S('assign')&&!wsLast(m.raw,'received')){wsReceive();return}
+  if(!isWorkshopCase(m.raw)&&idx===S('intake')&&i===S('assign')&&!hasCrew(m)){
+    toast('เลือกช่างและวันนัดหมายก่อน แล้วเคสจะไปขั้น “'+stepLabel(m,i)+'” เอง');
+    assignTechnician();return;
+  }
   var gate=stepGate(m,idx);
+  if(gate===GATE_CREW){toast(gate);assignTechnician();return}
   if(gate){
     if(openStep==null)slideNext='sdStepDrawer';
     openStep=idx;                     /* show the step that is holding it up, and why */
@@ -4245,9 +4522,9 @@ function attachmentsHTML(){
   /* The report's own photos are drawn inside the ใบตรวจ card above, so they are left out of
      the field block here — otherwise the same picture appears twice in one panel. */
   return qcDocsHTML()+reportDocsHTML()
-    +mediaBlock('📎 ไฟล์ที่ลูกค้าแนบมากับเคส',indexed.filter(function(x){return x.a.from==='customer'}))
+    +mediaBlock('📎 ไฟล์แนบของปัญหา (ลูกค้า / เจ้าหน้าที่)',indexed.filter(function(x){return x.a.from==='customer'||x.a.from==='staff'}))
     +mediaBlock('🖼 รูปและวิดีโอจากหน้างาน',indexed.filter(function(x){
-       return x.a.from!=='customer'&&x.a.from!=='report';
+       return x.a.from!=='customer'&&x.a.from!=='staff'&&x.a.from!=='report';
      }))
     +(a.length?'':'<p class="scd-empty">ยังไม่มีรูปหรือวิดีโอในเคสนี้</p>');
 }
@@ -4274,12 +4551,18 @@ function openMediaView(i){
       ?'<video src="'+esc(item.data)+'" controls autoplay playsinline></video>'
       :item.type==='audio'
       ?'<audio src="'+esc(item.data)+'" controls autoplay style="width:min(520px,80vw);margin:40px 20px"></audio>'
+      :item.type==='file'
+      ?'<div class="cmp-file"><iframe title="'+esc(item.name||'PDF')+'" data-pdf-frame></iframe>'
+        +'<a class="cmp-file-dl" href="'+esc(item.data)+'" download="'+esc(item.name||'file.pdf')+'">⬇ ดาวน์โหลดไฟล์</a></div>'
       :'<img src="'+esc(item.data)+'" alt="'+esc(item.name||'')+'">')
     +'<div class="cmp-lightbox-bar"><b>'+esc(item.name||'ไฟล์แนบ')+'</b>'
     +'<button type="button" class="cmp-lightbox-close" data-media-close="1" aria-label="ปิด">&#10005;</button>'
     +'</div></div>';
   wrap.addEventListener('click',function(e){if(e.target===wrap)closeMediaView()});
   document.body.appendChild(wrap);
+  /* A data: PDF will not render in a frame in every browser; a blob: URL does. */
+  var pf=wrap.querySelector('[data-pdf-frame]');
+  if(pf){try{fetch(item.data).then(function(r){return r.blob()}).then(function(b){pf.src=URL.createObjectURL(b)})}catch(e){}}
   document.addEventListener('keydown',onMediaKey,true);
   var btn=wrap.querySelector('.cmp-lightbox-close');
   if(btn)btn.focus();
@@ -4372,7 +4655,7 @@ var HANDLERS={
   'open-attachments':openCaseAttachments,
   'open-internal-notes':openInternalNotes,
   'open-feedback':openFeedback,
-  'add-attachment':function(){toast('การแนบไฟล์เพิ่มจะทำผ่านใบตรวจ / สถานะหน้างานในระบบหลัก')},
+  'add-attachment':addCaseFiles,
   /* closePanel() also drops .is-open and the body scroll lock — blanking innerHTML alone
      would leave the fixed overlay in place over a page nobody could scroll. */
   'close-panel':closePanel,
@@ -4440,6 +4723,8 @@ document.addEventListener('click',function(e){
   }
   var wsst=e.target.closest('[data-ws-status]');
   if(wsst){e.preventDefault();wsSetStatus(wsst.getAttribute('data-ws-status'));return}
+  var rv=e.target.closest('[data-revert-step]');
+  if(rv){e.preventDefault();revertTo(Number(rv.getAttribute('data-revert-step')));return}
   var setst=e.target.closest('[data-set-status]');
   if(setst){e.preventDefault();applyStatus(setst.getAttribute('data-set-status'),'');return}
   var btn=e.target.closest('[data-action]');
@@ -4715,6 +5000,23 @@ load().then(function(res){
   /* After the first paint, never before: subscribing earlier would race the render it is
      meant to refresh. */
   try{CaseLive.start()}catch(e){}
+  /* 2026-10-20: back from เพิ่มเครื่อง (missingMachinePopup) — reopen ลงรายละเอียดเคส with the
+     new machine already chosen; saving is still the person's own press. */
+  try{
+    var pm=new URLSearchParams(location.search).get('pickMachine');
+    if(pm){
+      var u=new URL(location.href);u.searchParams.delete('pickMachine');
+      history.replaceState(history.state,'',u.pathname+u.search+u.hash);
+      var ma=(readJSON(K.machines,[])||[]).filter(function(x){return x&&x.id===pm})[0];
+      editCase();
+      if(ma){
+        var cs=el('ceCustomer'),ms=el('ceMachine');
+        if(cs&&cs.value!==ma.customerId){cs.value=ma.customerId;cs.dispatchEvent(new Event('change',{bubbles:true}))}
+        if(ms){ms.innerHTML=ceMachineOptions(ma.customerId,pm);ms.value=pm}
+        toast('เพิ่มเครื่องแล้ว กด บันทึกเคส เพื่อใช้เครื่องนี้');
+      }
+    }
+  }catch(e){}
 }).catch(function(err){
   renderError('not-found');
   window.scdReady=true;

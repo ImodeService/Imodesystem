@@ -321,16 +321,16 @@ html[data-ui^="flat"]:is(:root,#fx) .toast { background: #2b2b2b !important; col
 /* ---------- 8. Dark: text and surfaces the old CSS hard-codes as navy-on-white ---------- */
 html[data-ui="flat-dark"]:is(:root,#fx) .main,
 html[data-ui="flat-dark"]:is(:root,#fx) .modal-panel { color: var(--fx-text) !important; }
-html[data-ui="flat-dark"]:is(:root,#fx) .main :is(h1, h2, h3, h4, h5, b, strong, label, td, li, p),
-html[data-ui="flat-dark"]:is(:root,#fx) .modal-panel :is(h1, h2, h3, h4, h5, b, strong, label, td, li, p) { color: var(--fx-text) !important; }
-html[data-ui="flat-dark"]:is(:root,#fx) .main :is(small, .muted, [class*="sub"], [class*="hint"], [class*="note"]),
-html[data-ui="flat-dark"]:is(:root,#fx) .modal-panel :is(small, .muted, [class*="sub"], [class*="hint"], [class*="note"]) { color: var(--fx-muted) !important; }
-html[data-ui="flat-dark"]:is(:root,#fx) .main a,
-html[data-ui="flat-dark"]:is(:root,#fx) .modal-panel a { color: var(--fx-accent) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .main :is(h1, h2, h3, h4, h5, b, strong, label, td, li, p):not(:where(#quotePreviewDoc, #serviceReportPrint, #qcPrintDoc, #salesQuotePrintDoc, #warrantyCertificateDoc, .imode-a4-page) *),
+html[data-ui="flat-dark"]:is(:root,#fx) .modal-panel :is(h1, h2, h3, h4, h5, b, strong, label, td, li, p):not(:where(#quotePreviewDoc, #serviceReportPrint, #qcPrintDoc, #salesQuotePrintDoc, #warrantyCertificateDoc, .imode-a4-page) *) { color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .main :is(small, .muted, [class*="sub"], [class*="hint"], [class*="note"]):not(:where(#quotePreviewDoc, #serviceReportPrint, #qcPrintDoc, #salesQuotePrintDoc, #warrantyCertificateDoc, .imode-a4-page) *),
+html[data-ui="flat-dark"]:is(:root,#fx) .modal-panel :is(small, .muted, [class*="sub"], [class*="hint"], [class*="note"]):not(:where(#quotePreviewDoc, #serviceReportPrint, #qcPrintDoc, #salesQuotePrintDoc, #warrantyCertificateDoc, .imode-a4-page) *) { color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .main a:not(:where(#quotePreviewDoc, #serviceReportPrint, #qcPrintDoc, #salesQuotePrintDoc, #warrantyCertificateDoc, .imode-a4-page) *),
+html[data-ui="flat-dark"]:is(:root,#fx) .modal-panel a:not(:where(#quotePreviewDoc, #serviceReportPrint, #qcPrintDoc, #salesQuotePrintDoc, #warrantyCertificateDoc, .imode-a4-page) *) { color: var(--fx-accent) !important; }
 html[data-ui="flat-dark"]:is(:root,#fx) :is(.icon-btn, .month-cell, .month-dow, .machine-display-control, .machine-total-chip, .team-badge,
   .tacc-chip, .tacc-colbadge, .performance-meter, .v68-price-result, .cbx-input, .quote-staff-sign-card, .imp-modes,
   .quote-summary, .quote-zone, .quote-footer-editor, .v68-rate-state, .v68-onsite-note, .v68-employee-card, .setting-state,
-  .signature-pad, .panel-body, .table-wrap, .list-row, .case-row, [class*="-card"], [class*="-box"], [class*="-item"]) {
+  .signature-pad, .panel-body, .table-wrap, .list-row, .case-row, [class*="-card"], [class*="-box"], [class*="-item"]):not(:where(#quotePreviewDoc, #serviceReportPrint, #qcPrintDoc, #salesQuotePrintDoc, #warrantyCertificateDoc, .imode-a4-page) *) {
   background-color: var(--fx-surface) !important; border-color: var(--fx-line) !important; color: var(--fx-text) !important;
 }
 html[data-ui="flat-dark"]:is(:root,#fx) .sidebar .nav-item { background-color: transparent !important; border-color: transparent !important; color: #fff !important; }
@@ -633,4 +633,77 @@ html[data-ui="flat-dark"]:is(:root,#fx) #page-home .rhome-brand::after { color: 
   html[data-ui]:is(:root,#fx) #page-home .rhome-modcard-icon { width: 60px !important; height: 60px !important; border-radius: 16px !important; font-size: 28px !important; }
   html[data-ui]:is(:root,#fx) #page-home .rhome-modcard-label { font-size: 12px !important; }
   html[data-ui]:is(:root,#fx) #page-home .rhome-modcard .imode-cbadge { right: calc(50% - 38px) !important; }
+}
+
+/* ---------- 15. Dark: boxes the patch scripts paint light (2026-10-20 contrast pass) ----------
+   Section 8 turns every text light in the dark theme, but these boxes come from js/16, js/26,
+   js/31, js/49, js/51 and css/01/23 with a white or pale background of their own, so the light
+   text sat on white. Each gets a dark surface; the coloured ones keep a dark tint of their hue. */
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.work-row, .assign-member, .t24, .assign-foot, .notification-row .noti-when) {
+  background-color: var(--fx-surface) !important; border-color: var(--fx-line) !important; color: var(--fx-text) !important;
+}
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.assign-when, .case-assign-toggle, .warranty-timeline, .notification-row, .t24-h, .t24-m, .t24-date) {
+  background-color: var(--fx-surface-2) !important; border-color: var(--fx-line) !important; color: var(--fx-text) !important;
+}
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.t24-clock, .t24-colon, .warranty-timeline .arrow) { color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .warranty-timeline .datebox { background: transparent !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .warranty-timeline b { color: var(--fx-head) !important; }
+/* unread notices: blue tint, read ones plain */
+html[data-ui="flat-dark"]:is(:root,#fx) .notification-row.unread { background-color: var(--fx-accent-soft) !important; border-color: #2f5585 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .notification-row .stack-icon { background-color: var(--fx-surface) !important; border-color: var(--fx-line) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .notification-row.unread .noti-when { background-color: var(--fx-surface) !important; border-color: #2f5585 !important; color: var(--fx-accent) !important; }
+/* chosen technician in the assign picker */
+html[data-ui="flat-dark"]:is(:root,#fx) .assign-member.is-on { background-color: var(--fx-accent-soft) !important; border-color: var(--fx-accent) !important; }
+/* "มอบหมายไปแล้ว N เคส … ไปที่หน้าเคส ›" and the requests page twin */
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.assign-moved, .req-moved) {
+  background-color: var(--fx-accent-soft) !important; border-color: #2f5585 !important; color: var(--fx-text) !important;
+}
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.assign-movedlink, .req-link) { color: var(--fx-accent) !important; }
+/* overdue reply (SLA) rows and chips: dark red instead of pink */
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.sla-over, .sla-over > td, .work-row.sla-over) { background-color: #3a2222 !important; border-color: #6b3434 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .case-sla-chip :is(b, i, span) { color: inherit !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .case-sla-chip.is-over { background-color: #4d2323 !important; border-color: #8a3a3a !important; color: #ffc2c2 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .case-sla-chip.is-warn { background-color: #3d2a1a !important; border-color: #7a5230 !important; color: #ffd4a8 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .case-sla-chip u { background-color: var(--fx-surface) !important; border-color: var(--fx-line) !important; color: var(--fx-text) !important; }
+/* headings that the base CSS paints I-MODE navy */
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.section-title, .tab-btn.active) { color: var(--fx-head) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .tab-btn.active { border-bottom-color: var(--fx-accent) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .doc-upload-preview { color: var(--fx-muted) !important; }
+/* both flat themes: the faintest grey labels were under 3:1 */
+html[data-ui^="flat"]:is(:root,#fx) :is(.work-crew.is-none, .assign-member small) { color: var(--fx-muted) !important; }
+/* rows marked "อัปเดตใหม่" (js/26): dark amber tint; the ticket number keeps the link blue */
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.is-case-updated, .is-case-updated > td) { background-color: #33291a !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.sla-over, .is-case-updated) .ticket { color: var(--fx-accent) !important; }
+html[data-ui^="flat"]:is(:root,#fx) .case-upd-chip { background-color: #c25e00 !important; color: #fff !important; }
+/* หน้างาน (js/32, js/73, js/77) */
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.fw-statusbar, .report-type-strip, .isp-fb, .isp-row.is-blank) {
+  background: var(--fx-surface-2) !important; border-color: var(--fx-line) !important;
+}
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.fw-ladder li, .fw-action, .fa-row, .isp-row, .isp-note) {
+  background-color: var(--fx-surface) !important; border-color: var(--fx-line) !important; color: var(--fx-text) !important;
+}
+html[data-ui="flat-dark"]:is(:root,#fx) .fw-ladder li span { background-color: var(--fx-surface-2) !important; color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fw-ladder li.is-done { background-color: #1d3326 !important; border-color: #2f5a40 !important; color: #8fdcb0 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fw-ladder li.is-done span { background-color: #2a4a37 !important; color: #8fdcb0 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fw-ladder li.is-now { background-color: var(--fx-accent-soft) !important; border-color: #2f5585 !important; color: #cfe2ff !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fw-ladder li.is-now span { background-color: var(--fx-accent-fill) !important; color: #fff !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .isp-note.has-note { background-color: var(--fx-accent-soft) !important; border-color: var(--fx-accent) !important; color: #cfe2ff !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.fw-statusnow b, .fw-mrow dd, .fw-action b, .report-type-strip b) { color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.fw-statusnow small, .fw-mrow dt, .report-type-strip span) { color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fw-issue { background-color: #33291a !important; border-color: #5c4526 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fw-issue small { color: #f0b765 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.fw-issue p, .fw-issue .fw-note) { color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fa-go { color: var(--fx-accent) !important; }
+/* small white buttons that glared on the dark page */
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.fw-back, .assign-mini) { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line-strong) !important; color: var(--fx-accent) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .file-warning { background-color: #33291a !important; color: #f0c56a !important; }
+
+/* ---------- 16. Dark: documents on screen stay paper ----------
+   ใบเสนอราคา, ใบตรวจ, QC, ใบรับประกัน previews: section 8 skips their insides; here the theme
+   colours they read are put back to the light ones so the sheet looks as it prints. */
+html[data-ui="flat-dark"]:is(:root,#fx) :is(#quotePreviewDoc, #serviceReportPrint, #qcPrintDoc, #salesQuotePrintDoc, #warrantyCertificateDoc, .imode-a4-page) {
+  --fx-bg: #f3f3f3; --fx-surface: #ffffff; --fx-surface-2: #f7f7f7; --fx-hover: #ebebeb; --fx-line: #e1e1e1; --fx-line-strong: #c8c8c8;
+  --fx-text: #1f1f1f; --fx-muted: #5f6672; --fx-head: #0c225e; --fx-accent: #0b5cd6; --fx-accent-soft: #e5effd;
+  --bg: #f3f3f3; --white: #ffffff; --text: #1f1f1f; --muted: #5f6672; --line: #e1e1e1; --blue2: #1449c9; --blue3: #0c225e;
+  background-color: #fff !important; color: #1d2636 !important; color-scheme: light;
 }

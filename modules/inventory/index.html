@@ -521,6 +521,10 @@ button.report-tile:hover{border-color:#cbd9f3}
 .logo-wrap .logo-dark{display:none}
 [data-theme="dark"] .logo-wrap .logo-light{display:none}
 [data-theme="dark"] .logo-wrap .logo-dark{display:block}
+/* ===== ปุ่มกลับหน้าหลักสต๊อก + เช็คลิสต์เฉพาะเครื่อง (เพิ่ม 2026-10-20) ===== */
+.back-home{margin-bottom:8px;font-weight:600}
+.crumb-home{border:0;background:none;padding:0;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:2px}
+.ln-check{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:12px;cursor:pointer}.ln-check input{margin-top:3px}
 /* ===== เครื่อง Demo / ยืม-คืน (เพิ่ม 2026-10-16) ===== */
 .loan-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
 .mstatus.lnout{background:#e8f0ff;color:var(--blue2)}
@@ -720,7 +724,7 @@ const norm=s=>String(s||'').toLocaleLowerCase('th-TH').trim();
 
 /* เช็คลิสต์อุปกรณ์มาตรฐานของเครื่อง Demo (ตัวอย่าง รอข้อมูลจริงจากทีม) */
 const DEFAULT_LOAN_ITEMS=[{name:'ตัวเครื่องหลัก',qty:1},{name:'สายไฟ AC',qty:1},{name:'อะแดปเตอร์ / ที่ชาร์จ',qty:1},{name:'รีโมท / แป้นควบคุม',qty:1},{name:'คู่มือการใช้งาน',qty:1},{name:'กล่อง / กระเป๋าใส่เครื่อง',qty:1},{name:'อุปกรณ์เสริมอื่น ๆ (ตัวอย่าง)',qty:1}];
-function ensureLoans(x){if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.loanTemplate)||!x.loanTemplate.length)x.loanTemplate=structuredClone(DEFAULT_LOAN_ITEMS).map(i=>({...i,id:uid()}));return x;}
+function ensureLoans(x){if(!Array.isArray(x.loans))x.loans=[];if(!x.loanTemplates||typeof x.loanTemplates!=='object'||Array.isArray(x.loanTemplates))x.loanTemplates={};if(!Array.isArray(x.loanTemplate)||!x.loanTemplate.length)x.loanTemplate=structuredClone(DEFAULT_LOAN_ITEMS).map(i=>({...i,id:uid()}));return x;}
 
 /* ---------- 2. ชั้นข้อมูล ---------- */
 const empty=()=>ensureLoans({schema:SCHEMA,products:[],movements:[],warehouses:structuredClone(DEFAULT_WAREHOUSES),seq:{},updatedAt:null});
@@ -1020,7 +1024,8 @@ function titleBar(){
  if(ui.view==='dashboard'||PRODUCT_VIEWS.includes(ui.view))addon=`<button class="btn outline" data-action="exportCsv">${icon('download')}ส่งออกข้อมูล</button>${can('product')?`<button class="btn primary" data-action="addProduct">${icon('plus')}เพิ่มสินค้า</button>`:''}`;
  else if(ui.view==='loans')addon=loanActions();
  else if(ui.view==='history')addon=`<button class="btn outline" data-action="exportMovement">${icon('download')}ส่งออกประวัติ</button>`;
- return `<div class="breadcrumb">หน้าหลัก <span>› ${esc(m[0])}</span></div><div class="page-header"><div><h1>${esc(m[0])}</h1><p>${esc(m[1])}</p></div><div class="page-action">${addon}</div></div>`;
+ const home=ui.view==='dashboard'?'':`<button class="btn outline back-home" type="button" data-view="dashboard" title="กลับหน้าหลักของโมดุลสต๊อก">${icon('home')}กลับหน้าหลักสต๊อก</button>`;
+ return `${home}<div class="breadcrumb"><button class="crumb-home" type="button" data-view="dashboard">หน้าหลัก</button> ${ui.view==='dashboard'?'':`<span>› ${esc(m[0])}</span>`}</div><div class="page-header"><div><h1>${esc(m[0])}</h1><p>${esc(m[1])}</p></div><div class="page-action">${addon}</div></div>`;
 }
 function setChrome(){
  document.querySelectorAll('[data-view]').forEach(n=>{if(n.classList.contains('nav')||n.closest('.mobile-tabs'))n.classList.toggle('active',n.dataset.view===ui.view||(n.dataset.view==='products'&&PRODUCT_VIEWS.includes(ui.view)&&n.closest('.mobile-tabs')));});
@@ -1502,11 +1507,16 @@ const loanApi={
   if(!can('approve'))return {error:'เฉพาะผู้จัดการคลังหรือผู้ดูแลระบบที่ลบรายการยืมได้'};
   db.loans=db.loans.filter(l=>l.id!==id);persist();return {ok:true};
  },
- saveTemplate(rows){
+ saveTemplate(rows,key='',name=''){
   if(!can('loan'))return {error:'บทบาทนี้ไม่มีสิทธิ์แก้ไขเช็คลิสต์'};
   const items=rows.map(r=>({name:String(r.name||'').trim(),qty:Math.max(1,Math.floor(Number(r.qty)||1))})).filter(r=>r.name);
-  if(!items.length)return {error:'เช็คลิสต์มาตรฐานต้องมีอย่างน้อย 1 รายการ'};
-  db.loanTemplate=items;persist();return {ok:true};
+  if(!items.length)return {error:'เช็คลิสต์ต้องมีอย่างน้อย 1 รายการ'};
+  if(!key){db.loanTemplate=items;persist();return {ok:true};}
+  db.loanTemplates[key]={name:String(name||'').trim(),items,updatedAt:now()};persist();return {ok:true};
+ },
+ removeTemplate(key){
+  if(!can('loan'))return {error:'บทบาทนี้ไม่มีสิทธิ์แก้ไขเช็คลิสต์'};
+  delete db.loanTemplates[key];persist();return {ok:true};
  },
  loadSamples(){
   if(db.loans.some(l=>l.demo))return {error:'มีตัวอย่างการยืมอยู่แล้ว'};
@@ -1537,7 +1547,7 @@ const loanApi={
 
 /* ---------- หน้ารายการ ---------- */
 function loanActions(){
- return `${can('loan')?`<button class="btn outline" data-action="lnTemplate">${icon('list')}แก้เช็คลิสต์มาตรฐาน</button><button class="btn primary" data-action="lnNew">${icon('plus')}บันทึกการยืม</button>`:''}`;
+ return `${can('loan')?`<button class="btn outline" data-action="lnTemplate">${icon('list')}แก้เช็คลิสต์อุปกรณ์</button><button class="btn primary" data-action="lnNew">${icon('plus')}บันทึกการยืม</button>`:''}`;
 }
 function loanData(){
  const q=norm(ui.loanSearch),f=ui.loanStatus;
@@ -1579,13 +1589,18 @@ function picsHtml(set){
 function refreshPics(set){const n=$('#lp-'+set);if(n)n.outerHTML=picsHtml(set);}
 const rowHtml=(it={})=>`<div class="row" data-id="${esc(it.id||'')}"><input class="form-control" data-ln-name maxlength="80" value="${esc(it.name||'')}" placeholder="ชื่ออุปกรณ์ เช่น สายไฟ" aria-label="ชื่ออุปกรณ์"><input class="form-control" data-ln-qty type="number" min="1" step="1" value="${esc(it.qty||1)}" aria-label="จำนวน"><button type="button" class="tiny-action" data-action="lnRmRow" aria-label="ลบรายการ">${icon('trash')}</button></div>`;
 const readRows=root=>[...root.querySelectorAll('.ln-rows .row')].map(r=>({id:r.dataset.id||'',name:r.querySelector('[data-ln-name]').value,qty:r.querySelector('[data-ln-qty]').value}));
+/* เช็คลิสต์เฉพาะเครื่อง: คีย์ p:<id สินค้า> หรือ n:<ชื่อเครื่องตัวพิมพ์เล็ก> ถ้าไม่มีใช้แบบมาตรฐาน */
+const tplKey=(productId,machine)=>productId?'p:'+productId:(String(machine||'').trim()?'n:'+String(machine).trim().toLowerCase():'');
+const tplEntry=(productId,machine)=>{const t=db.loanTemplates||{};return (productId&&t['p:'+productId])||t[tplKey('',machine)]||null;};
+const tplItems=(productId,machine)=>(tplEntry(productId,machine)?.items||db.loanTemplate).map(i=>({id:uid(),name:i.name,qty:i.qty}));
+const tplNoteText=(productId,machine)=>{const e=tplEntry(productId,machine);return e?`ใช้เช็คลิสต์ที่ตั้งไว้สำหรับเครื่องนี้ (${e.items.length} รายการ)`:'ใช้เช็คลิสต์มาตรฐาน — ตั้งเช็คลิสต์เฉพาะเครื่องได้ที่ปุ่ม "แก้เช็คลิสต์อุปกรณ์"';};
 const dueText=(d,n)=>/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number(n)>0?`กำหนดคืน: ${dOnly(addDays(d,n))}`:'';
 
 /* ---------- ฟอร์มยืม ---------- */
 function loanModal(id=null){
  if(!can('loan'))return toast('บทบาทนี้ไม่มีสิทธิ์บันทึกการยืมเครื่อง','bad');
  const l=id?db.loans.find(x=>x.id===id):null;if(id&&!l)return toast('ไม่พบรายการยืม','bad');
- const v=l||{productId:'',machine:'',serial:'',borrower:'',company:'',phone:'',purpose:'',lentDate:dayKey(new Date()),days:7,lentBy:actor(),note:'',before:[],items:db.loanTemplate};
+ const v=l||{productId:'',machine:'',serial:'',borrower:'',company:'',phone:'',purpose:'',lentDate:dayKey(new Date()),days:7,lentBy:actor(),note:'',before:[],items:tplItems('','')};
  ui.loanPics={before:[...(v.before||[])],after:[]};
  const machines=db.products.filter(p=>p.category==='machines');
  const f=(label,inner,cls='',req=false)=>`<div class="field ${cls}"><label class="label">${label}${req?' <span class="required" aria-hidden="true">*</span>':''}</label>${inner}</div>`;
@@ -1599,8 +1614,8 @@ function loanModal(id=null){
   ${f('วัตถุประสงค์',`<input class="form-control" name="purpose" maxlength="160" value="${esc(v.purpose)}" placeholder="เช่น ทดลองใช้ก่อนซื้อ">`)}
   ${f('วันที่ยืม',`<input class="form-control" type="date" id="lnDate" name="lentDate" value="${esc(v.lentDate)}" required>`,'',true)}
   ${f('ยืมกี่วัน',`<input class="form-control" type="number" id="lnDays" name="days" min="1" max="365" step="1" value="${esc(v.days)}" inputmode="numeric" required><div class="ln-due" id="lnDue">${dueText(v.lentDate,v.days)}</div>`,'',true)}
-  ${f('ผู้ให้ยืม (พนักงาน)',`<input class="form-control" name="lentBy" maxlength="100" value="${esc(v.lentBy)}">`,'wide')}
-  <div class="field wide"><label class="label">เช็คลิสต์อุปกรณ์ที่ให้ยืม <span class="label-note">แก้ไข เพิ่ม ลบ ได้เฉพาะใบนี้</span></label><div class="ln-rows">${v.items.map(rowHtml).join('')}</div><button type="button" class="btn outline small" data-action="lnAddRow">${icon('plus')}เพิ่มรายการ</button></div>
+  ${f('ผู้นำเครื่องออก / ผู้ให้ยืม (พนักงาน)',`<input class="form-control" name="lentBy" maxlength="100" value="${esc(v.lentBy)}">`,'wide')}
+  <div class="field wide"><label class="label">เช็คลิสต์อุปกรณ์ที่ให้ยืม <span class="label-note">แก้ไข เพิ่ม ลบ ได้เฉพาะใบนี้</span></label><div class="helper-note" id="lnTplNote" style="margin-bottom:6px">${l?'':tplNoteText('','')}</div><div class="ln-rows">${v.items.map(rowHtml).join('')}</div><button type="button" class="btn outline small" data-action="lnAddRow">${icon('plus')}เพิ่มรายการ</button><label class="ln-check"><input type="checkbox" name="saveTpl" value="1"> จำรายการนี้เป็นเช็คลิสต์ของเครื่องนี้ (ครั้งหน้าเลือกเครื่องนี้แล้วขึ้นให้อัตโนมัติ)</label></div>
   <div class="field wide"><label class="label">รูปก่อนให้ยืม <span class="label-note">ไม่เกิน ${LOAN_MAX_PICS} รูป</span></label>${picsHtml('before')}</div>
   ${f('หมายเหตุ',`<textarea class="form-control" name="note" rows="2" maxlength="400">${esc(v.note)}</textarea>`,'wide')}
  </div><div class="form-submit"><button type="button" class="btn outline" data-action="closeModal">ยกเลิก</button><button class="btn primary" type="submit">${icon('check')}${l?'บันทึกการแก้ไข':'บันทึกการยืม'}</button></div></form>`);
@@ -1610,6 +1625,7 @@ function submitLoan(form){
  f.items=readRows(form);f.before=ui.loanPics?.before||[];
  const editId=form.dataset.id||null,res=loanApi.save(f,editId);
  if(!done(res,editId?'บันทึกการแก้ไขแล้ว':'บันทึกการยืมแล้ว'))return;
+ if(f.saveTpl){const k=tplKey(f.productId,f.machine);if(k)loanApi.saveTemplate(f.items,k,f.machine);}
  closeModal();render();loanDetails(res.data.id);
 }
 
@@ -1669,11 +1685,25 @@ function submitReturn(form){
 }
 
 /* ---------- เช็คลิสต์มาตรฐาน ---------- */
-function templateModal(){
+function tplScopes(){
+ const out=[{key:'',label:'มาตรฐาน (ใช้กับทุกเครื่องที่ไม่ได้ตั้งเฉพาะ)'}],seen=new Set();
+ db.products.filter(p=>p.category==='machines').forEach(p=>{out.push({key:'p:'+p.id,label:p.name+(p.serial?' • '+p.serial:''),name:p.name});seen.add('p:'+p.id);});
+ Object.entries(db.loanTemplates).forEach(([k,v])=>{if(!seen.has(k))out.push({key:k,label:(v.name||k.slice(2))+' (ตั้งเอง)',name:v.name||k.slice(2)});});
+ out.push({key:'__new',label:'+ เครื่องอื่น (พิมพ์ชื่อเอง)'});
+ return out;
+}
+function tplRowsFor(key){
+ if(!key)return db.loanTemplate;
+ return db.loanTemplates[key]?.items||db.loanTemplate;
+}
+function templateModal(key=''){
  if(!can('loan'))return toast('บทบาทนี้ไม่มีสิทธิ์แก้ไขเช็คลิสต์','bad');
- openModal('เช็คลิสต์อุปกรณ์มาตรฐาน',`<form id="loanTplForm" novalidate><p class="helper-note" style="margin-bottom:10px">รายการนี้จะถูกใส่ให้อัตโนมัติทุกครั้งที่บันทึกการยืมใหม่ (ใบที่ยืมไปแล้วไม่เปลี่ยน) และแก้เพิ่มเฉพาะใบได้อีก</p>
-  <div class="ln-rows">${db.loanTemplate.map(rowHtml).join('')}</div><button type="button" class="btn outline small" data-action="lnAddRow">${icon('plus')}เพิ่มรายการ</button>
-  <div class="form-submit" style="margin-top:14px"><button type="button" class="btn outline" data-action="closeModal">ยกเลิก</button><button class="btn primary" type="submit">${icon('check')}บันทึกเช็คลิสต์</button></div></form>`);
+ const scopes=tplScopes(),has=key&&db.loanTemplates[key];
+ openModal('เช็คลิสต์อุปกรณ์',`<form id="loanTplForm" novalidate><p class="helper-note" style="margin-bottom:10px">สร้างรายการอุปกรณ์ของเครื่อง Demo แต่ละรุ่นได้เอง เมื่อบันทึกการยืมแล้วเลือกเครื่องนี้ รายการจะขึ้นให้อัตโนมัติ (ใบที่ยืมไปแล้วไม่เปลี่ยน) และแก้เพิ่มเฉพาะใบได้อีก</p>
+  <div class="field" style="margin-bottom:10px"><label class="label">เช็คลิสต์ของ</label><select class="form-control" id="tplScope" name="scope">${scopes.map(o=>`<option value="${esc(o.key)}" ${o.key===key?'selected':''}>${esc(o.label)}</option>`).join('')}</select></div>
+  <div class="field" id="tplNewName" style="margin-bottom:10px" hidden><label class="label">ชื่อเครื่อง</label><input class="form-control" name="newName" maxlength="120" placeholder="ชื่อเครื่อง Demo ให้ตรงกับที่พิมพ์ตอนบันทึกการยืม"></div>
+  <div class="ln-rows" id="tplRows">${tplRowsFor(key).map(rowHtml).join('')}</div><button type="button" class="btn outline small" data-action="lnAddRow">${icon('plus')}เพิ่มรายการ</button>
+  <div class="form-submit" style="margin-top:14px"><button type="button" class="btn outline" data-action="closeModal">ยกเลิก</button>${has?`<button type="button" class="btn outline" data-action="lnTplDel" data-id="${esc(key)}">${icon('trash')}ลบเช็คลิสต์เฉพาะเครื่องนี้</button>`:''}<button class="btn primary" type="submit">${icon('check')}บันทึกเช็คลิสต์</button></div></form>`);
 }
 
 /* ---------- ใบยืม A4 สำหรับพิมพ์ ---------- */
@@ -1721,6 +1751,7 @@ document.addEventListener('click',e=>{
   case 'lnPrint':printLoan(id);break;
   case 'lnPhoto':closeModal();loanPhoto(id,set,i);break;
   case 'lnTemplate':closeModal();templateModal();break;
+  case 'lnTplDel':if(confirm('ลบเช็คลิสต์เฉพาะเครื่องนี้? (เครื่องนี้จะกลับไปใช้แบบมาตรฐาน)')&&done(loanApi.removeTemplate(id),'ลบเช็คลิสต์เฉพาะเครื่องแล้ว')){closeModal();templateModal();}break;
   case 'lnSamples':if(done(loanApi.loadSamples(),'โหลดตัวอย่างการยืมแล้ว'))render();break;
   case 'lnDelete':if(confirm('ลบรายการยืมนี้ถาวร? (รูปและเช็คลิสต์จะหายไปด้วย)')&&done(loanApi.remove(id),'ลบรายการยืมแล้ว')){closeModal();render();}break;
   case 'lnSigned':{const l=db.loans.find(x=>x.id===id);if(l&&done(loanApi.setSigned(id,!l.signed.done,l.signed.done?null:undefined))){closeModal();render();loanDetails(id);}break;}
@@ -1733,11 +1764,24 @@ document.addEventListener('submit',e=>{
  const form=e.target;
  if(form.id==='loanForm'){e.preventDefault();submitLoan(form);}
  else if(form.id==='returnForm'){e.preventDefault();submitReturn(form);}
- else if(form.id==='loanTplForm'){e.preventDefault();if(done(loanApi.saveTemplate(readRows(form)),'บันทึกเช็คลิสต์มาตรฐานแล้ว'))closeModal();}
+ else if(form.id==='loanTplForm'){e.preventDefault();
+  let key=form.scope.value,name='';
+  if(key==='__new'){name=form.newName.value.trim();if(!name)return toast('กรอกชื่อเครื่อง','bad');key=tplKey('',name);}
+  else if(key){name=(tplScopes().find(o=>o.key===key)||{}).name||'';}
+  if(done(loanApi.saveTemplate(readRows(form),key,name),key?'บันทึกเช็คลิสต์ของเครื่องนี้แล้ว':'บันทึกเช็คลิสต์มาตรฐานแล้ว'))closeModal();}
 });
 document.addEventListener('change',e=>{
  const t=e.target;
  if(t.id==='lnProduct'){const o=t.selectedOptions[0];if(o?.value){$('#lnMachine').value=o.dataset.name||'';$('#lnSerial').value=o.dataset.serial||'';}}
+ if(t.id==='lnProduct'||t.id==='lnMachine'){
+  const form=t.closest('form'),e2=tplEntry($('#lnProduct').value,$('#lnMachine').value),box=form.querySelector('.ln-rows');
+  if(e2&&!form.dataset.id&&box){box.innerHTML=tplItems($('#lnProduct').value,$('#lnMachine').value).map(rowHtml).join('');toast('โหลดเช็คลิสต์ของเครื่องนี้ให้แล้ว');}
+  const nt=$('#lnTplNote');if(nt&&!form.dataset.id)nt.textContent=tplNoteText($('#lnProduct').value,$('#lnMachine').value);
+ }
+ if(t.id==='tplScope'){
+  const form=t.closest('form'),k=t.value;$('#tplNewName').hidden=k!=='__new';
+  form.querySelector('#tplRows').innerHTML=(k==='__new'?db.loanTemplate:tplRowsFor(k)).map(it=>({id:uid(),name:it.name,qty:it.qty})).map(rowHtml).join('');
+ }
  if(t.id==='lnDate'||t.id==='lnDays'){const d=$('#lnDue');if(d)d.textContent=dueText($('#lnDate').value,$('#lnDays').value);}
  if(t.id==='loanStatusFilter'){ui.loanStatus=t.value;refreshLoans();}
  if(t.dataset.lnPic&&t.files?.length){

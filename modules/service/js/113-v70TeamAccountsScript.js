@@ -211,6 +211,11 @@
   s.id='imodeTeamAccStyle';
   s.textContent=[
    '.tacc-block{margin-top:18px;border-top:1px solid var(--line,#e4e9f2);padding-top:14px}',
+   '.tacc-tabs{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap}',
+   '.tacc-tabs button{min-height:44px;padding:0 18px;border-radius:12px;border:1.5px solid #cfe0fb;background:#fff;color:#173f8a;font:inherit;font-size:14px;font-weight:700;cursor:pointer}',
+   '.tacc-tabs button[aria-selected="true"]{background:#0b63e5;border-color:#0b63e5;color:#fff}',
+   '.tacc-tabs span{display:inline-block;min-width:22px;margin-left:4px;padding:0 6px;border-radius:9px;background:rgba(11,99,229,.12);font-size:12px}',
+   '.tacc-tabs button[aria-selected="true"] span{background:rgba(255,255,255,.25)}',
    '.tacc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;'
     +'flex-wrap:wrap;margin-bottom:4px}',
    '.tacc-head h4{margin:0;font-size:14px;color:#173f8a}',
@@ -357,6 +362,12 @@
   if(!list.length)return;
   /* 2026-09-25: "หน้าทีมงานโชว์ทุกคน ทุก account แบ่งเป็นหมวดตาม Role". The block now leads the
      page, is grouped by role, and follows the team chips above it (ทั้งหมด shows everyone). */
+  /* 2026-10-20 (ข้อ 3): "ทีมงานเอาไว้แค่ทีมช่าง ส่วนอื่นย้ายไปไว้ที่บุคลากร ให้บุคลากรโชว์ทั้งหมด".
+     Two tabs on this page: ทีมช่าง (technician roles only, the default) and บุคลากรทั้งหมด (every
+     account, as before). The launcher's บุคลากร tile opens the second one (?view=people). */
+  var all=list.length,techAll=list.filter(function(a){return isTechRole(a.role)}).length;
+  if(!peopleView)list=list.filter(function(a){return isTechRole(a.role)});
+  segChips();
   var team='all';try{team=techTeamFilter||'all'}catch(e){}
   var TEAMS=[];try{TEAMS=TEAM_LIST.slice()}catch(e){}
   if(team!=='all'&&TEAMS.indexOf(team)>=0)list=list.filter(function(a){return (a.team||'Technical')===team});
@@ -376,17 +387,39 @@
    ? '<button type="button" class="soft-btn" onclick="openAccountAdminModal()">'
      +esc2(tl('🔐 จัดการบัญชี','🔐 Manage accounts'))+'</button>'
    : '';
-  box.innerHTML='<div class="tacc-head"><div>'
-   +'<h4>'+esc2(tl('บัญชีผู้ใช้งานทั้งหมด','All login accounts'))+' ('+list.length+')</h4>'
-   +'<p>'+esc2(tl('ช่างหน้างาน '+techCount+' · ไม่ใช่ช่าง '+(list.length-techCount)
-     +' — ทุกบัญชีที่เข้าสู่ระบบได้ แบ่งตาม Role · ตัวกรองทีมด้านบนใช้กับรายการนี้ด้วย',
-     techCount+' field · '+(list.length-techCount)
-     +' office — every account that can sign in, grouped by role; the team chips filter it too'))+'</p>'
+  box.innerHTML='<div class="tacc-tabs" role="tablist">'
+   +'<button type="button" role="tab" data-tacc-view="team" aria-selected="'+(!peopleView)+'">'+esc2(tl('🔧 ทีมช่าง','🔧 Technicians'))+' <span>'+techAll+'</span></button>'
+   +'<button type="button" role="tab" data-tacc-view="people" aria-selected="'+peopleView+'">'+esc2(tl('👥 บุคลากรทั้งหมด','👥 All staff'))+' <span>'+all+'</span></button></div>'
+   +'<div class="tacc-head"><div>'
+   +(peopleView
+     ?'<h4>'+esc2(tl('บุคลากรทั้งหมด','All staff'))+' ('+list.length+')</h4>'
+      +'<p>'+esc2(tl('ช่างหน้างาน '+techCount+' · ไม่ใช่ช่าง '+(list.length-techCount)
+       +' — ทุกบัญชีที่เข้าสู่ระบบได้ แบ่งตาม Role · ตัวกรองทีมด้านบนใช้กับรายการนี้ด้วย',
+       techCount+' field · '+(list.length-techCount)
+       +' office — every account that can sign in, grouped by role; the team chips filter it too'))+'</p>'
+     :'<h4>'+esc2(tl('ทีมช่าง','Technicians'))+' ('+list.length+')</h4>'
+      +'<p>'+esc2(tl('เฉพาะบัญชีที่เป็นช่าง (Technician / R&D / หัวหน้าช่าง) · คนอื่นอยู่ที่แท็บ บุคลากรทั้งหมด',
+       'Technician, R&D and lead accounts only · everyone else is under All staff'))+'</p>')
    +'</div>'+manage+'</div>'
    +groupsHTML(list);
   box.classList.add('is-top');
   grid.parentNode.insertBefore(box,grid);
+  box.querySelectorAll('[data-tacc-view]').forEach(function(b){
+   b.onclick=function(){
+    peopleView=b.getAttribute('data-tacc-view')==='people';
+    try{if(typeof setTechTeamFilter==='function'&&techTeamFilter!=='all')setTechTeamFilter('all');else render()}catch(e){render()}
+   };
+  });
  }
+ /* The office chips (แอดมิน, เซลส์, ผู้จัดการ, Dev) mean nothing on a technicians-only list. */
+ var OFFICE_TEAMS=['Admin','Sales','Management','Dev'];
+ function segChips(){
+  document.querySelectorAll('#techTeamSegment [data-team]').forEach(function(b){
+   b.hidden=!peopleView&&OFFICE_TEAMS.indexOf(b.getAttribute('data-team'))>=0;
+  });
+ }
+ var peopleView=false;
+ try{peopleView=new URLSearchParams(location.search).get('view')==='people'}catch(e){}
  window.imodeRenderTeamAccounts=render;
 
  /* renderTechnicians() is a top-level function declaration in js/03 and therefore a window

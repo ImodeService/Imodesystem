@@ -1,6 +1,7 @@
 /* Shared page frame for new ERP modules (pairs with module-shell.css).
    Load after supabase.min.js, config.js, auth.js and modules.js, then:
      var page = await ImodeShell.start({ module: 'tracking', root: '../../', subtitle, actions });
+     (optional `hide: ['service']` leaves those modules out of the sidebar)
      var kp = ImodeShell.kpis(page.body, cards);           // cards with `filter` become filter buttons
      var ls = ImodeShell.list(page.body, opt);             // searchable table, cards on phones
      kp.bind(ls);                                          // clicking a card filters the list
@@ -44,8 +45,9 @@
     toastTimer = setTimeout(function () { t.classList.remove('is-on'); }, 2800);
   }
 
-  function sidebar(root, current) {
-    var mods = window.IMODE_MODULES || [];
+  // `hide`: module ids this module must not link to (QC & R&D hides Service: two admins, 2026-10-20).
+  function sidebar(root, current, hide) {
+    var mods = (window.IMODE_MODULES || []).filter(function (m) { return (hide || []).indexOf(m.id) < 0; });
     var link = function (m) {
       var label = esc(m.fullName || m.name);
       if (m.id === current) return '<a class="sh-link" aria-current="page" href="#">' + tile(m) + '<span>' + label + '</span></a>';
@@ -72,7 +74,7 @@
     document.title = title + ' · I-MODE System';
     document.body.classList.add('sh-page', 'is-loading');
     var shell = el(
-      '<div class="shell">' + sidebar(root, opt.module) + '<div class="sh-scrim" aria-hidden="true"></div>' +
+      '<div class="shell">' + sidebar(root, opt.module, opt.hide) + '<div class="sh-scrim" aria-hidden="true"></div>' +
       '<div class="sh-main">' +
         '<header class="sh-top">' +
           '<button type="button" class="sh-icon-btn sh-menu-btn" aria-label="เปิดเมนู" aria-controls="shSide" aria-expanded="false">' + line('menu') + '</button>' +
