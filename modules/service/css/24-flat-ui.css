@@ -236,7 +236,8 @@ html[data-ui^="flat"]:is(:root,#fx) .doc-category-card:hover,
 html[data-ui^="flat"]:is(:root,#fx) .req-kpi-box:hover { border-color: var(--fx-line-strong) !important; background: var(--fx-surface-2) !important; }
 html[data-ui^="flat"]:is(:root,#fx) .req-kpi-box.is-active { border-color: var(--fx-accent) !important; background: var(--fx-accent-soft) !important; }
 html[data-ui^="flat"]:is(:root,#fx) .panel-head,
-html[data-ui^="flat"]:is(:root,#fx) .modal-head { border-bottom: 1px solid var(--fx-line) !important; background: transparent !important; }
+html[data-ui^="flat"]:is(:root,#fx) .modal-head { border-bottom: 1px solid var(--fx-line) !important; background: var(--fx-surface) !important; }
+/* the head is sticky: transparent let the form scroll up through the title (2026-10-20) */
 html[data-ui^="flat"]:is(:root,#fx) .setting-icon,
 html[data-ui^="flat"]:is(:root,#fx) .kpi-ico,
 html[data-ui^="flat"]:is(:root,#fx) .metric-icon {
@@ -707,3 +708,21 @@ html[data-ui="flat-dark"]:is(:root,#fx) :is(#quotePreviewDoc, #serviceReportPrin
   --bg: #f3f3f3; --white: #ffffff; --text: #1f1f1f; --muted: #5f6672; --line: #e1e1e1; --blue2: #1449c9; --blue3: #0c225e;
   background-color: #fff !important; color: #1d2636 !important; color-scheme: light;
 }
+html[data-ui="flat-dark"]:is(:root,#fx) .ticket { color: var(--fx-accent) !important; }
+/* second sweep (more data states, 45 popups, top and bottom of each) */
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.dj-row, .font-current, .font-preset-grid button, .settings-list button, .rhome-gate, .font-user-note > span) {
+  background-color: var(--fx-surface) !important; border-color: var(--fx-line) !important; color: var(--fx-text) !important;
+}
+html[data-ui="flat-dark"]:is(:root,#fx) .settings-list button:hover { background-color: var(--fx-hover) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.machine-photo-line, .tech-photo-line, .toggle-row, .techacc, .font-user-note) {
+  background: var(--fx-surface-2) !important; border-color: var(--fx-line) !important; color: var(--fx-text) !important;
+}
+html[data-ui="flat-dark"]:is(:root,#fx) .month-appt { background-color: var(--fx-accent-soft) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .month-appt.rd { background-color: #2e2447 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .mo-check { background-color: #33291a !important; border-color: #5c4526 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .mo-check b { color: #f0b765 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .dj-go { color: var(--fx-accent) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .agenda-job { background-color: var(--fx-accent-soft) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .language-choice { background-color: var(--fx-surface) !important; border-color: var(--fx-line) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .language-choice.active { background-color: var(--fx-accent-soft) !important; border-color: var(--fx-accent) !important; }
+html[data-ui^="flat"]:is(:root,#fx) .qc-hint { color: var(--fx-muted) !important; }
