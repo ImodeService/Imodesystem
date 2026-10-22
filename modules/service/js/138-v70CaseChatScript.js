@@ -162,13 +162,21 @@
    })}catch(e){}
    return m;
   }
+  function fieldIdx(f){
+   try{return (typeof window.imodeFieldSteps==='function'?window.imodeFieldSteps():[]).indexOf(f)}catch(e){return -1}
+  }
   function diffPost(before){
    var now=snapAll();
    Object.keys(now).forEach(function(id){
     var b=before[id],n=now[id];
     if(!b)return;                       /* a case just created is not an update */
     if(n.a!==b.a&&n.a)notify(id,'👷 มอบหมายช่าง: '+n.a.split(',').map(techName).join(', '));
-    if(n.f!==b.f&&n.f)notify(id,'🔧 ช่างอัปเดตหน้างาน: '+n.f);
+    /* 2026-10-21 ข้อ 7: a technician's press says only what the technician pressed. The case
+       status it moves as a side effect (saveFieldStatus) is not a second line. */
+    if(n.f!==b.f&&n.f){
+     notify(id,(fieldIdx(n.f)>=0&&fieldIdx(b.f)>fieldIdx(n.f)?'↩️ ช่างย้อนสถานะหน้างาน: '+b.f+' → ':'🔧 ช่างอัปเดตหน้างาน: ')+n.f);
+     return;
+    }
     if(n.s!==b.s)notify(id,(stepOf(n.s)<stepOf(b.s)?'↩️ ย้อนสถานะเคส: ':'🔄 เปลี่ยนสถานะเคส: ')+(b.s||'-')+' → '+(n.s||'-'));
    });
   }
@@ -288,6 +296,7 @@
    '.cc-head b{font-size:15px;color:var(--imode-navy,#0c225e)}',
    '.cc-head small{color:var(--muted,#6b7d9e);font-size:12px}',
    '.cc-head .cc-sp{flex:1}',
+   '.cc-field{font-size:12.5px;font-weight:700;color:var(--imode-blue,#0b63e5);text-decoration:none;border:1px solid currentColor;border-radius:999px;padding:4px 10px;white-space:nowrap}',
    '.cc-x{width:34px;height:34px;border:1px solid var(--line,#e2ecfb);border-radius:10px;background:#fff;cursor:pointer;font-size:16px;line-height:1;color:var(--imode-navy,#0c225e)}',
    '.cc-x:hover{background:#f4f8ff}',
    '.cc-x:focus-visible,.cc-send:focus-visible,.cc-attach:focus-visible,.cc-fab:focus-visible{outline:3px solid var(--imode-blue,#0b63e5);outline-offset:2px}',
@@ -323,7 +332,7 @@
    '.cc-prev{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}',
    '.cc-prev:empty{display:none}',
    '.cc-prev span{position:relative;line-height:0}',
-   '.cc-prev img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line,#e2ecfb)}',
+   '.cc-prev img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line,#e2ecfb);cursor:zoom-in}',
    '.cc-prev button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:0;background:#12224a;color:#fff;font-size:12px;line-height:20px;cursor:pointer;padding:0}',
    '.cc-row{display:flex;align-items:flex-end;gap:8px}',
    '.cc-row textarea{flex:1;min-width:0;resize:none;border:1px solid var(--line-2,#dfe9f8);border-radius:12px;padding:9px 11px;font:inherit;font-size:14px;line-height:1.4;max-height:140px;min-height:40px;background:#f8fbff;color:inherit}',
@@ -369,7 +378,11 @@
   var panel=document.createElement('aside');
   panel.className='cc-panel';panel.id='ccPanel';panel.setAttribute('aria-label','แชททีมในเคสนี้');panel.hidden=true;
   panel.innerHTML='<div class="cc-head"><span aria-hidden="true">💬</span><div><b>แชททีม</b><br><small id="ccSub">อัปเดตงานในเคสนี้</small></div>'
-   +'<span class="cc-sp"></span><button type="button" class="cc-x" id="ccClose" aria-label="ซ่อนแชท" title="ซ่อนแชท">✕</button></div>'
+   +'<span class="cc-sp"></span>'
+   /* 2026-10-21 ข้อ 5: a technician's way from this chat to the job on หน้างาน */
+   +(appUser&&(appUser.technicianId||appUser.accountType==='technician')
+     ?'<a class="cc-field" href="./index.html?page=field-service&caseId='+encodeURIComponent(caseId)+'&intent=field">🔧 ไปหน้างาน</a>':'')
+   +'<button type="button" class="cc-x" id="ccClose" aria-label="ซ่อนแชท" title="ซ่อนแชท">✕</button></div>'
    +'<div id="ccBanner"></div>'
    +'<div class="cc-feed" id="ccFeed" aria-live="polite"><div class="cc-empty">กำลังโหลดแชท...</div></div>'
    +'<form class="cc-compose" id="ccForm" autocomplete="off">'
@@ -529,6 +542,7 @@
      +(m.body?'<div class="cc-body">'+tagged(m.body)+'</div>':'')
      +(ph.length?'<div class="cc-photos'+(ph.length===1?' is-one':'')+'">'+ph.map(function(p,i){
        return '<button type="button" data-photo="'+i+'" aria-label="ดูรูปขนาดใหญ่"><img src="'+esc(p)+'" alt="รูปที่แนบ '+(i+1)+'" loading="lazy"></button>'}).join('')+'</div>':'')
+     +(RX()&&!AUTO.test(String(m.body||''))?RX().bar('case',m.id):'')      /* ข้อ 13, js/144 */
      +'</div>'
      +((mine||me.admin)?'<button type="button" class="cc-del" data-del="'+esc(m.id)+'" title="ลบข้อความ">ลบ</button>':'')
      +'</div>';
@@ -626,9 +640,11 @@
       render();return;
      }
      state='ok';msgs=[];byId={};add(r&&r.data);render();layout();listen();loadPeople(c);
+     if(RX()){RX().use(c,me.id);RX().load('case',msgs.map(function(m){return m.id}))}
     },function(e){state='offline';errText=String(e&&e.message||'');render()});
    });
   }
+  function RX(){return window.imodeChatReactions||null}
   function pullNew(){
    var c=db();if(!c||state!=='ok')return;
    var q=c.from(TABLE).select(COLS).eq('case_id',caseId).order('created_at',{ascending:true}).limit(200);
@@ -652,6 +668,13 @@
     chan=c.channel('case-chat-'+Math.random().toString(36).slice(2,8))
      .on('postgres_changes',{event:'INSERT',schema:'public',table:TABLE,filter:'case_id=eq.'+caseId},function(p){
       if(p&&p.new&&add([p.new])){render();if(!panel.hidden)markSeen()}
+      /* 2026-10-21 ข้อ 6: a status line in the chat means the case row moved; read it now. */
+      if(p&&p.new&&AUTO.test(String(p.new.body||''))){
+       try{
+        if(window.CaseLive&&typeof window.CaseLive.pull==='function')window.CaseLive.pull();
+        else if(typeof window.imodeRealtimeRefetch==='function')window.imodeRealtimeRefetch('service_cases',caseId);
+       }catch(e){}
+      }
      })
      .on('postgres_changes',{event:'DELETE',schema:'public',table:TABLE},function(p){
       if(p&&p.old&&p.old.id)drop(p.old.id);
@@ -682,9 +705,17 @@
   }
   function preview(){
    $('ccPrev').innerHTML=pending.map(function(d,i){
-    return '<span><img src="'+esc(d)+'" alt="รูปที่จะส่ง '+(i+1)+'"><button type="button" data-rm="'+i+'" aria-label="เอารูปนี้ออก">×</button></span>'}).join('');
+    return '<span><img src="'+esc(d)+'" alt="รูปที่จะส่ง '+(i+1)+'" data-big="'+i+'" title="กดเพื่อดูรูปเต็ม"><button type="button" data-rm="'+i+'" aria-label="เอารูปนี้ออก">×</button></span>'}).join('');
   }
   $('ccPrev').addEventListener('click',function(e){
+   /* 2026-10-21 ข้อ 12: a photo can be looked at full size before it is sent, not only after */
+   var big=e.target.closest('[data-big]');
+   if(big){
+    var lb=document.createElement('div');lb.className='cc-light';lb.setAttribute('role','dialog');lb.setAttribute('aria-label','รูปที่จะส่ง');
+    lb.innerHTML='<img alt="รูปที่จะส่ง">';lb.firstChild.src=pending[Number(big.getAttribute('data-big'))]||'';
+    lb.addEventListener('click',function(){lb.remove()});
+    document.body.appendChild(lb);return;
+   }
    var b=e.target.closest('[data-rm]');if(!b)return;
    pending.splice(Number(b.getAttribute('data-rm')),1);preview();
   });

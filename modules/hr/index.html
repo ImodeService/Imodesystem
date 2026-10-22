@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>บุคลากร · I-MODE System</title>
+<link rel="icon" href="../../assets/brand/imode-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- one screen theme for every module (light / dark), before the first paint -->
+<script src="../../shared/theme-pref.js"></script>
+<link rel="stylesheet" href="../../shared/theme.css">
+<link rel="stylesheet" href="../../shared/module-shell.css">
+</head>
+<body>
+<!-- โมดูลบุคลากร (2026-10-21, ขั้นแรก): รายชื่อทุกคนในบริษัท อ่านอย่างเดียว
+     ข้อมูลมาจากตาราง technicians (รายชื่อทีมงานที่ Service ใช้) และ profiles (บัญชีเข้าระบบ)
+     ระบบ HR เต็ม (ลา, OT, ลงเวลา ฯลฯ) จะต่อยอดในโฟลเดอร์นี้ -->
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../../shared/modules.js"></script>
+<script src="../../shared/module-shell.js"></script>
+<script>
+(async function () {
+  'use strict';
+  function isTech(r) {
+    return /technician|ช่าง|supervisor/i.test(r.role || '') && !/admin|แอดมิน|manager|ผู้จัดการ/i.test(r.role || '')
+      || /^technical$/i.test(r.team || '');
+  }
+  var list;
+  var page = await ImodeShell.start({
+    module: 'hr', root: '../../',
+    subtitle: 'รายชื่อทุกคนในบริษัท แยกตามทีมและตำแหน่ง',
+    actions: [
+      { label: 'ส่งออก CSV', icon: 'download', onClick: function () {
+        var n = list.csv('people-' + new Date().toISOString().slice(0, 10) + '.csv');
+        page.toast('ส่งออก ' + n + ' รายการแล้ว');
+      } }
+    ]
+  });
+  var kp = ImodeShell.kpis(page.body, [
+    { label: 'บุคลากรทั้งหมด', value: '…', note: 'ทุกทีมในบริษัท', tone: 'blue', icon: 'list' },
+    { label: 'ทีมช่าง', value: '…', note: 'ช่างและหัวหน้าช่าง', tone: 'orange', icon: 'clock', filter: isTech },
+    { label: 'มีบัญชีเข้าระบบ', value: '…', note: 'ล็อกอินได้', tone: 'green', icon: 'check', filter: function (r) { return r.account === 'มี'; } },
+    { label: 'ยังไม่มีบัญชี', value: '…', note: 'ต้องสร้างบัญชีให้', tone: 'red', icon: 'alert', filter: function (r) { return r.account !== 'มี'; } }
+  ]);
+  list = ImodeShell.list(page.body, {
+    title: 'รายชื่อบุคลากร', subtitle: 'ค้นหาด้วยชื่อ ทีม หรือตำแหน่ง',
+    columns: [
+      { key: 'name', label: 'ชื่อ', isKey: true },
+      { key: 'team', label: 'ทีม' },
+      { key: 'role', label: 'ตำแหน่ง' },
+      { key: 'phone', label: 'โทร' },
+      { key: 'account', label: 'บัญชีเข้าระบบ' },
+      { key: 'status', label: 'สถานะ' }
+    ],
+    rows: [], loading: true, statusKey: 'status',
+    statusTone: { 'ทำงานอยู่': 'green', 'พร้อมรับงาน': 'green', 'ลา': 'orange', 'ปิดใช้งาน': 'red' },
+    empty: { title: 'ยังไม่มีรายชื่อ', text: 'เพิ่มคนได้ที่ Service → ทีมงาน (ชั่วคราว จนกว่าโมดูลนี้จะเพิ่มคนได้เอง)' },
+    footNote: 'อ่านอย่างเดียว · เพิ่ม/แก้ไขรายชื่อยังทำที่ Service → ทีมงาน'
+  });
+  kp.bind(list);
+
+  var sb = ImodeAuth.client();
+  var res = await Promise.all([
+    sb.from('technicians').select('id,name,role,team,phone,status'),
+    sb.from('profiles').select('id,full_name,username,role,team,is_active,technician_id')
+  ]);
+  var techs = (res[0].data || []), profs = (res[1].data || []).filter(function (p) {
+    return !/^customer$/i.test(String(p.role || ''));
+  });
+  var byTech = {};
+  profs.forEach(function (p) { if (p.technician_id) byTech[p.technician_id] = p; });
+  var rows = techs.map(function (t) {
+    var p = byTech[t.id];
+    return {
+      name: t.name || (p && p.full_name) || '-', team: t.team || (p && p.team) || '-',
+      role: t.role || (p && p.role) || '-', phone: t.phone || '-',
+      account: p ? 'มี' : 'ยังไม่มี',
+      status: p && p.is_active === false ? 'ปิดใช้งาน' : (t.status || 'ทำงานอยู่')
+    };
+  });
+  // accounts that are not on the team list yet still count as people
+  var linked = {};
+  techs.forEach(function (t) { if (byTech[t.id]) linked[byTech[t.id].id] = 1; });
+  profs.forEach(function (p) {
+    if (linked[p.id]) return;
+    rows.push({
+      name: p.full_name || p.username || '-', team: p.team || '-', role: p.role || '-', phone: '-',
+      account: 'มี', status: p.is_active === false ? 'ปิดใช้งาน' : 'ทำงานอยู่'
+    });
+  });
+  rows.sort(function (a, b) { return String(a.team).localeCompare(String(b.team), 'th') || String(a.name).localeCompare(String(b.name), 'th'); });
+  list.setRows(rows);
+  var vals = [rows.length, rows.filter(isTech).length,
+    rows.filter(function (r) { return r.account === 'มี'; }).length,
+    rows.filter(function (r) { return r.account !== 'มี'; }).length];
+  page.body.querySelectorAll('.sh-kpi-value').forEach(function (el, i) { if (i < vals.length) el.textContent = vals[i]; });
+  if (res[0].error && res[1].error) page.toast('โหลดรายชื่อไม่สำเร็จ ลองรีเฟรชอีกครั้ง');
+})();
+</script>
+</body>
+</html>

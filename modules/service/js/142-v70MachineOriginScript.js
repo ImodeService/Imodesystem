@@ -74,13 +74,15 @@
  var baseOpen=window.openMachineModal;
  if(typeof baseOpen==='function'){
   window.openMachineModal=function(mid){
-   var preset=window.imodeMachineOriginNext;window.imodeMachineOriginNext='';
+   window.imodeMachineOriginNext='';
    var r=baseOpen.apply(this,arguments);
    setTimeout(function(){
     var note=document.getElementById('maNote');
     if(!note||document.getElementById('maNonImode'))return;
     var m=null;all().forEach(function(x){if(x&&x.id===mid)m=x});
-    var on=m?isOther(m):(preset==='other'||(!mid&&tab==='other'&&isPageMachines()));
+    /* 2026-10-21 ข้อ 9: a new machine always opens unticked; whoever adds it ticks the box
+       when it really was bought elsewhere. Only an existing machine shows what it is. */
+    var on=m?isOther(m):false;
     var f=document.createElement('div');f.className='field full mo-origin';
     f.innerHTML='<label class="mo-check"><input type="checkbox" id="maNonImode"'+(on?' checked':'')+'>'
      +'<span><b>เครื่องที่ไม่ได้ซื้อจาก I-MODE</b><small>ลูกค้าซื้อจากที่อื่น แต่ให้ I-MODE ดูแล / ซ่อม · จะแสดงในแท็บแยก</small></span></label>';

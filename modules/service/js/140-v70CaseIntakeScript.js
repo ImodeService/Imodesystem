@@ -181,8 +181,6 @@
  }
  function machineFormFor(customerId,name,after){
   if(typeof window.openMachineModal!=='function')return;
-  /* a machine nobody has registered is most often one the customer bought elsewhere (js/142) */
-  window.imodeMachineOriginNext='other';
   window.openMachineModal('',after==='case',customerId);
   setTimeout(function(){
    var n=$('maNameTh');

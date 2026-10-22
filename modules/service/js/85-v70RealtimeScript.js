@@ -451,4 +451,11 @@
  window.addEventListener('load',function(){setTimeout(function(){if(client()&&!channel)start()},1500)});
  window.imodeRealtimeStart=start;
  window.imodeRealtimeStop=stop;
+ /* 2026-10-21 ข้อ 6: the case chat hears a technician's 🔧/↩️ line at once; the case row it
+    describes is read back here, so the status bar moves together with the chat line even
+    when the row's own event was missed or cut. */
+ window.imodeRealtimeRefetch=function(table,id){
+  var cfg=TABLES.filter(function(t){return t.name===table})[0];
+  if(cfg&&id)refetch(cfg,id);
+ };
 })();

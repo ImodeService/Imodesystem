@@ -34,8 +34,11 @@
  function missingTable(err){
   return /PGRST205|PGRST202|42P01|does not exist|Could not find/i.test(String(err&&(err.code+' '+err.message)||''));
  }
+ /* 2026-10-21 ข้อ 11 "ลูกค้าเห็นแชท เอาออกก่อน": every customer surface (QR scan, portal,
+    customer home) counts, not only a signed-in customer account — js/01 knows them all. */
  function isCustomer(){
   var u=user();
+  try{if(typeof window.imodeCustomerSurface==='function'&&window.imodeCustomerSurface())return true}catch(e){}
   return document.body.classList.contains('customer-portal-mode')
    ||!!(u&&(u.accountType==='customer'||/^customer$/i.test(String(u.role||''))));
  }
@@ -107,8 +110,8 @@
   '.ch-feed{flex:1;min-height:0;overflow-y:auto;padding:6px 14px 14px;overscroll-behavior:contain}',
   '.ch-day{display:flex;align-items:center;gap:10px;margin:14px 0 8px;color:var(--muted,#6b7d9e);font-size:12px;font-weight:700}',
   '.ch-day::before,.ch-day::after{content:"";flex:1;height:1px;background:var(--line,#e2ecfb)}',
-  '.ch-msg{display:flex;margin:4px 0}',
-  '.ch-msg.is-mine{justify-content:flex-end}',
+  '.ch-msg{display:flex;flex-direction:column;align-items:flex-start;margin:4px 0}',
+  '.ch-msg.is-mine{align-items:flex-end}',
   '.ch-bub{max-width:82%;background:#f1f5fb;border-radius:14px 14px 14px 4px;padding:7px 11px}',
   '.ch-msg.is-mine .ch-bub{background:#e3eeff;border-radius:14px 14px 4px 14px}',
   '.ch-bub .ch-who{display:block;font-size:12px;font-weight:700;color:var(--imode-navy,#0c225e);margin-bottom:1px}',
@@ -122,14 +125,16 @@
   '.ch-prev{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}',
   '.ch-prev:empty{display:none}',
   '.ch-prev span{position:relative;line-height:0}',
-  '.ch-prev img{width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--line,#e2ecfb)}',
+  '.ch-prev img{width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--line,#e2ecfb);cursor:zoom-in}',
   '.ch-prev button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:0;background:#12224a;color:#fff;font-size:12px;line-height:20px;cursor:pointer;padding:0}',
   '.ch-crow{display:flex;align-items:flex-end;gap:8px}',
   '.ch-crow textarea{flex:1;min-width:0;resize:none;border:1px solid var(--line-2,#dfe9f8);border-radius:12px;padding:9px 11px;font:inherit;font-size:14px;line-height:1.4;max-height:140px;min-height:42px;background:#f8fbff;color:inherit}',
   '.ch-crow textarea:focus{outline:none;border-color:var(--imode-blue,#0b63e5);background:#fff}',
   '.ch-send{flex:none;height:42px;border-radius:12px;border:0;background:var(--imode-blue,#0b63e5);color:#fff;padding:0 16px;font:inherit;font-weight:700;cursor:pointer}',
   '.ch-send:disabled{opacity:.5;cursor:default}',
-  '.ch-link{display:block;margin:8px 12px 0;text-align:center;font-size:13px;font-weight:700;color:var(--imode-blue,#0b63e5);text-decoration:none;flex:none}',
+  '.ch-links{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 12px 0;flex:none}',
+  '.ch-link{display:block;text-align:center;font-size:13px;font-weight:700;color:var(--imode-blue,#0b63e5);text-decoration:none;background:none;border:0;padding:4px 6px;cursor:pointer;font-family:inherit}',
+  '.ch-link.is-field{border:1px solid currentColor;border-radius:999px;padding:4px 12px}',
   '.ch-light{position:fixed;inset:0;z-index:12000;background:rgba(5,10,24,.88);display:grid;place-items:center;padding:20px;cursor:zoom-out}',
   '.ch-light img{max-width:100%;max-height:100%;border-radius:8px}',
   '.fw-chat{flex:none;border:1px solid #d3e0f4;background:#fff;color:#0b3f9e;border-radius:11px;padding:8px 13px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}',
@@ -218,7 +223,11 @@
    var at=l?l.last_at:'';
    out.push({c:c,at:at,count:l?l.messages:0,unread:!!(at&&(!s[c.id]||at>s[c.id])),closed:closed});
   });
+  /* 2026-10-21 ข้อ 14 "แชทที่มีข้อความใหม่ให้ขึ้นมาบนสุด": a conversation is placed by its
+     last message, and every case that has one comes before a case nobody has written in —
+     a case merely edited a minute ago no longer pushes a live conversation down. */
   out.sort(function(a,b){
+   if(!!a.at!==!!b.at)return a.at?-1:1;
    var x=a.at||a.c.updatedAt||a.c.createdAt||'',y=b.at||b.c.updatedAt||b.c.createdAt||'';
    return x<y?1:x>y?-1:0;
   });
@@ -235,6 +244,10 @@
   var f=document.getElementById('chFabN');if(f)f.textContent=(n+k)?String(n+k):'';
   var a=document.getElementById('chTabDmN');if(a)a.textContent=n?String(n):'';
   var b=document.getElementById('chTabCaseN');if(b)b.textContent=k?String(k):'';
+ }
+ function fieldOk(id){
+  var c=findCase(id);
+  return !!(c&&myTech()&&mine(c)&&typeof window.imodeOpenFieldJob==='function'&&CLOSED.indexOf(String(c.status||''))<0);
  }
  function findCase(id){return caseList().filter(function(c){return c&&c.id===id})[0]||null}
  function render(){
@@ -301,7 +314,10 @@
   panel.innerHTML='<div class="ch-head"><button type="button" class="ch-icon" data-ch="back" aria-label="กลับไปรายการแชท" title="กลับ">‹</button>'
    +'<div class="ch-sp"><b>'+esc(t.t)+'</b><small>'+esc(t.s)+'</small></div>'
    +'<button type="button" class="ch-icon" data-ch="close" aria-label="ปิดแชท" title="ปิด">✕</button></div>'
-   +(isCase?'<a class="ch-link" href="./service-case-detail.html?caseId='+encodeURIComponent(view.open.id)+'">เปิดหน้าเคส ›</a>':'')
+   +(isCase?'<div class="ch-links">'
+     /* 2026-10-21 ข้อ 5: a technician goes from the case chat straight to this job on หน้างาน */
+     +(fieldOk(view.open.id)?'<button type="button" class="ch-link is-field" data-ch="field">🔧 ไปหน้างานของงานนี้</button>':'')
+     +'<a class="ch-link" href="./service-case-detail.html?caseId='+encodeURIComponent(view.open.id)+'">เปิดหน้าเคส ›</a></div>':'')
    +'<div class="ch-feed" id="chFeed" aria-live="polite">'+feedHTML()+'</div>'
    +'<form class="ch-compose" id="chForm" autocomplete="off"><div class="ch-prev" id="chPrev"></div>'
    +'<div class="ch-crow"><button type="button" class="ch-icon" data-ch="attach" aria-label="แนบรูป" title="แนบรูป (สูงสุด '+MAX_PHOTOS+' รูป)">📷</button>'
@@ -318,6 +334,7 @@
   if(window.matchMedia('(hover:hover)').matches)ta.focus();
  }
  var AUTO=/^(🔄|↩️|👷|🔧|🏭|📎|✏️)/;
+ function RX(){return window.imodeChatReactions||null}
  function feedHTML(){
   if(threadState==='loading')return '<div class="ch-empty">กำลังโหลด...</div>';
   if(threadState==='nosql')return '<div class="ch-empty">ยังใช้แชทนี้ไม่ได้ ต้องรันไฟล์ SQL ของแชทก่อน</div>';
@@ -333,7 +350,9 @@
     +(!isMine&&view.open.kind==='case'?'<span class="ch-who">'+esc(name)+'</span>':'')
     +(m.body?'<p>'+esc(m.body)+'</p>':'')
     +(ph.length?'<div class="ch-ph">'+ph.map(function(p,i){return '<button type="button" data-ch-photo="'+i+'" aria-label="ดูรูปขนาดใหญ่"><img src="'+esc(p)+'" alt="รูปที่แนบ '+(i+1)+'" loading="lazy"></button>'}).join('')+'</div>':'')
-    +'<time datetime="'+esc(m.created_at)+'">'+hhmm(t)+'</time></div></div>';
+    +'<time datetime="'+esc(m.created_at)+'">'+hhmm(t)+'</time></div>'
+    +(RX()&&!AUTO.test(String(m.body||''))?RX().bar(view.open.kind,m.id):'')     /* ข้อ 13, js/144 */
+    +'</div>';
   });
   return html;
  }
@@ -358,6 +377,7 @@
    if(!view.open||view.open!==o)return;
    if(r&&r.error){threadState=missingTable(r.error)?'nosql':'error';repaintFeed();return}
    thread=(r&&r.data)||[];threadState='ok';repaintFeed();markRead();
+   if(RX()){RX().use(c,me.id);RX().load(o.kind,thread.map(function(m){return m.id}))}
   },function(){threadState='error';repaintFeed()});
  }
  function markRead(){
@@ -393,7 +413,7 @@
  }
  function preview(){
   var b=document.getElementById('chPrev');if(!b)return;
-  b.innerHTML=pending.map(function(p,i){return '<span><img src="'+esc(p)+'" alt="รูปที่จะส่ง '+(i+1)+'"><button type="button" data-ch-rm="'+i+'" aria-label="เอารูปนี้ออก">✕</button></span>'}).join('');
+  b.innerHTML=pending.map(function(p,i){return '<span><img src="'+esc(p)+'" alt="รูปที่จะส่ง '+(i+1)+'" data-ch-big="'+i+'" title="กดเพื่อดูรูปเต็ม"><button type="button" data-ch-rm="'+i+'" aria-label="เอารูปนี้ออก">✕</button></span>'}).join('');
  }
  fileIn.addEventListener('change',function(){
   var files=[].slice.call(fileIn.files||[]).filter(function(f){return /^image\//.test(f.type)});
@@ -447,7 +467,11 @@
  }
  fab.addEventListener('click',function(){isOpen?close():open()});
  shade.addEventListener('click',close);
- document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen){e.preventDefault();close()}});
+ document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  var lb=document.querySelector('.ch-light');if(lb){e.preventDefault();lb.remove();return}
+  if(isOpen){e.preventDefault();close()}
+ });
  panel.addEventListener('click',function(e){
   var t=e.target;
   var a=t.closest('[data-ch]');
@@ -455,6 +479,7 @@
    var k=a.getAttribute('data-ch');
    if(k==='close')close();
    else if(k==='back'){view.open=null;render();refresh()}
+   else if(k==='field'&&view.open){var fid=view.open.id;close();try{window.imodeOpenFieldJob(fid)}catch(e){}}
    else if(k==='attach'){if(pending.length>=MAX_PHOTOS)alert('แนบได้สูงสุด '+MAX_PHOTOS+' รูปต่อข้อความ');else fileIn.click()}
    return;
   }
@@ -462,6 +487,13 @@
   if(tab){view.tab=tab.getAttribute('data-ch-tab');var qi=document.getElementById('chQ');if(qi)qi.value='';render();return}
   var dm=t.closest('[data-ch-dm]');if(dm){openThread('dm',dm.getAttribute('data-ch-dm'));return}
   var cs=t.closest('[data-ch-case]');if(cs){openThread('case',cs.getAttribute('data-ch-case'));return}
+  /* 2026-10-21 ข้อ 12: full size before sending too */
+  var big=t.closest('[data-ch-big]');
+  if(big){
+   var lb0=document.createElement('div');lb0.className='ch-light';lb0.setAttribute('role','dialog');lb0.setAttribute('aria-label','รูปที่จะส่ง');
+   lb0.innerHTML='<img alt="รูปที่จะส่ง">';lb0.firstChild.src=pending[Number(big.getAttribute('data-ch-big'))]||'';
+   lb0.addEventListener('click',function(){lb0.remove()});document.body.appendChild(lb0);return;
+  }
   var rm=t.closest('[data-ch-rm]');if(rm){pending.splice(Number(rm.getAttribute('data-ch-rm')),1);preview();return}
   var ph=t.closest('[data-ch-photo]');
   if(ph){
@@ -476,7 +508,8 @@
  var busy=false,live=null;
  function refresh(){
   var c=db();
-  if(busy||!c||!user()||isCustomer())return Promise.resolve();
+  if(isCustomer()){hideForCustomer();return Promise.resolve()}
+  if(busy||!c||!user())return Promise.resolve();
   busy=true;
   return loadMe(c).then(function(ok){
    if(!ok){busy=false;return}
@@ -489,6 +522,13 @@
    });
   }).catch(function(){busy=false});
  }
+ /* The same device can go from staff to a customer page without a reload (the portal, a
+    scanned QR), so the button is taken away again, not only never shown. */
+ function hideForCustomer(){
+  fab.hidden=true;
+  try{if(isOpen)close()}catch(e){}
+ }
+ setInterval(function(){if(!fab.hidden&&isCustomer())hideForCustomer()},1500);
  function listen(c){
   if(live||typeof c.channel!=='function')return;
   try{
@@ -503,6 +543,9 @@
     })
     .on('postgres_changes',{event:'INSERT',schema:'public',table:CM},function(p){
      var m=p&&p.new;if(!m||!m.case_id)return;
+     if(/^(🔄|↩️|👷|🔧|🏭)/.test(String(m.body||''))&&typeof window.imodeRealtimeRefetch==='function'){
+      try{window.imodeRealtimeRefetch('service_cases',m.case_id)}catch(e){}
+     }
      var l=caseLast[m.case_id]||{case_id:m.case_id,messages:0};
      l.last_at=m.created_at;l.messages=(l.messages||0)+1;caseLast[m.case_id]=l;
      var o=view.open;

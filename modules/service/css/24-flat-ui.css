@@ -726,3 +726,60 @@ html[data-ui="flat-dark"]:is(:root,#fx) .agenda-job { background-color: var(--fx
 html[data-ui="flat-dark"]:is(:root,#fx) .language-choice { background-color: var(--fx-surface) !important; border-color: var(--fx-line) !important; color: var(--fx-text) !important; }
 html[data-ui="flat-dark"]:is(:root,#fx) .language-choice.active { background-color: var(--fx-accent-soft) !important; border-color: var(--fx-accent) !important; }
 html[data-ui^="flat"]:is(:root,#fx) .qc-hint { color: var(--fx-muted) !important; }
+
+/* ---------- 17. Dark: what a technician sees (2026-10-21, ข้อ 4 และ 8) ----------
+   Audited signed in as a technician: งานของฉัน, หน้างาน, the อัปเดตสถานะงาน popup (js/26, js/91),
+   the confirm popup (js/78), the 💬 chat (js/141) and reactions (js/144). */
+/* งานของฉัน: a new job is a dark amber card, not a cream one with pale text on it */
+html[data-ui="flat-dark"]:is(:root,#fx) .work-row.njb-new { background: #33291a !important; border-color: #6b4b22 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .work-row.njb-new :is(b, h4, .ticket, .work-row-main > strong) { color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .work-row.njb-new :is(small, p, .work-meta) { color: #cdbfa8 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .njb-chip { background: #c25e00 !important; color: #fff !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.fw-go, .fsx-manual summary) { color: var(--fx-accent) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fw-chat { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line-strong) !important; color: var(--fx-accent) !important; }
+/* อัปเดตสถานะงาน popup */
+html[data-ui="flat-dark"]:is(:root,#fx) .context-link-bar { background: var(--fx-surface-2) !important; border-color: var(--fx-line) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .context-link { background-color: var(--fx-surface) !important; border-color: var(--fx-line-strong) !important; color: var(--fx-accent) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .context-link.map { background-color: #1d3326 !important; border-color: #2f5a40 !important; color: #8fdcb0 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-head { background: var(--fx-surface-2) !important; border-color: var(--fx-line) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-head small { color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-head b { color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-steps li { background-color: var(--fx-surface) !important; border-color: var(--fx-line) !important; color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-steps li span { background-color: var(--fx-surface-2) !important; color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-steps li.is-done { background-color: #1d3326 !important; border-color: #2f5a40 !important; color: #8fdcb0 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-steps li.is-done span { background-color: #2a4a37 !important; color: #8fdcb0 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-steps li.is-now { background-color: var(--fx-accent-soft) !important; border-color: #2f5585 !important; color: #cfe2ff !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-steps li.is-now span { background-color: var(--fx-accent-fill) !important; color: #fff !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-editbtn { background: transparent !important; color: inherit !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-editbtn b { color: inherit !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-final { color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-editbox { background-color: #33291a !important; border-color: #6b4b22 !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.fsx-revmeta, .fsx-revhint) { color: #cdbfa8 !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .fsx-revnote { color: var(--fx-text) !important; }
+/* the confirm popup */
+html[data-ui="flat-dark"]:is(:root,#fx) .icf-card { background-color: var(--fx-surface) !important; color: var(--fx-text) !important; border-color: var(--fx-line) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .icf-title { color: var(--fx-head) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.icf-body, .icf-body p) { color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .icf-no { background: var(--fx-surface-2) !important; border-color: var(--fx-line-strong) !important; color: var(--fx-text) !important; }
+/* ช่าง popup, customer contact chips, the A4 bar above a document */
+html[data-ui="flat-dark"]:is(:root,#fx) .tech-profile-head { background: var(--fx-surface-2) !important; border-color: var(--fx-line) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .tech-profile-head h3 { color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.tech-profile-head p, .tech-profile-head .tech-status-dot, .imode-a4-size) { color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .cc-ch { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line-strong) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .cc-ch :is(a, small) { color: var(--fx-text) !important; }
+/* 💬 chat (js/141) and reactions (js/144) */
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-panel, .ch-compose) { background: var(--fx-surface) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-head, .ch-compose) { border-color: var(--fx-line) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-head b, .ch-row b, .ch-bub .ch-who) { color: var(--fx-head) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-head small, .ch-row small, .ch-row .ch-meta, .ch-sec, .ch-empty, .ch-day, .ch-bub time) { color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-row.is-unread :is(b, small) { color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-day::before, .ch-day::after) { background: var(--fx-line) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-icon, .ch-tabs button:not([aria-selected="true"])) { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line-strong) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-row:hover, .ch-icon:hover) { background-color: var(--fx-hover) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-search input, .ch-crow textarea) { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line-strong) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-bub { background-color: var(--fx-surface-2) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-msg.is-mine .ch-bub { background-color: var(--fx-accent-soft) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-msg.is-auto .ch-bub { background-color: transparent !important; border-color: var(--fx-line-strong) !important; color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-av.is-case { background: var(--fx-accent-soft) !important; color: #cfe2ff !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-link { color: var(--fx-accent) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-ph button { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line) !important; }

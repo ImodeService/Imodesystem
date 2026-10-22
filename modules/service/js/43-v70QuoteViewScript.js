@@ -201,7 +201,34 @@
   go();
  }
 
+ /* 2026-10-21 ข้อ 2 "กดส่งแล้วกว่าจะขึ้นช้า": the server answer can take a few seconds, and
+    until now nothing showed between the press and the result popup. This covers the screen
+    from the press until pushQuote() answers; sentPopup() then says sent / not sent. */
+ function sendingCover(on){
+  var el=document.getElementById('qvSending');
+  if(!on){if(el)el.remove();return}
+  if(el)return;
+  if(!document.getElementById('qvSendingStyle')){
+   var st=document.createElement('style');st.id='qvSendingStyle';
+   st.textContent='#qvSending{position:fixed;inset:0;z-index:13000;display:grid;place-items:center;background:rgba(9,18,38,.45)}'
+    +'#qvSending .qvs-card{display:flex;align-items:center;gap:14px;padding:18px 22px;border-radius:16px;'
+    +'background:var(--fx-surface,var(--card,#fff));color:var(--fx-text,var(--text,#0c225e));box-shadow:0 18px 50px rgba(0,0,0,.28);font-weight:700}'
+    +'#qvSending .qvs-spin{width:26px;height:26px;border-radius:50%;border:3px solid rgba(11,99,229,.2);border-top-color:var(--imode-blue,#0b63e5);animation:qvsSpin .8s linear infinite}'
+    +'#qvSending small{display:block;font-weight:500;opacity:.75;margin-top:2px}'
+    +'@keyframes qvsSpin{to{transform:rotate(360deg)}}'
+    +'@media (prefers-reduced-motion:reduce){#qvSending .qvs-spin{animation-duration:2.4s}}';
+   document.head.appendChild(st);
+  }
+  el=document.createElement('div');el.id='qvSending';
+  el.setAttribute('role','status');el.setAttribute('aria-live','polite');
+  el.innerHTML='<div class="qvs-card"><span class="qvs-spin" aria-hidden="true"></span><span>'
+   +esc2(tl('กำลังส่งใบเสนอราคา…','Sending the quotation…'))
+   +'<small>'+esc2(tl('รอสักครู่ อย่าเพิ่งปิดหน้านี้','Please wait, do not close this page'))+'</small></span></div>';
+  document.body.appendChild(el);
+ }
+
  window.imodeSendQuoteToCustomer=function(id,quiet){
+  if(document.getElementById('qvSending'))return;     /* a second press while the first is in flight */
   var q=quoteList().filter(function(x){return x.id===id})[0];
   if(!q){toast(tl('ไม่พบใบเสนอราคา','Quotation not found'));return}
   if(!isDraft(q)){
@@ -217,7 +244,10 @@
   q.updatedAt=new Date().toISOString();
   try{if(typeof saveLocal==='function')saveLocal()}catch(e){}
   var movedCase=advanceCaseForQuote(q);
+  sendingCover(true);
+  setTimeout(function(){sendingCover(false)},30000);   /* never a cover that stays */
   pushQuote(q).then(function(res){
+   sendingCover(false);
    try{if(typeof renderAll==='function')renderAll()}catch(e){}
    render();
    sentPopup(q,res,function(){

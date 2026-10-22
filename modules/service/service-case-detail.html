@@ -8,6 +8,9 @@
 <!-- platform sign-in (G:\imodeservice): same project and shared session as the launcher -->
 <script src="../../shared/config.js"></script>
 <script src="./js/00-platform.js"></script>
+<!-- 2026-10-21 (ข้อ 3): nothing on this page shows until js/143 has checked the sign-in -->
+<style id="scdGateStyle">html.scd-gate body{visibility:hidden}</style>
+<script>document.documentElement.classList.add('scd-gate')</script>
 <link rel="icon" href="./assets/Iconservice.png">
 <!--
   Service Case Detail — the full-page workspace for one case.
@@ -215,6 +218,8 @@ a{color:var(--imode-blue)}
 .scd-ask-no:focus-visible,.scd-ask-yes:focus-visible{outline:2px solid var(--imode-blue);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.scd-ask{animation:none}.scd-ask-yes:active{transform:none}}
 .sd-ok{margin:10px 0 0;font-size:13px;font-weight:700;color:var(--ok)}
+.ws-sub{margin:14px 0 6px;font-size:13.5px;font-weight:800;color:var(--imode-navy)}
+.ws-sub:first-of-type{margin-top:4px}
 .sd-wait{margin:10px 0 0;font-size:13px;font-weight:700;color:#9a6516}
 .sd-acts{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
 .sd-team{margin-top:12px}
@@ -833,6 +838,8 @@ body.scd-modal-open{overflow:hidden}
      same Supabase client the application uses; the connection details are read from the
      config the app already stored on this device. Nothing else on the page writes. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- 2026-10-21 (ข้อ 3): sign-in gate — no signed-in staff account, no case -->
+<script src="./js/143-v70CaseDetailGateScript.js"></script>
 <!-- 2026-09-15: the 24-hour date + time control. Without it this page falls back to the
      browser's own datetime-local widget, which renders 12-hour (mm/dd/yyyy --:-- --) from the
      browser's UI locale whatever the document says — measured in part 19, there is no
@@ -1982,7 +1989,7 @@ function stepDrawerHTML(m,i){
     return '<div class="sd-head"><h4>'+esc(t)+'</h4>'+(sub?'<p>'+esc(sub)+'</p>':'')
       +'<button type="button" class="sd-close" data-action="close-step">ปิด</button></div>';
   };
-  if(isWorkshopCase(m.raw)&&(i===S('assign')||i===S('service')||i===S('done')))return wsDrawerHTML(m,i,head);
+  if(isWorkshopCase(m.raw)&&(i===S('service')||i===S('done')))return wsDrawerHTML(m,i,head);
   if(i===S('intake')){
     return head(stepNo('intake')+'. รับแจ้งปัญหา','เคสนี้เข้ามาอย่างไร')
       +'<dl class="sd-kv"><dt>รับแจ้ง</dt><dd>'+esc(fmtDateTime(c.createdAt))+'</dd>'
@@ -2932,7 +2939,7 @@ function openQuotation(){goApp('quotation','&caseId='+encodeURIComponent(caseDet
 function openFieldService(){
   if(isWorkshopCase(caseDetailModel.raw)){
     openStep=stepIndex(caseDetailModel.case.status)>=S('done')?S('done')
-      :wsLast(caseDetailModel.raw,'received')?S('service'):S('assign');
+      :stepIndex(caseDetailModel.case.status)>=S('assign')?S('service'):S('assign');
     repaintProgress();
     var pr=document.querySelector('.scd-progress');
     if(pr&&pr.scrollIntoView)pr.scrollIntoView({behavior:'smooth',block:'start'});
@@ -3322,9 +3329,10 @@ var WS_TRACK=['รอตรวจ','กำลังตรวจ','กำลั�
 /* A Workshop case renames three of the circles. Keyed through S() so the merge of
    มอบหมาย+นัดหมาย moved them without a renumbering: the machine arriving IS that step now. */
 var WS_LABELS={};
-WS_LABELS[S('assign')]='รับเครื่องเข้าบริษัท';
-WS_LABELS[S('service')]='ช่างตรวจ / ซ่อมในบริษัท';
-WS_LABELS[S('done')]='QC / ส่งคืนเครื่อง';
+/* 2026-10-21 (ข้อ 10): the circles keep their names for every case. The owner: "ถ้าลูกค้าเลือก
+   service หน้างาน ขั้น 3 จะแสดงของหน้างาน แต่ถ้าลูกค้าเลือกส่งเครื่องมา ขั้นที่ 3 จะเป็น Flow ของส่งมา
+   ที่บริษัท" — so มอบหมาย / นัดหมาย is the same for both, and the Workshop work (receive the
+   machine, the bench track) lives inside ขั้น 3 กำลังให้บริการ. ขั้น 4 keeps QC / ส่งคืน. */
 var wsPending=[];
 function isWorkshopCase(raw){return !!raw&&String(raw.serviceType||'')===WS_TYPE}
 function wsLast(raw,kind){
@@ -3378,9 +3386,9 @@ function wsWrite(entry,status,keepStep,message){
 function wsDrawerHTML(m,i,head){
   var raw=m.raw||{},c=m.case,l=wsLast(raw,'logistics')||{};
   var may=wsMayWork();
-  if(i===S('assign')){
+  if(i===S('service')){
     var rc=wsLast(raw,'received');
-    return head(stepNo('assign')+'. รับเครื่องเข้าบริษัท','งาน Workshop · เครื่องเข้ามาที่บริษัท และใครรับผิดชอบ')
+    var receive='<h5 class="ws-sub">① รับเครื่องเข้าบริษัท</h5>'
       +'<dl class="sd-kv"><dt>นำเครื่องเข้า</dt><dd>'+esc(wsInboundText(l.inbound))+'</dd>'
       +'<dt>รับเครื่องคืน</dt><dd>'+esc(wsOutboundText(l.outbound))+'</dd>'
       +(m.appointment.date?'<dt>นัดรับเครื่อง</dt><dd>'+esc(fmtDateTime(m.appointment.date))+'</dd>':'')
@@ -3389,17 +3397,8 @@ function wsDrawerHTML(m,i,head){
           +'<dt>อุปกรณ์ที่มากับเครื่อง</dt><dd>'+esc(rc.accessories||'-')+'</dd>'
           +(rc.media&&rc.media.length?'<dt>รูปตอนรับ</dt><dd>'+rc.media.length+' ไฟล์ (ดูใน เอกสาร &amp; รูปภาพ)</dd>':''):'')
       +'</dl>'
-      +(rc?'<p class="sd-ok">✔ รับเครื่องเข้าบริษัทแล้ว</p>':'<p class="sd-wait">⏳ ยังไม่ได้บันทึกรับเครื่องเข้า</p>')
-      +'<div class="sd-acts">'
-      +(may?'<button type="button" class="sd-go is-primary" data-action="ws-receive">'+(rc?'แก้ไขบันทึกรับเครื่อง ›':'บันทึกรับเครื่องเข้า ›')+'</button>':'')
-      /* Always offered now: มอบหมาย used to be a circle of its own, and this one replaces it
-         for a Workshop case — without this the assign panel would have no way in at all. */
-      +'<button type="button" class="sd-go" data-action="assign-technician">'
-      +(l.inbound==='pickup'?'ตั้งวันไปรับเครื่อง / มอบหมาย ›'
-        :(m.assignment.technician?'แก้ไขช่าง / นัดหมาย ›':'เลือกช่างและวันนัดหมาย ›'))+'</button>'
-      +'</div>';
-  }
-  if(i===S('service')){
+      +(rc?'<p class="sd-ok">✔ รับเครื่องเข้าบริษัทแล้ว</p>':'<p class="sd-wait">⏳ ยังไม่ได้บันทึกรับเครื่องเข้า — บันทึกก่อนจึงเริ่มตรวจ / ซ่อมได้</p>')
+      +(may?'<div class="sd-acts"><button type="button" class="sd-go'+(rc?'':' is-primary')+'" data-action="ws-receive">'+(rc?'แก้ไขบันทึกรับเครื่อง ›':'บันทึกรับเครื่องเข้า ›')+'</button></div>':'');
     var now=wsTrackNow(raw),at={};
     ((raw.fieldStatusLog)||[]).forEach(function(e){if(e&&e.workshop==='status')at[e.label]=e.createdAt});
     var nowIdx=WS_TRACK.indexOf(now);
@@ -3409,17 +3408,19 @@ function wsDrawerHTML(m,i,head){
         +'<span class="fdot">'+(done?'✔':String(k+1))+'</span><b>'+esc(label)+'</b>'
         +(at[label]?'<small>'+esc(fmtDateTime(at[label]))+'</small>':'')+'</li>';
     }).join('');
-    return head(stepNo('service')+'. ช่างตรวจ / ซ่อมในบริษัท','สถานะงานในบริษัท — เริ่มได้ก่อนลูกค้าเซ็นใบเสนอราคา')
+    var bench='<h5 class="ws-sub">② ช่างตรวจ / ซ่อมในบริษัท</h5>'
       +'<ol class="sd-field">'+dots+'</ol>'
       +(now==='พร้อมส่งคืน'?'<p class="sd-ok">✔ พร้อมส่งคืน — กดวงกลมขั้นที่ '+stepNo('done')+' เพื่อไปทำ QC และส่งคืน</p>'
         :'<p class="sd-wait">⏳ '+(now?'ตอนนี้: '+esc(now):'ยังไม่ได้เริ่มงาน')+' — ไปขั้นที่ '+stepNo('done')+' ได้เมื่อถึง “พร้อมส่งคืน”</p>')
-      +(may?'<div class="sd-acts ws-set">'+WS_TRACK.map(function(label){
+      +(may&&rc?'<div class="sd-acts ws-set">'+WS_TRACK.map(function(label){
           return '<button type="button" class="sd-go'+(label===now?' is-primary':'')+'" data-ws-status="'+esc(label)+'">'+esc(label)+'</button>';
         }).join('')+'</div>':'');
+    return head(stepNo('service')+'. กำลังให้บริการ','งาน Workshop · ลูกค้าส่งเครื่องเข้าบริษัท — เริ่มได้ก่อนลูกค้าเซ็นใบเสนอราคา')
+      +receive+bench;
   }
   if(i===S('done')){
     var qc=wsQcPass(c.id),anyQc=wsQcAny(c.id),rt=wsLast(raw,'returned');
-    return head(stepNo('done')+'. QC / ส่งคืนเครื่อง','ต้องผ่าน QC ก่อนส่งคืนทุกครั้ง')
+    return head(stepNo('done')+'. งานเสร็จ / ตรวจรับ','งาน Workshop · QC และส่งคืนเครื่อง — ต้องผ่าน QC ก่อนส่งคืนทุกครั้ง')
       +'<dl class="sd-kv"><dt>QC ก่อนส่งคืน</dt><dd>'
       +(qc?'✔ '+esc(qc.status)+' · '+esc(qc.qcNo||qc.id)
          :anyQc?'✕ ยังไม่ผ่าน ('+esc(anyQc.status||'-')+')':'ยังไม่ได้ทำ QC')+'</dd>'
@@ -3469,7 +3470,7 @@ function wsReceive(){
     wsWrite({workshop:'received',status:'Workshop · รับเครื่องเข้าบริษัทแล้ว',receivedDate:day,note:note,
       accessories:el('wsRecvAcc').value.trim(),
       media:wsPending.map(function(f){return {name:f.name,type:f.type,size:f.size,data:f.data}})},
-      idx<S('assign')?'นัดหมายแล้ว':'',S('assign'),'บันทึกรับเครื่องเข้าบริษัทแล้ว');
+      idx<S('service')&&hasCrew(caseDetailModel)?'กำลังดำเนินการ':'',S('service'),'บันทึกรับเครื่องเข้าบริษัทแล้ว');
   });
 }
 function wsRedraw(){
@@ -3499,7 +3500,7 @@ function wsAddFiles(list){
 function wsSetStatus(label){
   if(!wsMayWork()){toast('บัญชีนี้ไม่มีสิทธิ์อัปเดตสถานะงาน');return}
   var raw=caseDetailModel.raw||{},c=caseDetailModel.case;
-  if(!wsLast(raw,'received')){toast('ยังไม่ได้บันทึกรับเครื่องเข้าบริษัท — บันทึกที่ขั้นที่ '+stepNo('assign')+' ก่อน');openStep=S('assign');repaintProgress();return}
+  if(!wsLast(raw,'received')){toast('ยังไม่ได้บันทึกรับเครื่องเข้าบริษัท — บันทึกที่ขั้นที่ '+stepNo('service')+' ก่อน');openStep=S('service');repaintProgress();return}
   if(wsTrackNow(raw)===label){toast('สถานะเป็น “'+label+'” อยู่แล้ว');return}
   var idx=stepIndex(c.status),next='';
   /* The case follows the bench: waiting for parts is the case's own hold state, anything else
@@ -4055,7 +4056,6 @@ var GATE_CREW='ยังไม่ได้มอบหมายช่าง — 
 function hasCrew(m){return !!(m&&m.assignment&&(m.assignment.technician||(m.assignment.crew||[]).length))}
 function stepGate(m,idx){
   if(isWorkshopCase(m.raw)){
-    if(idx===S('assign')&&!wsLast(m.raw,'received'))return 'ยังไม่ได้บันทึกรับเครื่องเข้าบริษัท';
     if(idx===S('assign')&&!hasCrew(m))return GATE_CREW;
     if(idx===S('service')&&wsTrackNow(m.raw)!=='พร้อมส่งคืน')return 'รอช่างอัปเดตให้ถึง “พร้อมส่งคืน”';
     if(idx===S('done')&&!wsLast(m.raw,'returned'))return 'ต้องผ่าน QC และบันทึกส่งคืนเครื่องก่อน';
@@ -4080,12 +4080,7 @@ function stepPressed(i,role){
     return;
   }
   /* role === 'next' */
-  /* For a Workshop case that circle IS the receiving form: pressing it opens the form, and
-     saving it moves the case on. Since มอบหมาย and นัดหมาย became one circle it is pressed
-     from รับแจ้งปัญหา rather than from มอบหมายแล้ว; assigning a technician on a Workshop case
-     is done from the drawer or from the นัดหมาย button in the action bar. */
-  if(isWorkshopCase(m.raw)&&idx===S('intake')&&i===S('assign')&&!wsLast(m.raw,'received')){wsReceive();return}
-  if(!isWorkshopCase(m.raw)&&idx===S('intake')&&i===S('assign')&&!hasCrew(m)){
+  if(idx===S('intake')&&i===S('assign')&&!hasCrew(m)){
     toast('เลือกช่างและวันนัดหมายก่อน แล้วเคสจะไปขั้น “'+stepLabel(m,i)+'” เอง');
     assignTechnician();return;
   }
@@ -4659,15 +4654,9 @@ var HANDLERS={
   /* closePanel() also drops .is-open and the body scroll lock — blanking innerHTML alone
      would leave the fixed overlay in place over a page nobody could scroll. */
   'close-panel':closePanel,
-  /* Back to the list. history.back() when the visitor came from the app, so the browser's
-     own Back and this button do the same thing and no entry is left dangling; a direct
-     link (a bookmark, a pasted URL) has nothing to go back to, so it goes to the list. */
-  'go-back':function(){
-    if(document.referrer&&document.referrer.indexOf(location.origin)===0&&history.length>1){
-      history.back();return;
-    }
-    goApp('cases');
-  },
+  /* 2026-10-21 (ข้อ 1): always the case list. history.back() went wherever the visitor had
+     been before — the launcher (หน้าเลือกโมดูล) when the case was opened from a link there. */
+  'go-back':function(){goApp('cases')},
   'open-app':function(){window.location.href=APP},
   'open-notifications':function(){goApp('notifications')},
   'toggle-language':function(){toast('ภาษาเปลี่ยนได้จากระบบหลัก · หน้านี้ยังใช้ภาษาไทย')}
@@ -4989,7 +4978,20 @@ var CaseLive=(function(){
     }catch(e){state.status='error'}
   }
 
-  return {start:start,state:function(){return state}};
+  /* 2026-10-21 ข้อ 6 "แชท Real time แล้ว บาร์สถานะไม่ real time": js/138 calls pull() when a
+     status line lands in this case's chat, so the bar follows the chat even if the row's own
+     event was missed. Another tab of this browser writes the same localStorage, so its change
+     is already "ours" to applyCase(); the storage event repaints for it. */
+  function pull(){
+    var sb=null;
+    try{sb=CaseWrite.client()}catch(e){}
+    pullCurrentCase(sb,caseId());
+  }
+  window.addEventListener('storage',function(e){
+    if(e&&(e.key===K.cases||e.key===K.quotes))repaint();
+  });
+
+  return {start:start,pull:pull,state:function(){return state}};
 })();
 window.CaseLive=CaseLive;
 
@@ -5157,6 +5159,8 @@ load().then(function(res){
 </script>
 <!-- 2026-10-16: Workshop QC result comes from the QC & R&D module database (js/137). -->
 <script src="./js/137-v70QcCloudMirrorScript.js"></script>
+<!-- 2026-10-21: emoji reactions under chat messages (supabase/16-chat-reactions.sql) (js/144) — before js/138, which draws its bars as soon as the messages arrive. -->
+<script src="./js/144-v70ChatReactionsScript.js"></script>
 <!-- 2026-10-16: team chat panel on the right of the case + update reminder (js/138). -->
 <script src="./js/138-v70CaseChatScript.js"></script>
 </body>

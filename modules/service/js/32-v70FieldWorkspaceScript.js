@@ -232,6 +232,12 @@
     +esc2(tl('ถัดไป: ','Next: '))+esc2(nx)+' →</button>';
   else btns+='<span class="fw-final">'+esc2(tl('งานหน้างานถึงขั้นสุดท้ายแล้ว','The field job is at its last step'))+'</span>';
   if(cur!==hold&&nx)btns+='<button type="button" class="soft-btn fw-next" data-status="'+esc2(hold)+'">📦 '+esc2(hold)+'</button>';
+  /* 2026-10-21 ข้อ 7: one step back, for a press made by mistake. It goes through the same
+     saveFieldStatus() as a step forward, so the log keeps both, and js/138 posts it to the
+     case chat as ↩️ ช่างย้อนสถานะหน้างาน. */
+  var at=list.indexOf(cur);
+  if(at>0)btns+='<button type="button" class="soft-btn fw-stepback" data-status="'+esc2(list[at-1])+'">↩ '
+    +esc2(tl('ย้อนกลับ: ','Back: '))+esc2(list[at-1])+'</button>';
   btns+='<button type="button" class="soft-btn" onclick="openFieldStatusModal('+imodeJsArg(c.id)+')">📷 '
     +esc2(tl('บันทึกสถานะพร้อมรูป','Save status with evidence'))+'</button>';
   return '<div class="fw-statusbar">'
@@ -490,6 +496,15 @@
 
   ws.querySelectorAll('.fw-next').forEach(function(btn){
    btn.onclick=function(){advance(c.id,btn.getAttribute('data-status'))};
+  });
+  ws.querySelectorAll('.fw-stepback').forEach(function(btn){
+   btn.onclick=function(){
+    var to=btn.getAttribute('data-status');
+    var ask=typeof window.imodeConfirm==='function'
+     ?window.imodeConfirm({title:tl('ย้อนสถานะหน้างาน?','Step back?'),message:tl('ย้อนกลับไปที่ "','Go back to "')+to+tl('" ระบบจะแจ้งในแชทของเคสนี้ด้วย','"? The case chat will show it.'),okText:tl('ย้อนกลับ','Go back')})
+     :Promise.resolve(window.confirm(tl('ย้อนกลับไปที่ ','Go back to ')+to+' ?'));
+    ask.then(function(ok){if(ok)advance(c.id,to)});
+   };
   });
 
   /* The sheet is rebuilt only when it is not already the sheet for this case. renderAll()

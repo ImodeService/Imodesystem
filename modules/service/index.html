@@ -67,7 +67,7 @@
 <link rel="stylesheet" href="./css/18-cases-toolbar-tabs.css">
 <link rel="stylesheet" href="./css/19-v6.8---machine-display-limit-total-counter.css">
 <!-- 2026-10-12: flat themes. In <head> so the first paint already has the chosen theme (it used to load at the end of <body> and the old look flashed on refresh). Its selectors carry id-level weight, so the styles injected later by js/NN files do not override it. -->
-<link rel="stylesheet" href="./css/24-flat-ui.css?v=20261021">
+<link rel="stylesheet" href="./css/24-flat-ui.css?v=20261021b">
 
 </head>
 <body>
@@ -1127,6 +1127,8 @@
 <script src="./js/135-v70SettingsTabsScript.js"></script>
 <!-- 2026-10-16: QC moved to the QC & R&D module; QC menu, machine QC buttons and Workshop QC open it (js/136). -->
 <script src="./js/136-v70QcModuleLinkScript.js"></script>
+<!-- 2026-10-21: emoji reactions under chat messages, both chats (supabase/16-chat-reactions.sql) (js/144) — before js/138, which draws its bars as soon as the messages arrive. -->
+<script src="./js/144-v70ChatReactionsScript.js"></script>
 <!-- 2026-10-16: case chat — "update this case" reminders in the bell + days setting (js/138). -->
 <script src="./js/138-v70CaseChatScript.js"></script>
 <!-- 2026-10-19: technicians can open Settings and change their own UI theme and font size (js/139). -->
