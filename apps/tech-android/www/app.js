@@ -12,7 +12,7 @@
   'use strict';
 
   var C = window.IMODE_CONFIG || {};
-  var VERSION = '0.3.1';      /* bump for every release; tools/make-version.js copies it into version.json */
+  var VERSION = '0.3.2';      /* bump for every release; tools/make-version.js copies it into version.json */
   var NATIVE = 1;           /* the native (APK) features this bundle needs; see AppChromePlugin.NATIVE */
   var STEPS = ['กำลังเดินทาง', 'ถึงหน้างาน', 'เริ่มตรวจเช็ก', 'กำลัง PM / Maintenance', 'กำลังซ่อม Service', 'ทดสอบเครื่อง', 'รอลูกค้าตรวจรับ', 'จบงาน'];
   var HOLD = 'รออะไหล่';
@@ -29,7 +29,7 @@
   ];
 
   var app = document.getElementById('app');
-  var sb = null, me = null, jobs = [], filter = 'today', busy = false;
+  var sb = null, me = null, jobs = [], allCases = [], filter = 'today', busy = false;
 
   /* ------------------------------------------------------------ helpers ---- */
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -62,6 +62,7 @@
     send: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-2-6z"/></svg>',
     cam: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
     pen: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
+    cal: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>',
     x: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
     out: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>'
   };
@@ -190,7 +191,7 @@
     var ok = await confirmSheet('ออกจากระบบ?', 'ครั้งหน้าต้องกรอกรหัสผ่านใหม่', 'ออกจากระบบ');
     if (!ok) return;
     try { await client().auth.signOut(); } catch (e) {}
-    me = null; jobs = []; chatStop(); unread = 0; hub.loaded = false; hub.dms = []; hub.people = []; hub.byPerson = {}; hub.caseTops = {}; hub.q = '';
+    me = null; jobs = []; allCases = []; chatStop(); unread = 0; hub.loaded = false; hub.dms = []; hub.people = []; hub.byPerson = {}; hub.caseTops = {}; hub.q = '';
     paint(); location.hash = '';
     renderLogin();
   }
@@ -200,7 +201,8 @@
   async function loadJobs() {
     var r = await client().from('service_cases').select(COLS);
     if (r.error) throw new Error(friendly(r.error));
-    jobs = (r.data || []).filter(function (c) {
+    allCases = r.data || [];
+    jobs = allCases.filter(function (c) {
       return crewOf(c).indexOf(me.techId) >= 0 && CLOSED.indexOf(String(c.status || '')) < 0;
     }).sort(function (a, b) {
       var x = apptDate(a), y = apptDate(b);
@@ -292,6 +294,7 @@
   function navHTML(cur) {
     return '<nav class="nav" aria-label="เมนูหลัก">' +
       '<button type="button" data-go="#/jobs"' + (cur === 'jobs' ? ' aria-current="page"' : '') + '>' + I.jobs + 'งาน</button>' +
+      '<button type="button" data-go="#/cal"' + (cur === 'cal' ? ' aria-current="page"' : '') + '>' + I.cal + 'ปฏิทิน</button>' +
       '<button type="button" data-go="#/chats"' + (cur === 'chats' ? ' aria-current="page"' : '') + '><span class="nav-ico">' + I.chat + '<i class="badge" id="nb"' + (unread ? '' : ' hidden') + '>' + (unread > 99 ? '99+' : unread) + '</i></span>แชท</button>' +
       '<button type="button" data-go="#/me"' + (cur === 'me' ? ' aria-current="page"' : '') + '>' + I.user + 'ฉัน</button></nav>';
   }
@@ -710,6 +713,165 @@
     s.onclick = function () { s.remove(); };
   }
 
+  /* ----------------------------------------------------------- calendar ---- */
+  /* ปฏิทิน tab, the web's ปฏิทินงาน (js/03 renderCalendar + js/119) on a phone: เดือน (default, as
+     on the web), สัปดาห์ and วัน; ของฉัน = my jobs, ทั้งทีม = every case with an appointment. A job
+     wears the colour of its technicians (technicians.color, the same values js/99 writes: a
+     preset name or c-rrggbb). Read only: appointments are set by the office on the web. */
+  var cal = { view: lsGet('imode.calView') || 'month', scope: lsGet('imode.calScope') === 'team' ? 'team' : 'mine', at: null, pick: null };
+  var techs = [], techById = {};
+  var TECH_PRESET = { blue: '#0b63e5', orange: '#f2751a', green: '#079455', purple: '#8a5bc0' };
+  var TH_DOW = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+  var TH_MONTH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+  function techHex(v) {
+    v = String(v || '');
+    if (/^c-[0-9a-f]{6}$/i.test(v)) return '#' + v.slice(2).toLowerCase();
+    if (TECH_PRESET[v]) return TECH_PRESET[v];
+    if (/^#[0-9a-f]{6}$/i.test(v)) return v.toLowerCase();
+    return TECH_PRESET.blue;
+  }
+  async function loadTechs() {
+    if (techs.length) return;
+    var r = await client().from('technicians').select('id,name,color,team');
+    if (r.error) return;
+    techs = r.data || []; techById = {};
+    techs.forEach(function (t) { techById[t.id] = t; });
+  }
+  function crewColors(c) {
+    var cs = crewOf(c).map(function (id) { return techById[id]; }).filter(Boolean).map(function (t) { return techHex(t.color); });
+    return cs.length ? cs : ['#8a93ad'];
+  }
+  function crewNames(c) {
+    return crewOf(c).map(function (id) { return techById[id] ? techById[id].name : ''; }).filter(Boolean).join(', ') || 'ยังไม่มอบหมาย';
+  }
+  function calCases() {
+    var list = cal.scope === 'team' ? allCases : allCases.filter(function (c) { return crewOf(c).indexOf(me.techId) >= 0; });
+    return list.filter(function (c) { return apptDate(c); }).sort(function (a, b) { return apptDate(a) - apptDate(b); });
+  }
+  function startOfDay(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function calRange() {
+    var a = cal.at;
+    if (cal.view === 'day') return { from: startOfDay(a), to: addDays(startOfDay(a), 1), label: thDate(a) + ' ' + (a.getFullYear() + 543) };
+    if (cal.view === 'week') {
+      var s = addDays(startOfDay(a), -a.getDay()), e = addDays(s, 7), l = addDays(s, 6);
+      return { from: s, to: e, label: s.getDate() + ' ' + TH_MON[s.getMonth()] + ' – ' + l.getDate() + ' ' + TH_MON[l.getMonth()] + ' ' + (l.getFullYear() + 543) };
+    }
+    var f = new Date(a.getFullYear(), a.getMonth(), 1);
+    return { from: f, to: new Date(a.getFullYear(), a.getMonth() + 1, 1), label: TH_MONTH[f.getMonth()] + ' ' + (f.getFullYear() + 543) };
+  }
+  function calItem(c) {
+    var d = apptDate(c), closed = CLOSED.indexOf(String(c.status || '')) >= 0, cols = crewColors(c);
+    return '<button type="button" class="cal-job' + (closed ? ' closed' : '') + '" data-cj="' + esc(c.id) + '">' +
+      '<span class="cal-bar" aria-hidden="true">' + cols.map(function (h) { return '<i style="background:' + h + '"></i>'; }).join('') + '</span>' +
+      '<span class="grow"><span class="crow-top"><b>' + hhmm(d) + ' น. · ' + esc(c.customer || '-') + '</b>' + (closed ? '<span class="chip">ปิดแล้ว</span>' : chipFor(c)) + '</span>' +
+      '<small>' + esc([c.machine, c.service_type].filter(Boolean).join(' · ') || '-') + '</small>' +
+      '<small>' + esc(crewNames(c)) + '</small></span></button>';
+  }
+  function dayBlock(day, list, title) {
+    return '<section class="cal-day"><h3>' + esc(title || (thDate(day) + (dayKey(day) === dayKey(new Date()) ? ' · วันนี้' : ''))) + '</h3>' +
+      (list.length ? list.map(calItem).join('') : '<p class="cal-none">ไม่มีงานนัดหมาย</p>') + '</section>';
+  }
+  function calBody() {
+    var rg = calRange(), list = calCases().filter(function (c) { var d = apptDate(c); return d >= rg.from && d < rg.to; });
+    var byDay = {};
+    list.forEach(function (c) { var k = dayKey(apptDate(c)); (byDay[k] = byDay[k] || []).push(c); });
+    if (cal.view === 'day') {
+      if (cal.scope !== 'team') return dayBlock(rg.from, list);
+      /* ทั้งทีม: one card per technician, like the web's day view */
+      var out = '';
+      techs.forEach(function (t) {
+        var mine = list.filter(function (c) { return crewOf(c).indexOf(t.id) >= 0; });
+        if (!mine.length) return;
+        out += '<section class="cal-day"><h3><i class="dot" style="background:' + techHex(t.color) + '"></i>' + esc(t.name) + '</h3>' + mine.map(calItem).join('') + '</section>';
+      });
+      var none = list.filter(function (c) { return !crewOf(c).some(function (id) { return techById[id]; }); });
+      if (none.length) out += '<section class="cal-day"><h3>ยังไม่มอบหมาย</h3>' + none.map(calItem).join('') + '</section>';
+      return out || '<div class="empty"><b>ไม่มีงานนัดหมายวันนี้</b></div>';
+    }
+    if (cal.view === 'week') {
+      var w = '';
+      for (var i = 0; i < 7; i++) { var d = addDays(rg.from, i); w += dayBlock(d, byDay[dayKey(d)] || []); }
+      return w;
+    }
+    /* month grid; the picked day's jobs are listed under it */
+    var first = rg.from, start = addDays(first, -first.getDay()), today = dayKey(new Date());
+    if (!cal.pick || cal.pick < rg.from || cal.pick >= rg.to) cal.pick = dayKey(new Date()) === dayKey(cal.at) || (new Date() >= rg.from && new Date() < rg.to) ? startOfDay(new Date()) : first;
+    var g = '<div class="mgrid" role="grid">' + TH_DOW.map(function (n, i) { return '<span class="mdow' + (i === 0 || i === 6 ? ' we' : '') + '">' + n + '</span>'; }).join('');
+    for (var k = 0; k < 42; k++) {
+      var day = addDays(start, k), key = dayKey(day), jobsOn = byDay[key] || [], inMonth = day.getMonth() === first.getMonth();
+      if (k >= 35 && !inMonth) break;
+      g += '<button type="button" class="mday' + (inMonth ? '' : ' out') + (key === today ? ' today' : '') + (key === dayKey(cal.pick) ? ' pick' : '') + '" data-md="' + day.getTime() + '"' +
+        ' aria-label="' + esc(thDate(day) + (jobsOn.length ? ' ' + jobsOn.length + ' งาน' : '')) + '"><span>' + day.getDate() + '</span><span class="mdots">' +
+        jobsOn.slice(0, 3).map(function (c) { return '<i style="background:' + crewColors(c)[0] + '"></i>'; }).join('') +
+        (jobsOn.length > 3 ? '<em>+' + (jobsOn.length - 3) + '</em>' : '') + '</span></button>';
+    }
+    g += '</div>';
+    return g + dayBlock(cal.pick, byDay[dayKey(cal.pick)] || []);
+  }
+  function renderCal(loading) {
+    if (!cal.at) cal.at = new Date();
+    var rg = calRange();
+    app.innerHTML = '<div class="screen"><header class="head"><div class="head-row"><div class="grow"><small>ตารางงานและนัดหมาย</small><h1>ปฏิทิน</h1></div>' +
+      '<button type="button" class="icon-btn" id="kr" aria-label="โหลดใหม่">' + I.refresh + '</button></div>' +
+      '<div class="ctabs three" role="tablist">' + [['month', 'เดือน'], ['week', 'สัปดาห์'], ['day', 'วัน']].map(function (v) {
+        return '<button type="button" role="tab" data-cv="' + v[0] + '" aria-selected="' + (cal.view === v[0]) + '">' + v[1] + '</button>';
+      }).join('') + '</div></header>' +
+      '<div class="cal-nav"><button type="button" class="back" id="kp" aria-label="ก่อนหน้า">' + I.back + '</button>' +
+      '<button type="button" class="cal-label" id="kt">' + esc(rg.label) + '<small>กลับวันนี้</small></button>' +
+      '<button type="button" class="back flip" id="kn" aria-label="ถัดไป">' + I.back + '</button></div>' +
+      '<div class="pills cal-scope" role="group" aria-label="แสดงงาน">' +
+      '<button type="button" data-cs="mine" aria-pressed="' + (cal.scope === 'mine') + '">ของฉัน</button>' +
+      '<button type="button" data-cs="team" aria-pressed="' + (cal.scope === 'team') + '">ทั้งทีม</button></div>' +
+      '<div class="scroll"><div class="cal-body" id="kb">' + (loading ? '<div class="loading"><span class="spin" aria-hidden="true"></span>กำลังโหลดปฏิทิน</div>' : calBody()) + '</div></div>' +
+      navHTML('cal') + '</div>';
+    function step(n) {
+      var a = new Date(cal.at);
+      if (cal.view === 'day') a.setDate(a.getDate() + n); else if (cal.view === 'week') a.setDate(a.getDate() + 7 * n); else { a.setDate(1); a.setMonth(a.getMonth() + n); }
+      cal.at = a; cal.pick = null; renderCal();
+    }
+    document.getElementById('kp').onclick = function () { step(-1); };
+    document.getElementById('kn').onclick = function () { step(1); };
+    document.getElementById('kt').onclick = function () { cal.at = new Date(); cal.pick = null; renderCal(); };
+    document.getElementById('kr').onclick = function () { refreshCal(true); };
+    app.querySelectorAll('[data-cv]').forEach(function (b) { b.onclick = function () { cal.view = b.getAttribute('data-cv'); lsSet('imode.calView', cal.view); if (cal.pick) cal.at = new Date(cal.pick); renderCal(); }; });
+    app.querySelectorAll('[data-cs]').forEach(function (b) { b.onclick = function () { cal.scope = b.getAttribute('data-cs'); lsSet('imode.calScope', cal.scope); renderCal(); }; });
+    var kb = document.getElementById('kb');
+    kb.onclick = function (e) {
+      var d = e.target.closest('[data-md]');
+      if (d) { cal.pick = new Date(Number(d.getAttribute('data-md'))); if (cal.pick.getMonth() !== cal.at.getMonth()) cal.at = new Date(cal.pick); renderCal(); return; }
+      var j = e.target.closest('[data-cj]');
+      if (j) openCalJob(j.getAttribute('data-cj'));
+    };
+    wireNav();
+  }
+  /* my open job: its job page; anything else: a read-only card */
+  function openCalJob(id) {
+    if (jobs.some(function (c) { return c.id === id; })) { location.hash = '#/job/' + encodeURIComponent(id); return; }
+    var c = allCases.filter(function (x) { return x.id === id; })[0]; if (!c) return;
+    var d = apptDate(c);
+    var w = document.createElement('div');
+    w.innerHTML = '<div class="scrim" role="dialog" aria-modal="true" aria-labelledby="cj-t"><div class="sheet"><span class="grab" aria-hidden="true"></span>' +
+      '<h2 id="cj-t">' + esc(c.customer || '-') + '</h2><p>' + esc(c.ticket || '') + ' · ' + esc(c.status || '') + '</p>' +
+      '<div class="kv"><span>นัดหมาย</span><span>' + (d ? esc(thDate(d) + ' ' + hhmm(d) + ' น.') : '-') + '</span>' +
+      '<span>ช่าง</span><span>' + esc(crewNames(c)) + '</span>' +
+      '<span>เครื่อง</span><span>' + esc([c.machine, c.model].filter(Boolean).join(' ') || '-') + '</span>' +
+      '<span>งาน</span><span>' + esc(c.service_type || '-') + '</span>' +
+      '<span>สถานที่</span><span>' + esc(c.location || c.branch || '-') + '</span>' +
+      (c.field_status ? '<span>หน้างาน</span><span>' + esc(c.field_status) + '</span>' : '') + '</div>' +
+      '<p class="note">งานนี้ไม่ได้มอบหมายให้คุณ ดูได้อย่างเดียว</p>' +
+      '<div class="sheet-actions"><button type="button" class="primary">ปิด</button></div></div></div>';
+    var s = w.firstChild; document.body.appendChild(s);
+    s.addEventListener('click', function (e) { if (e.target === s || e.target.closest('.primary')) s.remove(); });
+  }
+  async function refreshCal(say) {
+    try {
+      await Promise.all([loadJobs(), loadTechs()]);
+      if (say) toast('อัปเดตปฏิทินแล้ว');
+    } catch (e) { toast(e.message); }
+    if (location.hash === '#/cal') renderCal();
+  }
+
   /* ---------------------------------------------------------- chat list ---- */
   /* แชท tab, two tabs like the web: เคส/งาน (the chats of my open jobs; unread = messages from
      others since I last opened that chat on this phone, imode.chatSeen.<case>) and ส่วนตัว
@@ -866,7 +1028,7 @@
 
   /* -------------------------------------------------------------- route ---- */
   function route() {
-    document.querySelectorAll('.scrim').forEach(function (s) { s.remove(); });
+    document.querySelectorAll('.scrim:not(.upd-pop)').forEach(function (s) { s.remove(); });
     if (!me) return renderLogin();
     var h = location.hash || '#/jobs', m;
     if ((m = /^#\/chat\/(.+)$/.exec(h))) return renderChat('case', decodeURIComponent(m[1]));
@@ -874,6 +1036,7 @@
     chatStop();
     if ((m = /^#\/job\/(.+)$/.exec(h))) return renderJob(decodeURIComponent(m[1]));
     if (h === '#/me') return renderMe();
+    if (h === '#/cal') { renderCal(!allCases.length || !techs.length); return refreshCal(); }
     if (h === '#/chats') { renderChats(); return refreshChats(); }
     renderJobs(!jobs.length);
     if (!jobs.length) refreshJobs();
@@ -895,7 +1058,7 @@
      downloads and checks the files behind a loading page, and the app starts again on them. A new APK is needed only
      when version.json asks for newer native features than this APK has. */
   var UPDATE_URL = 'https://imodeservice.github.io/Imodesystem/apps/tech-android/www/version.json';
-  var upd = { at: 0, busy: false, offer: null, running: false };
+  var upd = { at: 0, busy: false, offer: null, running: false, later: '' };
   function cmpVer(a, b) {
     var x = String(a).split('.'), y = String(b).split('.');
     for (var i = 0; i < Math.max(x.length, y.length); i++) { var d = (parseInt(x[i], 10) || 0) - (parseInt(y[i], 10) || 0); if (d) return d < 0 ? -1 : 1; }
@@ -906,7 +1069,7 @@
   async function checkUpdate(force) {
     var P = chrome();
     if (!P || !P.downloadBundle || upd.busy || upd.running) return 'busy';
-    if (upd.offer) { if (force) runUpdate(); else showOffer(); return 'new'; }
+    if (upd.offer) { if (force) showOffer(true); else showOffer(); return 'new'; }
     if (!force && Date.now() - upd.at < 10 * 60000) return 'busy';
     upd.busy = true; upd.at = Date.now();
     try {
@@ -917,19 +1080,30 @@
       var info = await P.info();
       if ((m.native || 1) > (info.native || 1)) { if (force) toast('มีเวอร์ชัน ' + m.version + ' ต้องติดตั้งแอพตัวใหม่ (APK) ขอไฟล์จากผู้ดูแลระบบ'); return 'apk'; }
       upd.offer = { version: String(m.version), text: text, m: m };
-      if (force) runUpdate(); else showOffer();
+      showOffer(force);
       return 'new';
     } catch (e) { if (force) toast('ตรวจอัปเดตไม่สำเร็จ ลองใหม่ภายหลัง'); return 'err'; }
     finally { upd.busy = false; }
   }
-  function showOffer() {
-    if (!upd.offer || upd.running || document.querySelector('.upd')) return;
-    var b = document.createElement('div'); b.className = 'upd'; b.setAttribute('role', 'status');
-    b.innerHTML = '<span class="grow"><b>มีอัปเดต ' + esc(upd.offer.version) + '</b><small>ใช้เวลาไม่ถึงนาที แอพจะเริ่มใหม่เอง</small></span>' +
-      '<button type="button" class="later">ไว้ก่อน</button><button type="button" class="now">อัปเดต</button>';
-    document.body.appendChild(b);
-    b.querySelector('.later').onclick = function () { b.remove(); };
-    b.querySelector('.now').onclick = function () { runUpdate(); };
+  /* a pop-up in the middle of the screen as the app opens: อัปเดตเลย, or อัปเดตภายหลัง, which
+     keeps quiet until the app is opened again (ตรวจหาอัปเดต on ฉัน still offers it at once) */
+  function showOffer(force) {
+    if (!upd.offer || upd.running || document.querySelector('.upd-pop')) return;
+    if (!force && upd.later === upd.offer.version) return;
+    var w = document.createElement('div');
+    w.innerHTML = '<div class="scrim upd-pop" role="alertdialog" aria-modal="true" aria-labelledby="up-t" aria-describedby="up-d"><div class="pop">' +
+      '<span class="pop-ico" aria-hidden="true">' + I.refresh + '</span>' +
+      '<h2 id="up-t">มีอัปเดตใหม่</h2><p id="up-d">เวอร์ชัน ' + esc(upd.offer.version) + ' พร้อมให้อัปเดต (ตอนนี้ใช้ ' + esc(VERSION) + ')<br>ใช้เวลาไม่ถึงนาที แอพจะเริ่มใหม่เอง</p>' +
+      '<button type="button" class="pop-btn primary" id="up-now">อัปเดตเลย</button>' +
+      '<button type="button" class="pop-btn" id="up-later">อัปเดตภายหลัง</button></div></div>';
+    var s = w.firstChild; document.body.appendChild(s);
+    var t = document.querySelector('.toast'); if (t) t.remove();
+    document.getElementById('up-now').onclick = function () { s.remove(); runUpdate(); };
+    document.getElementById('up-later').onclick = function () {
+      s.remove(); upd.later = upd.offer.version;
+      toast('อัปเดตได้ทีหลังที่ ฉัน › ตรวจหาอัปเดต');
+    };
+    setTimeout(function () { try { document.getElementById('up-now').focus(); } catch (e) {} }, 50);
   }
   function kb(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
   /* full-screen loading page with a bar. The APK reports progress (bundleProgress events) from
@@ -940,7 +1114,7 @@
     var t = document.getElementById('ctext');
     if (chat && t && t.value.trim()) { toast('ส่งข้อความที่พิมพ์ค้างไว้ก่อน แล้วค่อยอัปเดต'); return; }
     upd.running = true;
-    var old = document.querySelector('.upd'); if (old) old.remove();
+    var old = document.querySelector('.upd-pop'); if (old) old.remove();
     var w = document.createElement('div');
     w.className = 'updating'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'กำลังอัปเดตแอพ');
     w.innerHTML = '<img class="updating-logo" src="img/' + (document.documentElement.getAttribute('data-t') === 'light' || document.documentElement.getAttribute('data-t') === 'glass' ? 'logo.png' : 'logo-white.png') + '" alt="I-MODE">' +
@@ -994,7 +1168,7 @@
     var seen = lsGet('imode.appVersion');
     if (seen && seen !== VERSION && cmpVer(VERSION, seen) > 0) setTimeout(function () { toast('อัปเดตเป็นเวอร์ชัน ' + VERSION + ' แล้ว'); }, 600);
     lsSet('imode.appVersion', VERSION);
-    setTimeout(function () { checkUpdate(false); }, 3000);
+    setTimeout(function () { checkUpdate(false); }, 1200);
   }
 
   async function boot() {
