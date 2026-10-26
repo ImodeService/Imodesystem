@@ -12,7 +12,7 @@
   'use strict';
 
   var C = window.IMODE_CONFIG || {};
-  var VERSION = '0.2.2';      /* bump for every release; tools/make-version.js copies it into version.json */
+  var VERSION = '0.3.1';      /* bump for every release; tools/make-version.js copies it into version.json */
   var NATIVE = 1;           /* the native (APK) features this bundle needs; see AppChromePlugin.NATIVE */
   var STEPS = ['กำลังเดินทาง', 'ถึงหน้างาน', 'เริ่มตรวจเช็ก', 'กำลัง PM / Maintenance', 'กำลังซ่อม Service', 'ทดสอบเครื่อง', 'รอลูกค้าตรวจรับ', 'จบงาน'];
   var HOLD = 'รออะไหล่';
@@ -61,6 +61,7 @@
     chat: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
     send: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-2-6z"/></svg>',
     cam: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+    pen: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
     x: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
     out: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>'
   };
@@ -168,6 +169,7 @@
     if (p.is_active === false) throw new Error('บัญชีนี้ถูกปิดใช้งาน ติดต่อผู้ดูแลระบบ');
     if (!p.technician_id) throw new Error('แอพนี้สำหรับบัญชีช่าง บัญชีนี้ยังไม่ได้ผูกกับรายชื่อช่าง ติดต่อผู้ดูแลระบบ');
     themeFromAccount(authUser);
+    namesFromAccount(authUser);
     return { id: authUser.id, techId: String(p.technician_id), name: p.full_name || p.username || '', username: p.username || String(authUser.email || '').split('@')[0], team: p.team || '', role: p.role || '' };
   }
   async function signIn(username, password, remember) {
@@ -188,7 +190,8 @@
     var ok = await confirmSheet('ออกจากระบบ?', 'ครั้งหน้าต้องกรอกรหัสผ่านใหม่', 'ออกจากระบบ');
     if (!ok) return;
     try { await client().auth.signOut(); } catch (e) {}
-    me = null; jobs = []; paint(); location.hash = '';
+    me = null; jobs = []; chatStop(); unread = 0; hub.loaded = false; hub.dms = []; hub.people = []; hub.byPerson = {}; hub.caseTops = {}; hub.q = '';
+    paint(); location.hash = '';
     renderLogin();
   }
 
@@ -347,7 +350,7 @@
   }
   async function refreshJobs(say) {
     if (location.hash.indexOf('#/jobs') === 0 && !jobs.length) renderJobs(true);
-    try { await loadJobs(); if (say) toast('อัปเดตรายการงานแล้ว'); loadChatTops().catch(function () {}); }
+    try { await loadJobs(); if (say) toast('อัปเดตรายการงานแล้ว'); loadHub().catch(function () {}); }
     catch (e) { toast(e.message); }
     if (location.hash.indexOf('#/jobs') === 0 || !location.hash) renderJobs();
   }
@@ -471,12 +474,26 @@
   }
 
   /* --------------------------------------------------------------- chat ---- */
-  /* The case chat of js/138: public.case_messages, one row per message. The server stamps the
-     author and the time (trigger case_messages_stamp), photos are shrunk JPEG data URLs, max 4.
-     New messages arrive by realtime, with a pull every 15 s as a fallback. */
+  /* The same two kinds of chat as the web's chat button (js/141):
+       เคส    public.case_messages (js/138, supabase/14): the team chat of one case
+       ส่วนตัว public.direct_messages (supabase/15): one-to-one between staff; only the two people
+              can read it, and only the recipient marks it read (read_at)
+     The server stamps the author and the time on both. Photos are shrunk JPEG data URLs, max 4.
+     New messages arrive by realtime, with a pull every 15 s as a fallback.
+     A chat can be given its own name (เปลี่ยนชื่อแชท). The names are the technician's own: kept
+     in localStorage and in the account (user_metadata.imode_chat_names), so every phone signed
+     in to the account shows them; nobody else sees them. */
   var CHAT_COLS = 'id,case_id,body,photos,author_id,author_name,created_at';
+  var DM_COLS = 'id,sender_id,sender_name,recipient_id,body,photos,created_at,read_at';
   var AUTO = /^(🔄|↩️|👷|🔧|🏭|📎|✏️)/;
-  var chat = null;   /* { id, msgs, byId, last, chan, timer, pending } */
+  var COLORS = ['#0b63e5', '#0f8a5f', '#b45309', '#7c3aed', '#be185d', '#0e7490', '#4d7c0f', '#9a3412'];
+  var chat = null;   /* { kind: 'case'|'dm', id, msgs, byId, last, chan, timer, pending } */
+  function missingTable(err) { return /PGRST205|PGRST202|42P01|does not exist|Could not find/i.test(String(err && (err.code + ' ' + err.message))); }
+  /* direct_messages rows use sender_*; give them the case chat's author_* names */
+  function norm(m) {
+    if (!m || m.sender_id === undefined) return m;
+    return { id: m.id, author_id: m.sender_id, author_name: m.sender_name, recipient_id: m.recipient_id, body: m.body, photos: m.photos, created_at: m.created_at, read_at: m.read_at };
+  }
   function chatStop() {
     if (!chat) return;
     try { if (chat.chan) client().removeChannel(chat.chan); } catch (e) {}
@@ -485,7 +502,7 @@
   }
   function chatAdd(list) {
     var n = 0;
-    (list || []).forEach(function (m) { if (m && m.id && !chat.byId[m.id]) { chat.byId[m.id] = m; chat.msgs.push(m); n++; } });
+    (list || []).forEach(function (m) { m = norm(m); if (m && m.id && !chat.byId[m.id]) { chat.byId[m.id] = m; chat.msgs.push(m); n++; } });
     if (n) {
       chat.msgs.sort(function (a, b) { return Date.parse(a.created_at) - Date.parse(b.created_at); });
       chat.last = chat.msgs[chat.msgs.length - 1].created_at;
@@ -498,25 +515,61 @@
     if (dayKey(d) === dayKey(y)) return 'เมื่อวาน';
     return d.getDate() + ' ' + TH_MON[d.getMonth()] + ' ' + (d.getFullYear() + 543);
   }
+  function when(t) { if (!t) return ''; var d = new Date(t); return dayKey(d) === dayKey(new Date()) ? hhmm(d) : dayLabel(d); }
   function linkify(t) { return esc(t).replace(/(@[^\s@]+(?:\s[^\s@]+)?)/g, '<b>$1</b>').replace(/\n/g, '<br>'); }
+  function initials(n) { var p = String(n || '?').trim().split(/\s+/); return ((p[0] || '?').charAt(0) + (p[1] ? p[1].charAt(0) : '')).toUpperCase(); }
+  function colorOf(n) { var h = 0, s = String(n || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return COLORS[Math.abs(h) % COLORS.length]; }
+
+  /* own names for chats: key 'case:<id>' or 'dm:<user id>' */
+  function chatNames() { try { return JSON.parse(lsGet('imode.chatNames') || '{}') || {}; } catch (e) { return {}; } }
+  function chatName(key) { var v = chatNames()[key]; return typeof v === 'string' ? v : ''; }
+  function namesFromAccount(user) {
+    var n = user && user.user_metadata && user.user_metadata.imode_chat_names;
+    if (n && typeof n === 'object') lsSet('imode.chatNames', JSON.stringify(n));
+  }
+  function saveChatName(key, name) {
+    var o = chatNames();
+    name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+    if (name) o[key] = name; else delete o[key];
+    lsSet('imode.chatNames', JSON.stringify(o));
+    client().auth.updateUser({ data: { imode_chat_names: o } }).catch(function () {});
+  }
+  function renameSheet(key, original) {
+    var cur = chatName(key);
+    var w = document.createElement('div');
+    w.innerHTML = '<div class="scrim" role="dialog" aria-modal="true" aria-labelledby="rn-t"><form class="sheet" id="rn-f"><span class="grab" aria-hidden="true"></span>' +
+      '<h2 id="rn-t">เปลี่ยนชื่อแชท</h2><p>ชื่อนี้เห็นเฉพาะคุณ ใช้ได้ทุกเครื่องที่เข้าบัญชีนี้ ชื่อเดิมคือ ' + esc(original) + '</p>' +
+      '<div class="field"><label for="rn-i">ชื่อแชท</label><input id="rn-i" maxlength="60" autocomplete="off" value="' + esc(cur || original) + '"></div>' +
+      '<div class="sheet-actions">' + (cur ? '<button type="button" id="rn-r">ใช้ชื่อเดิม</button>' : '<button type="button" id="rn-c">ยกเลิก</button>') +
+      '<button type="submit" class="primary">บันทึก</button></div></form></div>';
+    var s = w.firstChild; document.body.appendChild(s);
+    var inp = document.getElementById('rn-i');
+    setTimeout(function () { try { inp.focus(); inp.select(); } catch (e) {} }, 120);
+    function done(v) { s.remove(); if (v !== undefined) { saveChatName(key, v === original ? '' : v); route(); } }
+    s.addEventListener('click', function (e) { if (e.target === s) done(); });
+    var c = document.getElementById('rn-c'); if (c) c.onclick = function () { done(); };
+    var r = document.getElementById('rn-r'); if (r) r.onclick = function () { done(''); toast('ใช้ชื่อเดิมแล้ว'); };
+    document.getElementById('rn-f').onsubmit = function (e) { e.preventDefault(); done(inp.value.trim()); };
+  }
+
   function chatFeed() {
-    if (!chat.msgs.length) return '<div class="empty"><b>ยังไม่มีข้อความ</b>เขียนอัปเดตงานหรือส่งรูปหน้างานให้ทีมได้เลย</div>';
+    if (!chat.msgs.length) return '<div class="empty"><b>ยังไม่มีข้อความ</b>' + (chat.kind === 'dm' ? 'พิมพ์ทักได้เลย' : 'เขียนอัปเดตงานหรือส่งรูปหน้างานให้ทีมได้เลย') + '</div>';
     var out = '', lastDay = '';
     chat.msgs.forEach(function (m) {
       var d = new Date(m.created_at), k = dayKey(d);
       if (k !== lastDay) { out += '<div class="day"><span>' + esc(dayLabel(d)) + '</span></div>'; lastDay = k; }
       var body = String(m.body || ''), ph = Array.isArray(m.photos) ? m.photos : [];
-      if (AUTO.test(body) && !ph.length) {
+      if (chat.kind === 'case' && AUTO.test(body) && !ph.length) {
         out += '<div class="sys"><span>' + esc(body) + ' · ' + esc(m.author_name || '') + ' ' + hhmm(d) + '</span></div>';
         return;
       }
       var mine = m.author_id === me.id;
-      out += '<div class="msg' + (mine ? ' mine' : '') + '">' + (mine ? '' : '<small class="who">' + esc(m.author_name || 'พนักงาน') + '</small>') +
+      out += '<div class="msg' + (mine ? ' mine' : '') + '">' + (mine || chat.kind === 'dm' ? '' : '<small class="who">' + esc(m.author_name || 'พนักงาน') + '</small>') +
         '<div class="bubble">' + (body ? '<div>' + linkify(body) + '</div>' : '') +
         (ph.length ? '<div class="pics">' + ph.map(function (src, i) {
           return /^data:image\/(jpeg|png|webp);base64,/.test(String(src)) ? '<button type="button" class="pic" data-pic="' + esc(m.id) + '|' + i + '"><img src="' + esc(src) + '" alt="รูปที่ ' + (i + 1) + '"></button>' : '';
         }).join('') + '</div>' : '') +
-        '</div><small class="at">' + hhmm(d) + '</small></div>';
+        '</div><small class="at">' + hhmm(d) + (mine && chat.kind === 'dm' && m.read_at ? ' · อ่านแล้ว' : '') + '</small></div>';
     });
     return out;
   }
@@ -524,7 +577,7 @@
     var feed = document.getElementById('cf'); if (!feed || !chat) return;
     var near = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 120;
     feed.innerHTML = chatFeed();
-    if (chat.last && chat.last > seenAt(chat.id)) lsSet('imode.chatSeen.' + chat.id, chat.last);
+    if (chat.kind === 'case' && chat.last && chat.last > seenAt(chat.id)) lsSet('imode.chatSeen.' + chat.id, chat.last);
     if (stick || near) feed.scrollTop = feed.scrollHeight;
   }
   function chatPending() {
@@ -548,24 +601,55 @@
   }
   async function chatPull() {
     if (!chat) return;
-    var q = client().from('case_messages').select(CHAT_COLS).eq('case_id', chat.id).order('created_at', { ascending: true }).limit(500);
-    if (chat.last) q = q.gt('created_at', chat.last);
+    var o = chat, q;
+    if (o.kind === 'dm') {
+      q = client().from('direct_messages').select(DM_COLS)
+        .or('and(sender_id.eq.' + me.id + ',recipient_id.eq.' + o.id + '),and(sender_id.eq.' + o.id + ',recipient_id.eq.' + me.id + ')')
+        .order('created_at', { ascending: true }).limit(500);
+    } else {
+      q = client().from('case_messages').select(CHAT_COLS).eq('case_id', o.id).order('created_at', { ascending: true }).limit(500);
+    }
+    if (o.last) q = q.gt('created_at', o.last);
     var r = await q;
-    if (r.error) throw new Error(/PGRST205|42P01|does not exist/i.test(String(r.error.code + ' ' + r.error.message)) ? 'ระบบแชทยังไม่ได้เปิดใช้ ติดต่อผู้ดูแลระบบ' : friendly(r.error));
-    if (chat && chatAdd(r.data)) chatPaint();
+    if (r.error) throw new Error(missingTable(r.error) ? 'ระบบแชทนี้ยังไม่ได้เปิดใช้ ติดต่อผู้ดูแลระบบ' : friendly(r.error));
+    if (chat === o && chatAdd(r.data)) chatPaint();
+    if (chat === o && o.kind === 'dm') markDmRead(o.id);
   }
-  function renderChat(id) {
-    if (!chat || chat.id !== id) { chatStop(); chat = { id: id, msgs: [], byId: {}, last: '', chan: null, timer: null, pending: [] }; }
+  function markDmRead(other) {
+    var now = new Date().toISOString(), any = false;
+    chat.msgs.concat(hub.dms).forEach(function (m) {
+      var from = m.author_id !== undefined ? m.author_id : m.sender_id;
+      if (from === other && m.recipient_id === me.id && !m.read_at) { m.read_at = now; any = true; }
+    });
+    if (!any) return;
+    countUnread();
+    client().from('direct_messages').update({ read_at: now }).eq('recipient_id', me.id).eq('sender_id', other).is('read_at', null).then(function () {}, function () {});
+  }
+  function chatTitle(kind, id) {
+    if (kind === 'dm') {
+      var p = hub.byPerson[id];
+      var base = p ? p.name : 'แชทส่วนตัว';
+      return { key: 'dm:' + id, base: base, title: chatName('dm:' + id) || base, sub: 'แชทส่วนตัว' + (p && p.role ? ' · ' + p.role : '') };
+    }
     var c = jobs.filter(function (x) { return x.id === id; })[0] || {};
+    var cb = c.customer || c.ticket || 'แชทเคส', own = chatName('case:' + id);
+    return { key: 'case:' + id, base: cb, title: own || cb, sub: 'แชทเคส · ' + (c.ticket || '') + (own && c.customer ? ' · ' + c.customer : '') };
+  }
+  function renderChat(kind, id) {
+    if (!chat || chat.id !== id || chat.kind !== kind) { chatStop(); chat = { kind: kind, id: id, msgs: [], byId: {}, last: '', chan: null, timer: null, pending: [] }; }
+    if (kind === 'dm' && !hub.people.length) loadPeople().then(function () { if (chat && chat.id === id) { var t = document.getElementById('ctt'); if (t) t.textContent = chatTitle(kind, id).title; } }, function () {});
+    var t = chatTitle(kind, id);
     app.innerHTML = '<div class="screen chat"><header class="head"><div class="head-row">' +
-      '<button type="button" class="icon-btn" id="cb" aria-label="กลับไปหน้างาน">' + I.back + '</button>' +
-      '<div class="grow"><small>แชทเคส · ' + esc(c.ticket || '') + '</small><b class="t">' + esc(c.customer || '') + '</b></div></div></header>' +
+      '<button type="button" class="icon-btn" id="cb" aria-label="กลับ">' + I.back + '</button>' +
+      '<div class="grow"><small>' + esc(t.sub) + '</small><b class="t" id="ctt">' + esc(t.title) + '</b></div>' +
+      '<button type="button" class="icon-btn" id="crn" aria-label="เปลี่ยนชื่อแชท">' + I.pen + '</button></div></header>' +
       '<div class="scroll feed" id="cf" aria-live="polite"><div class="loading"><span class="spin" aria-hidden="true"></span>กำลังโหลดแชท</div></div>' +
       '<div class="pending" id="cpend" hidden></div>' +
       '<form class="composer" id="cform"><label class="cam" aria-label="แนบรูป">' + I.cam + '<input id="cfile" type="file" accept="image/*" multiple hidden></label>' +
       '<textarea id="ctext" rows="1" placeholder="พิมพ์ข้อความ" aria-label="ข้อความ"></textarea>' +
       '<button type="submit" class="sendb" id="csend" aria-label="ส่ง">' + I.send + '</button></form></div>';
-    document.getElementById('cb').onclick = function () { history.length > 1 ? history.back() : (location.hash = '#/job/' + encodeURIComponent(id)); };
+    document.getElementById('cb').onclick = function () { history.length > 1 ? history.back() : (location.hash = kind === 'dm' ? '#/chats' : '#/job/' + encodeURIComponent(id)); };
+    document.getElementById('crn').onclick = function () { var x = chatTitle(kind, id); renameSheet(x.key, x.base); };
     var ta = document.getElementById('ctext');
     ta.addEventListener('input', function () { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 120) + 'px'; });
     document.getElementById('cfile').onchange = async function () {
@@ -591,11 +675,13 @@
       var text = ta.value.trim();
       if (send.disabled || (!text && !chat.pending.length)) return;
       send.disabled = true;
-      var r = await client().from('case_messages').insert({ case_id: id, body: text.slice(0, 4000), photos: chat.pending.slice() }).select(CHAT_COLS).maybeSingle();
+      var row = { body: text.slice(0, 4000), photos: chat.pending.slice() };
+      if (kind === 'dm') row.recipient_id = id; else row.case_id = id;
+      var r = await client().from(kind === 'dm' ? 'direct_messages' : 'case_messages').insert(row).select(kind === 'dm' ? DM_COLS : CHAT_COLS).maybeSingle();
       send.disabled = false;
-      if (r.error) { toast('ส่งไม่สำเร็จ: ' + friendly(r.error)); return; }
+      if (r.error) { toast('ส่งไม่สำเร็จ: ' + (missingTable(r.error) ? 'ระบบแชทนี้ยังไม่ได้เปิดใช้' : friendly(r.error))); return; }
       ta.value = ''; ta.style.height = 'auto'; chat.pending = []; chatPending();
-      if (r.data && chatAdd([r.data])) chatPaint(true);
+      if (r.data) { if (kind === 'dm') hub.dms.unshift(r.data); if (chatAdd([r.data])) chatPaint(true); }
     };
     chatPending();
     chatPull().then(function () { chatPaint(true); }, function (e) {
@@ -603,9 +689,14 @@
     });
     if (!chat.chan && typeof client().channel === 'function') {
       try {
+        var o = chat;
         chat.chan = client().channel('app-chat-' + uid())
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'case_messages', filter: 'case_id=eq.' + id }, function (p) {
-            if (chat && p && p.new && chatAdd([p.new])) chatPaint();
+          .on('postgres_changes', kind === 'dm'
+            ? { event: 'INSERT', schema: 'public', table: 'direct_messages', filter: 'recipient_id=eq.' + me.id }
+            : { event: 'INSERT', schema: 'public', table: 'case_messages', filter: 'case_id=eq.' + id }, function (p) {
+            if (chat !== o || !p || !p.new) return;
+            if (kind === 'dm' && p.new.sender_id !== id) return;
+            if (chatAdd([p.new])) { chatPaint(); if (kind === 'dm') markDmRead(id); }
           }).subscribe();
       } catch (e) {}
     }
@@ -620,56 +711,133 @@
   }
 
   /* ---------------------------------------------------------- chat list ---- */
-  /* แชท tab: the chats of my open jobs, newest first, with the last line and how many messages
-     came from others since I last opened that chat (kept on this phone: imode.chatSeen.<case>). */
-  var unread = 0, chatTops = {};
+  /* แชท tab, two tabs like the web: เคส/งาน (the chats of my open jobs; unread = messages from
+     others since I last opened that chat on this phone, imode.chatSeen.<case>) and ส่วนตัว
+     (people I talked with first, then everyone; unread = not yet read_at). */
+  var unread = 0;
+  var hub = { tab: lsGet('imode.chatTab') === 'dm' ? 'dm' : 'case', q: '', people: [], byPerson: {}, dms: [], dmState: '', caseTops: {}, caseState: '', loaded: false };
   function seenAt(id) { return lsGet('imode.chatSeen.' + id) || ''; }
   function unreadIn(id, list) {
     var seen = seenAt(id), from = seen || new Date(Date.now() - 2 * 86400000).toISOString();
     return list.filter(function (m) { return m.author_id !== me.id && m.created_at > from; }).length;
   }
-  async function loadChatTops() {
+  function caseUnread() { return jobs.reduce(function (n, c) { return n + unreadIn(c.id, hub.caseTops[c.id] || []); }, 0); }
+  function dmUnread() { return hub.dms.filter(function (m) { return m.recipient_id === me.id && !m.read_at; }).length; }
+  function countUnread() { unread = caseUnread() + dmUnread(); paintBadge(); }
+  async function loadPeople() {
+    var r = await client().from('profiles').select('id,username,full_name,role,is_active').limit(500);
+    if (r.error) return;
+    hub.people = (r.data || []).filter(function (p) { return p && p.id !== me.id && p.is_active !== false && !/^customer$/i.test(String(p.role || '')); })
+      .map(function (p) { return { id: p.id, name: String(p.full_name || '').trim() || String(p.username || '').trim(), role: String(p.role || '') }; })
+      .filter(function (p) { return p.name; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name, 'th'); });
+    hub.byPerson = {}; hub.people.forEach(function (p) { hub.byPerson[p.id] = p; });
+  }
+  async function loadDms() {
+    var r = await client().from('direct_messages').select('id,sender_id,sender_name,recipient_id,body,created_at,read_at')
+      .or('sender_id.eq.' + me.id + ',recipient_id.eq.' + me.id).order('created_at', { ascending: false }).limit(1000);
+    if (r.error) { hub.dmState = missingTable(r.error) ? 'nosql' : 'error'; return; }
+    hub.dms = r.data || []; hub.dmState = 'ok';
+  }
+  async function loadCaseTops() {
     var ids = jobs.map(function (c) { return c.id; });
-    chatTops = {};
-    if (!ids.length) { unread = 0; return; }
+    if (!ids.length) { hub.caseTops = {}; hub.caseState = 'ok'; return; }
     var r = await client().from('case_messages').select('id,case_id,body,author_id,author_name,created_at')
       .in('case_id', ids).order('created_at', { ascending: false }).limit(500);
-    if (r.error) throw new Error(/PGRST205|42P01|does not exist/i.test(String(r.error.code + ' ' + r.error.message)) ? 'ระบบแชทยังไม่ได้เปิดใช้ ติดต่อผู้ดูแลระบบ' : friendly(r.error));
-    (r.data || []).forEach(function (m) { (chatTops[m.case_id] = chatTops[m.case_id] || []).push(m); });
-    unread = ids.reduce(function (n, id) { return n + unreadIn(id, chatTops[id] || []); }, 0);
-    paintBadge();
+    if (r.error) { hub.caseState = missingTable(r.error) ? 'nosql' : 'error'; return; }
+    var tops = {};
+    (r.data || []).forEach(function (m) { (tops[m.case_id] = tops[m.case_id] || []).push(m); });
+    hub.caseTops = tops; hub.caseState = 'ok';
+  }
+  async function loadHub() {
+    await Promise.all([loadPeople().catch(function () {}), loadDms().catch(function () { hub.dmState = 'error'; }), loadCaseTops().catch(function () { hub.caseState = 'error'; })]);
+    hub.loaded = true;
+    countUnread();
   }
   function paintBadge() {
-    var b = document.getElementById('nb'); if (!b) return;
-    b.hidden = !unread; b.textContent = unread > 99 ? '99+' : String(unread);
+    var b = document.getElementById('nb'); if (b) { b.hidden = !unread; b.textContent = unread > 99 ? '99+' : String(unread); }
+    var n = dmUnread(), k = caseUnread();
+    var x = document.getElementById('tbdm'); if (x) { x.hidden = !n; x.textContent = String(n); }
+    var y = document.getElementById('tbcase'); if (y) { y.hidden = !k; y.textContent = String(k); }
   }
-  function renderChats(loading) {
-    var rows = jobs.map(function (c) { var l = chatTops[c.id] || []; return { c: c, last: l[0] || null, n: unreadIn(c.id, l) }; })
+  function match(q, s) { q = String(q || '').trim().toLowerCase(); return !q || String(s || '').toLowerCase().indexOf(q) >= 0; }
+  function caseListHTML() {
+    if (!hub.loaded) return '<div class="loading"><span class="spin" aria-hidden="true"></span>กำลังโหลดแชท</div>';
+    if (hub.caseState === 'nosql') return '<div class="empty"><b>แชทเคสยังไม่เปิดใช้</b>ติดต่อผู้ดูแลระบบ</div>';
+    var rows = jobs.map(function (c) { var l = hub.caseTops[c.id] || []; return { c: c, last: l[0] || null, n: unreadIn(c.id, l), name: chatName('case:' + c.id) }; })
+      .filter(function (x) { return match(hub.q, [x.name, x.c.ticket, x.c.customer, x.c.machine].join(' ')); })
       .sort(function (a, b) { return String(b.last ? b.last.created_at : '').localeCompare(String(a.last ? a.last.created_at : '')); });
-    app.innerHTML = '<div class="screen"><header class="head"><div class="head-row"><div class="grow"><small>แชทเคสของงานที่ได้รับมอบหมาย</small><h1>แชท</h1></div>' +
-      '<button type="button" class="icon-btn" id="hr" aria-label="โหลดแชทใหม่">' + I.refresh + '</button></div></header>' +
-      '<div class="scroll"><div class="list">' +
-      (loading ? '<div class="loading"><span class="spin" aria-hidden="true"></span>กำลังโหลดแชท</div>'
-        : rows.length ? rows.map(function (x) {
-          var m = x.last, d = m ? new Date(m.created_at) : null;
-          var line = m ? (m.author_id === me.id ? 'คุณ: ' : (m.author_name ? m.author_name + ': ' : '')) + (String(m.body || '').trim() || '📷 รูปภาพ') : 'ยังไม่มีข้อความ';
-          return '<button type="button" class="job thread" data-chat="' + esc(x.c.id) + '">' +
-            '<div class="job-top"><span class="chip">' + esc(x.c.ticket || '') + '</span><small class="at">' + (d ? (dayKey(d) === dayKey(new Date()) ? hhmm(d) : esc(dayLabel(d))) : '') + '</small></div>' +
-            '<b>' + esc(x.c.customer || '') + '</b>' +
-            '<div class="thread-row"><span class="sub">' + esc(line) + '</span>' + (x.n ? '<i class="badge">' + (x.n > 99 ? '99+' : x.n) + '</i>' : '') + '</div></button>';
-        }).join('') : '<div class="empty"><b>ยังไม่มีงานที่ได้รับมอบหมาย</b>แชทของแต่ละเคสจะขึ้นที่นี่</div>') +
-      '</div></div>' + navHTML('chats') + '</div>';
+    if (!rows.length) return '<div class="empty"><b>' + (hub.q ? 'ไม่พบเคสนี้' : 'ยังไม่มีงานที่ได้รับมอบหมาย') + '</b>' + (hub.q ? '' : 'แชทของแต่ละเคสจะขึ้นที่นี่') + '</div>';
+    return rows.map(function (x) {
+      var m = x.last;
+      var line = m ? (m.author_id === me.id ? 'คุณ: ' : (m.author_name ? m.author_name + ': ' : '')) + (String(m.body || '').trim() || '📷 รูปภาพ') : 'ยังไม่มีข้อความ';
+      return '<button type="button" class="crow" data-chat="' + esc(x.c.id) + '"><span class="av case" aria-hidden="true">' + I.jobs + '</span>' +
+        '<span class="grow"><span class="crow-top"><b>' + esc(x.name || x.c.customer || x.c.ticket || '') + '</b><small>' + esc(when(m && m.created_at)) + '</small></span>' +
+        '<small class="crow-sub">' + esc(x.c.ticket || '') + (x.name && x.c.customer ? ' · ' + esc(x.c.customer) : '') + '</small>' +
+        '<span class="crow-top"><span class="sub">' + esc(line) + '</span>' + (x.n ? '<i class="badge">' + (x.n > 99 ? '99+' : x.n) + '</i>' : '') + '</span></span></button>';
+    }).join('');
+  }
+  function dmListHTML() {
+    if (!hub.loaded) return '<div class="loading"><span class="spin" aria-hidden="true"></span>กำลังโหลดแชท</div>';
+    if (hub.dmState === 'nosql') return '<div class="empty"><b>แชทส่วนตัวยังไม่เปิดใช้</b>ติดต่อผู้ดูแลระบบ</div>';
+    if (hub.dmState === 'error') return '<div class="empty"><b>โหลดแชทส่วนตัวไม่ได้</b>กดปุ่มโหลดใหม่ด้านบน</div>';
+    var conv = {};
+    hub.dms.forEach(function (m) {
+      var other = m.sender_id === me.id ? m.recipient_id : m.sender_id;
+      var x = conv[other] || (conv[other] = { last: null, n: 0 });
+      if (!x.last || m.created_at > x.last.created_at) x.last = m;
+      if (m.recipient_id === me.id && !m.read_at) x.n++;
+    });
+    var talked = [], rest = [];
+    hub.people.forEach(function (p) {
+      var own = chatName('dm:' + p.id);
+      if (!match(hub.q, own + ' ' + p.name + ' ' + p.role)) return;
+      (conv[p.id] ? talked : rest).push(p);
+    });
+    talked.sort(function (a, b) { return conv[a.id].last.created_at < conv[b.id].last.created_at ? 1 : -1; });
+    function row(p) {
+      var x = conv[p.id], m = x && x.last, own = chatName('dm:' + p.id);
+      var line = m ? (m.sender_id === me.id ? 'คุณ: ' : '') + (String(m.body || '').trim() || '📷 รูปภาพ') : (p.role || '');
+      return '<button type="button" class="crow" data-dm="' + esc(p.id) + '"><span class="av" style="background:' + colorOf(p.name) + '" aria-hidden="true">' + esc(initials(own || p.name)) + '</span>' +
+        '<span class="grow"><span class="crow-top"><b>' + esc(own || p.name) + '</b><small>' + esc(when(m && m.created_at)) + '</small></span>' +
+        (own ? '<small class="crow-sub">' + esc(p.name) + '</small>' : '') +
+        '<span class="crow-top"><span class="sub">' + esc(line) + '</span>' + (x && x.n ? '<i class="badge">' + (x.n > 99 ? '99+' : x.n) + '</i>' : '') + '</span></span></button>';
+    }
+    var html = '';
+    if (talked.length) html += '<div class="sec">ล่าสุด</div>' + talked.map(row).join('');
+    if (rest.length) html += '<div class="sec">ทุกคน</div>' + rest.map(row).join('');
+    return html || '<div class="empty"><b>' + (hub.q ? 'ไม่พบชื่อนี้' : 'ยังไม่มีรายชื่อพนักงาน') + '</b></div>';
+  }
+  function paintChatList() {
+    var l = document.getElementById('clist'); if (!l) return;
+    l.innerHTML = hub.tab === 'dm' ? dmListHTML() : caseListHTML();
+    l.querySelectorAll('[data-chat]').forEach(function (b) { b.onclick = function () { location.hash = '#/chat/' + encodeURIComponent(b.getAttribute('data-chat')); }; });
+    l.querySelectorAll('[data-dm]').forEach(function (b) { b.onclick = function () { location.hash = '#/dm/' + encodeURIComponent(b.getAttribute('data-dm')); }; });
+    paintBadge();
+  }
+  function renderChats() {
+    app.innerHTML = '<div class="screen"><header class="head"><div class="head-row"><div class="grow"><small>คุยส่วนตัว และคุยในเคส/งาน</small><h1>แชท</h1></div>' +
+      '<button type="button" class="icon-btn" id="hr" aria-label="โหลดแชทใหม่">' + I.refresh + '</button></div>' +
+      '<div class="ctabs" role="tablist">' +
+      '<button type="button" role="tab" data-tab="case" aria-selected="' + (hub.tab === 'case') + '">เคส / งาน<i class="badge" id="tbcase" hidden></i></button>' +
+      '<button type="button" role="tab" data-tab="dm" aria-selected="' + (hub.tab === 'dm') + '">ส่วนตัว<i class="badge" id="tbdm" hidden></i></button></div></header>' +
+      '<div class="csearch"><input id="cq" type="search" placeholder="' + (hub.tab === 'dm' ? 'ค้นหาชื่อคน' : 'ค้นหาเลขเคส / ลูกค้า') + '" aria-label="ค้นหา" value="' + esc(hub.q) + '"></div>' +
+      '<div class="scroll"><div class="clist" id="clist"></div></div>' + navHTML('chats') + '</div>';
     document.getElementById('hr').onclick = function () { refreshChats(true); };
-    app.querySelectorAll('[data-chat]').forEach(function (b) { b.onclick = function () { location.hash = '#/chat/' + encodeURIComponent(b.getAttribute('data-chat')); }; });
+    app.querySelectorAll('[data-tab]').forEach(function (b) {
+      b.onclick = function () { hub.tab = b.getAttribute('data-tab'); hub.q = ''; lsSet('imode.chatTab', hub.tab); renderChats(); };
+    });
+    document.getElementById('cq').addEventListener('input', function () { hub.q = this.value; paintChatList(); });
+    paintChatList();
     wireNav();
   }
   async function refreshChats(say) {
     try {
       if (!jobs.length) await loadJobs();
-      await loadChatTops();
+      await loadHub();
       if (say) toast('อัปเดตแชทแล้ว');
     } catch (e) { toast(e.message); }
-    if (location.hash === '#/chats') renderChats();
+    if (location.hash === '#/chats') paintChatList();
   }
 
   /* ----------------------------------------------------------------- me ---- */
@@ -685,7 +853,6 @@
     document.getElementById('mo').onclick = signOut;
     var mu = document.getElementById('mu');
     if (mu) mu.onclick = async function () {
-      if (upd.ready) return showUpdate();
       mu.disabled = true; toast('กำลังตรวจหาอัปเดต');
       upd.at = 0; var st = await checkUpdate(true);
       mu.disabled = false;
@@ -702,11 +869,12 @@
     document.querySelectorAll('.scrim').forEach(function (s) { s.remove(); });
     if (!me) return renderLogin();
     var h = location.hash || '#/jobs', m;
-    if ((m = /^#\/chat\/(.+)$/.exec(h))) return renderChat(decodeURIComponent(m[1]));
+    if ((m = /^#\/chat\/(.+)$/.exec(h))) return renderChat('case', decodeURIComponent(m[1]));
+    if ((m = /^#\/dm\/(.+)$/.exec(h))) return renderChat('dm', decodeURIComponent(m[1]));
     chatStop();
     if ((m = /^#\/job\/(.+)$/.exec(h))) return renderJob(decodeURIComponent(m[1]));
     if (h === '#/me') return renderMe();
-    if (h === '#/chats') { renderChats(!Object.keys(chatTops).length); return refreshChats(); }
+    if (h === '#/chats') { renderChats(); return refreshChats(); }
     renderJobs(!jobs.length);
     if (!jobs.length) refreshJobs();
   }
@@ -716,28 +884,30 @@
     if (document.visibilityState === 'visible') checkUpdate(false);
     if (document.visibilityState === 'visible' && me && !busy) {
       if (chat) { chatPull().catch(function () {}); return; }   /* keep what is being typed */
-      loadJobs().then(function () { if (!document.querySelector('.scrim')) route(); if (location.hash !== '#/chats') loadChatTops().catch(function () {}); }, function () {});
+      loadJobs().then(function () { if (!document.querySelector('.scrim')) route(); if (location.hash !== '#/chats') loadHub().catch(function () {}); }, function () {});
     }
   });
 
   /* ------------------------------------------------------- live update ---- */
   /* The screens are files inside the app. A newer set is published with the web system at
      UPDATE_URL (version.json lists every file with its SHA-256). The app checks it on start and
-     when it comes back to the screen; the native side downloads and checks the files, and they are
-     used from the next start, or at once if the technician taps เริ่มใหม่. A new APK is needed only
+     when it comes back to the screen and offers it; when the technician taps อัปเดต, the native side
+     downloads and checks the files behind a loading page, and the app starts again on them. A new APK is needed only
      when version.json asks for newer native features than this APK has. */
   var UPDATE_URL = 'https://imodeservice.github.io/Imodesystem/apps/tech-android/www/version.json';
-  var upd = { at: 0, busy: false, ready: null };
+  var upd = { at: 0, busy: false, offer: null, running: false };
   function cmpVer(a, b) {
     var x = String(a).split('.'), y = String(b).split('.');
     for (var i = 0; i < Math.max(x.length, y.length); i++) { var d = (parseInt(x[i], 10) || 0) - (parseInt(y[i], 10) || 0); if (d) return d < 0 ? -1 : 1; }
     return 0;
   }
   function chrome() { return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AppChrome; }
+  /* looks only; nothing is downloaded until the technician taps อัปเดต */
   async function checkUpdate(force) {
     var P = chrome();
-    if (!P || !P.downloadBundle || upd.busy || upd.ready) return 'busy';
-    if (!force && Date.now() - upd.at < 20 * 60000) return 'busy';
+    if (!P || !P.downloadBundle || upd.busy || upd.running) return 'busy';
+    if (upd.offer) { if (force) runUpdate(); else showOffer(); return 'new'; }
+    if (!force && Date.now() - upd.at < 10 * 60000) return 'busy';
     upd.busy = true; upd.at = Date.now();
     try {
       var r = await fetch(UPDATE_URL + '?t=' + Date.now(), { cache: 'no-store' });
@@ -746,26 +916,76 @@
       if (!m || !m.version || !m.files || cmpVer(m.version, VERSION) <= 0) return 'none';
       var info = await P.info();
       if ((m.native || 1) > (info.native || 1)) { if (force) toast('มีเวอร์ชัน ' + m.version + ' ต้องติดตั้งแอพตัวใหม่ (APK) ขอไฟล์จากผู้ดูแลระบบ'); return 'apk'; }
-      var res = await P.downloadBundle({ version: String(m.version), manifest: text });
-      await P.applyBundle({ path: res.path, now: false });      /* used from the next start anyway */
-      upd.ready = { version: String(m.version), path: res.path };
-      showUpdate();
+      upd.offer = { version: String(m.version), text: text, m: m };
+      if (force) runUpdate(); else showOffer();
       return 'new';
     } catch (e) { if (force) toast('ตรวจอัปเดตไม่สำเร็จ ลองใหม่ภายหลัง'); return 'err'; }
     finally { upd.busy = false; }
   }
-  function showUpdate() {
-    if (!upd.ready || document.querySelector('.upd')) return;
+  function showOffer() {
+    if (!upd.offer || upd.running || document.querySelector('.upd')) return;
     var b = document.createElement('div'); b.className = 'upd'; b.setAttribute('role', 'status');
-    b.innerHTML = '<span class="grow"><b>อัปเดต ' + esc(upd.ready.version) + ' พร้อมแล้ว</b><small>เริ่มใหม่ตอนนี้ หรือเปิดแอพครั้งหน้าก็ได้</small></span>' +
-      '<button type="button" class="later">ไว้ก่อน</button><button type="button" class="now">เริ่มใหม่</button>';
+    b.innerHTML = '<span class="grow"><b>มีอัปเดต ' + esc(upd.offer.version) + '</b><small>ใช้เวลาไม่ถึงนาที แอพจะเริ่มใหม่เอง</small></span>' +
+      '<button type="button" class="later">ไว้ก่อน</button><button type="button" class="now">อัปเดต</button>';
     document.body.appendChild(b);
     b.querySelector('.later').onclick = function () { b.remove(); };
-    b.querySelector('.now').onclick = function () {
-      if (chat && document.getElementById('ctext') && document.getElementById('ctext').value.trim()) { toast('ส่งข้อความที่พิมพ์ค้างไว้ก่อน แล้วค่อยเริ่มใหม่'); return; }
-      b.querySelector('.now').disabled = true;
-      chrome().applyBundle({ path: upd.ready.path, now: true }).catch(function () { toast('เริ่มใหม่ไม่สำเร็จ ปิดแล้วเปิดแอพใหม่แทนได้'); });
-    };
+    b.querySelector('.now').onclick = function () { runUpdate(); };
+  }
+  function kb(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  /* full-screen loading page with a bar. The APK reports progress (bundleProgress events) from
+     version 0.3; an older APK sends none, and the bar then just runs without a number. */
+  async function runUpdate() {
+    var P = chrome(), o = upd.offer;
+    if (!P || !o || upd.running) return;
+    var t = document.getElementById('ctext');
+    if (chat && t && t.value.trim()) { toast('ส่งข้อความที่พิมพ์ค้างไว้ก่อน แล้วค่อยอัปเดต'); return; }
+    upd.running = true;
+    var old = document.querySelector('.upd'); if (old) old.remove();
+    var w = document.createElement('div');
+    w.className = 'updating'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'กำลังอัปเดตแอพ');
+    w.innerHTML = '<img class="updating-logo" src="img/' + (document.documentElement.getAttribute('data-t') === 'light' || document.documentElement.getAttribute('data-t') === 'glass' ? 'logo.png' : 'logo-white.png') + '" alt="I-MODE">' +
+      '<h2 id="ut">กำลังอัปเดตเป็นเวอร์ชัน ' + esc(o.version) + '</h2>' +
+      '<div class="ubar run" id="ub" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="ความคืบหน้า"><i id="uf"></i></div>' +
+      '<div class="urow"><b id="up"></b><small id="us">กำลังเตรียมไฟล์</small></div>' +
+      '<p class="unote" id="un">อย่าเพิ่งปิดแอพ</p><div class="uact" id="ua" hidden></div>';
+    document.body.appendChild(w);
+    var bar = document.getElementById('ub'), fill = document.getElementById('uf');
+    function set(pct, sub) {
+      pct = Math.max(0, Math.min(100, Math.round(pct)));
+      bar.classList.remove('run'); fill.style.width = pct + '%'; bar.setAttribute('aria-valuenow', String(pct));
+      document.getElementById('up').textContent = pct + '%';
+      if (sub) document.getElementById('us').textContent = sub;
+    }
+    var h = null;
+    try {
+      h = await P.addListener('bundleProgress', function (e) {
+        if (!e || !e.total) return;
+        set(e.done / e.total * 100, e.unit === 'bytes' ? kb(e.done) + ' จาก ' + kb(e.total) : 'ไฟล์ ' + e.done + ' จาก ' + e.total);
+      });
+    } catch (e) {}
+    try {
+      var res = await P.downloadBundle({ version: o.version, manifest: o.text });
+      set(100, 'ตรวจไฟล์ครบแล้ว');
+      document.getElementById('ut').textContent = 'อัปเดตเสร็จแล้ว';
+      document.getElementById('un').textContent = 'กำลังเริ่มแอพใหม่';
+      await P.applyBundle({ path: res.path, now: false });
+      setTimeout(function () {
+        P.applyBundle({ path: res.path, now: true }).catch(function () { document.getElementById('un').textContent = 'ปิดแล้วเปิดแอพใหม่ เพื่อใช้เวอร์ชันใหม่'; });
+      }, 700);
+    } catch (e) {
+      upd.running = false;
+      bar.classList.remove('run'); bar.classList.add('bad');
+      document.getElementById('ut').textContent = 'อัปเดตไม่สำเร็จ';
+      document.getElementById('us').textContent = 'เช็กอินเทอร์เน็ตแล้วลองใหม่';
+      document.getElementById('up').textContent = '';
+      document.getElementById('un').textContent = 'แอพยังใช้เวอร์ชันเดิมได้ตามปกติ';
+      var act = document.getElementById('ua'); act.hidden = false;
+      act.innerHTML = '<button type="button" class="ghost">ปิด</button><button type="button" class="primary">ลองอีกครั้ง</button>';
+      act.querySelector('.ghost').onclick = function () { w.remove(); };
+      act.querySelector('.primary').onclick = function () { w.remove(); runUpdate(); };
+    } finally {
+      try { if (h && h.remove) h.remove(); } catch (e) {}
+    }
   }
   /* the native side keeps the last good set; a new set that never reaches this point is dropped
      after two tries and the app goes back to the previous one */

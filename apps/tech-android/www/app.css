@@ -100,9 +100,25 @@ html[data-t="dark"] .login-motif,html[data-t="gold"] .login-motif{opacity:.1}
 .nav-ico{position:relative;display:flex}
 .badge{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--orange);color:#fff;font-size:11px;font-weight:700;font-style:normal;display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .nav-ico .badge{position:absolute;top:-6px;left:14px;border:2px solid var(--nav)}
-.thread{gap:6px}
-.thread-row{display:flex;align-items:center;gap:10px}
-.thread-row .sub{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:rgba(255,255,255,.12);border-radius:14px;padding:4px}
+.ctabs button{height:42px;border:0;border-radius:11px;background:transparent;color:var(--head-sub);font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.ctabs button[aria-selected="true"]{background:var(--card);color:var(--ink);font-weight:700}
+.csearch{padding:12px var(--pad) 4px;flex:none}
+.csearch input{width:100%;height:46px;padding:0 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);font-size:16px;outline:none}
+.csearch input:focus{border-color:var(--orange)}
+.clist{padding:6px var(--pad) calc(var(--safe-b) + 24px);display:flex;flex-direction:column;gap:8px}
+.sec{font-size:12px;font-weight:700;color:var(--ink2);padding:8px 4px 0}
+.crow{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;cursor:pointer;min-height:68px}
+.crow:active{background:var(--field)}
+.crow:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.crow .grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.crow-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.crow-top b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.crow-top small{font-size:12px;color:var(--ink2);flex:none}
+.crow-sub{font-size:12px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .sub{flex:1;min-width:0;font-size:14px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.av{width:44px;height:44px;flex:none;border-radius:22px;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
+.av.case{background:var(--field);color:var(--title);border:1px solid var(--line)}
 
 /* ---- job page ---- */
 .steps{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
@@ -183,6 +199,23 @@ html[data-t="gold"] .steps span.now{background:#ffc845}
 .upd small{font-size:12px;color:var(--ink2)}
 .upd button{height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--btn);color:var(--btn-ink);font-weight:700;font-size:14px;flex:none}
 .upd button.later{background:transparent;color:var(--ink2);padding:0 8px}
+
+/* ---- updating page ---- */
+.updating{position:fixed;inset:0;z-index:40;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:calc(var(--safe-t) + 24px) 32px calc(var(--safe-b) + 24px);text-align:center;animation:fade .15s ease-out}
+.updating-logo{width:132px;height:auto;margin-bottom:12px}
+.updating h2{margin:0;font-size:19px;color:var(--title)}
+.ubar{width:100%;max-width:320px;height:12px;border-radius:6px;background:var(--line);overflow:hidden;position:relative}
+.ubar i{display:block;height:100%;width:0;border-radius:6px;background:var(--orange);transition:width .25s ease-out}
+html[data-t="gold"] .ubar i{background:#ffc845}
+.ubar.run i{width:35%;position:absolute;left:-35%;animation:slide 1.2s ease-in-out infinite}
+.ubar.bad i{background:var(--bad);width:100%}
+.urow{width:100%;max-width:320px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:13px;color:var(--ink2)}
+.urow b{font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
+.unote{margin:8px 0 0;font-size:13px;color:var(--ink2)}
+.uact{display:flex;gap:10px;width:100%;max-width:320px;margin-top:8px}
+.uact button{flex:1;height:52px;border-radius:14px;font-size:16px;font-weight:700;border:1.5px solid var(--line);background:transparent;color:var(--ink)}
+.uact button.primary{background:var(--btn);color:var(--btn-ink);border-color:transparent}
+@keyframes slide{to{left:100%}}
 
 /* ---- sheet / dialog / toast ---- */
 .scrim{position:fixed;inset:0;background:rgba(5,10,30,.5);display:flex;flex-direction:column;justify-content:flex-end;z-index:20;animation:fade .15s ease-out}

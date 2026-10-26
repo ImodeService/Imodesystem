@@ -96,17 +96,32 @@ public class AppChromePlugin extends Plugin {
                 deleteTree(tmp);
                 if (!tmp.mkdirs()) throw new Exception("cannot write");
                 String cur = capPath();
+                /* progress for the loading page: bytes when version.json has sizes, else files */
+                JSONObject sizes = m.optJSONObject("sizes");
+                long total = 0;
+                Iterator<String> si = files.keys();
+                while (si.hasNext()) { String k = si.next(); total += sizes != null ? Math.max(0, sizes.optLong(k, 0)) : 1; }
+                final boolean bytes = sizes != null && total > 0;
+                if (!bytes) total = files.length();
+                final long[] done = {0};
+                final long all = Math.max(1, total);
+                progress(0, all, bytes, "");
                 Iterator<String> it = files.keys();
                 while (it.hasNext()) {
                     String path = it.next();
                     String want = files.getString(path).toLowerCase();
                     if (!SAFE.matcher(path).matches() || path.contains("..") || path.equals("version.json")) throw new Exception("bad path " + path);
                     if (!want.matches("^[0-9a-f]{64}$")) throw new Exception("bad hash " + path);
+                    final long before = done[0];
+                    final long size = bytes ? Math.max(0, sizes.optLong(path, 0)) : 1;
                     byte[] data = readLocal(cur, path);
                     if (data == null || !sha256(data).equals(want)) {
-                        data = fetch(BASE + path + "?v=" + want.substring(0, 12));
+                        final String p = path;
+                        data = fetch(BASE + path + "?v=" + want.substring(0, 12), bytes ? n -> progress(before + Math.min(n, size), all, true, p) : null);
                         if (!sha256(data).equals(want)) throw new Exception("checksum " + path);
                     }
+                    done[0] = before + size;
+                    progress(done[0], all, bytes, path);
                     File out = new File(tmp, path);
                     File dir = out.getParentFile();
                     if (dir != null && !dir.isDirectory() && !dir.mkdirs()) throw new Exception("cannot write " + path);
@@ -118,8 +133,8 @@ public class AppChromePlugin extends Plugin {
                 if (!tmp.renameTo(dest)) throw new Exception("cannot finish");
                 /* keep the new set, the one in use and the fallback; drop the rest */
                 String good = upd().getString("good", "");
-                File[] all = root.listFiles();
-                if (all != null) for (File f : all) {
+                File[] sets = root.listFiles();
+                if (sets != null) for (File f : sets) {
                     String p = f.getAbsolutePath();
                     if (!p.equals(dest.getAbsolutePath()) && !p.equals(cur) && !p.equals(good)) deleteTree(f);
                 }
@@ -171,14 +186,37 @@ public class AppChromePlugin extends Plugin {
         }
     }
 
-    private static byte[] fetch(String url) throws Exception {
+    interface Progress { void at(long n); }
+
+    private long lastProgress = 0;
+
+    private void progress(long done, long total, boolean bytes, String file) {
+        long now = System.currentTimeMillis();
+        if (done < total && now - lastProgress < 80) return;
+        lastProgress = now;
+        JSObject e = new JSObject();
+        e.put("done", Math.min(done, total));
+        e.put("total", total);
+        e.put("unit", bytes ? "bytes" : "files");
+        e.put("file", file);
+        notifyListeners("bundleProgress", e);
+    }
+
+    private static byte[] fetch(String url, Progress onBytes) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(15000);
         c.setReadTimeout(30000);
         c.setUseCaches(false);
         try {
             if (c.getResponseCode() != 200) throw new Exception("HTTP " + c.getResponseCode() + " " + url);
-            try (InputStream in = c.getInputStream()) { return readAll(in); }
+            try (InputStream in = c.getInputStream()) {
+                if (onBytes == null) return readAll(in);
+                ByteArrayOutputStream b = new ByteArrayOutputStream();
+                byte[] buf = new byte[16384];
+                int n;
+                while ((n = in.read(buf)) > 0) { b.write(buf, 0, n); onBytes.at(b.size()); }
+                return b.toByteArray();
+            }
         } finally {
             c.disconnect();
         }
