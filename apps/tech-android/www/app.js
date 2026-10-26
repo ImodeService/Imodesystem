@@ -12,7 +12,7 @@
   'use strict';
 
   var C = window.IMODE_CONFIG || {};
-  var VERSION = '0.3.2';      /* bump for every release; tools/make-version.js copies it into version.json */
+  var VERSION = '0.5';      /* bump for every release; tools/make-version.js copies it into version.json */
   var NATIVE = 1;           /* the native (APK) features this bundle needs; see AppChromePlugin.NATIVE */
   var STEPS = ['กำลังเดินทาง', 'ถึงหน้างาน', 'เริ่มตรวจเช็ก', 'กำลัง PM / Maintenance', 'กำลังซ่อม Service', 'ทดสอบเครื่อง', 'รอลูกค้าตรวจรับ', 'จบงาน'];
   var HOLD = 'รออะไหล่';
@@ -540,7 +540,8 @@
   function renameSheet(key, original) {
     var cur = chatName(key);
     var w = document.createElement('div');
-    w.innerHTML = '<div class="scrim" role="dialog" aria-modal="true" aria-labelledby="rn-t"><form class="sheet" id="rn-f"><span class="grab" aria-hidden="true"></span>' +
+    /* a card near the top, not a bottom sheet: the keyboard covers the lower half of the screen */
+    w.innerHTML = '<div class="scrim top-dialog" role="dialog" aria-modal="true" aria-labelledby="rn-t"><form class="sheet" id="rn-f">' +
       '<h2 id="rn-t">เปลี่ยนชื่อแชท</h2><p>ชื่อนี้เห็นเฉพาะคุณ ใช้ได้ทุกเครื่องที่เข้าบัญชีนี้ ชื่อเดิมคือ ' + esc(original) + '</p>' +
       '<div class="field"><label for="rn-i">ชื่อแชท</label><input id="rn-i" maxlength="60" autocomplete="off" value="' + esc(cur || original) + '"></div>' +
       '<div class="sheet-actions">' + (cur ? '<button type="button" id="rn-r">ใช้ชื่อเดิม</button>' : '<button type="button" id="rn-c">ยกเลิก</button>') +
@@ -655,6 +656,8 @@
     document.getElementById('crn').onclick = function () { var x = chatTitle(kind, id); renameSheet(x.key, x.base); };
     var ta = document.getElementById('ctext');
     ta.addEventListener('input', function () { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 120) + 'px'; });
+    /* the keyboard pushes the composer up (APK 0.4+); keep the newest message in view */
+    ta.addEventListener('focus', function () { setTimeout(function () { var f = document.getElementById('cf'); if (f) f.scrollTop = f.scrollHeight; }, 350); });
     document.getElementById('cfile').onchange = async function () {
       var files = Array.prototype.slice.call(this.files || []); this.value = '';
       for (var i = 0; i < files.length; i++) {
@@ -768,6 +771,19 @@
       '<small>' + esc([c.machine, c.service_type].filter(Boolean).join(' · ') || '-') + '</small>' +
       '<small>' + esc(crewNames(c)) + '</small></span></button>';
   }
+  /* month dots: one dot per job; a job with several technicians is a dot split into their colours
+     (asked 2026-10-26), lead technician first, so the dots tell how many jobs and who goes */
+  function dotFill(c) {
+    var cs = crewColors(c);
+    if (cs.length === 1) return cs[0];
+    var step = 360 / cs.length;
+    return 'conic-gradient(' + cs.map(function (h, i) { return h + ' ' + (i * step) + 'deg ' + ((i + 1) * step) + 'deg'; }).join(',') + ')';
+  }
+  function dotsFor(list) {
+    var max = 4;
+    return list.slice(0, max).map(function (c) { return '<i style="background:' + dotFill(c) + '"></i>'; }).join('') +
+      (list.length > max ? '<em>+' + (list.length - max) + '</em>' : '');
+  }
   function dayBlock(day, list, title) {
     return '<section class="cal-day"><h3>' + esc(title || (thDate(day) + (dayKey(day) === dayKey(new Date()) ? ' · วันนี้' : ''))) + '</h3>' +
       (list.length ? list.map(calItem).join('') : '<p class="cal-none">ไม่มีงานนัดหมาย</p>') + '</section>';
@@ -803,8 +819,7 @@
       if (k >= 35 && !inMonth) break;
       g += '<button type="button" class="mday' + (inMonth ? '' : ' out') + (key === today ? ' today' : '') + (key === dayKey(cal.pick) ? ' pick' : '') + '" data-md="' + day.getTime() + '"' +
         ' aria-label="' + esc(thDate(day) + (jobsOn.length ? ' ' + jobsOn.length + ' งาน' : '')) + '"><span>' + day.getDate() + '</span><span class="mdots">' +
-        jobsOn.slice(0, 3).map(function (c) { return '<i style="background:' + crewColors(c)[0] + '"></i>'; }).join('') +
-        (jobsOn.length > 3 ? '<em>+' + (jobsOn.length - 3) + '</em>' : '') + '</span></button>';
+        dotsFor(jobsOn) + '</span></button>';
     }
     g += '</div>';
     return g + dayBlock(cal.pick, byDay[dayKey(cal.pick)] || []);
@@ -1042,7 +1057,46 @@
     if (!jobs.length) refreshJobs();
   }
   window.addEventListener('hashchange', route);
+
+  /* ------------------------------------------------- phone Back button ---- */
+  /* MainActivity hands the Android Back button to this function and leaves the app only when it
+     answers 'exit'. Back closes an open sheet or pop-up first, then goes to the previous page; the
+     other tabs go back to งาน; on งาน (or the login page) the first press only warns, and a second
+     press within 2 seconds leaves the app. */
+  var backAt = 0;
+  var TABS = ['#/cal', '#/chats', '#/me'];
+  window.imodeBack = function () {
+    if (document.querySelector('.updating')) {
+      if (upd.running) return 'stay';                        /* never cut an update in the middle */
+      document.querySelector('.updating').remove(); return 'stay';
+    }
+    var later = document.getElementById('up-later');
+    if (later) { later.click(); return 'stay'; }             /* Back on the update pop-up = อัปเดตภายหลัง */
+    var all = document.querySelectorAll('.scrim'), s = all[all.length - 1];
+    if (s) {
+      /* tap the backdrop, so each sheet closes its own way (a confirm answers ยกเลิก) */
+      s.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      if (s.isConnected) s.remove();
+      return 'stay';
+    }
+    var h = location.hash || '#/jobs';
+    if (me && TABS.indexOf(h) >= 0) { location.hash = '#/jobs'; return 'stay'; }
+    if (me && h !== '#/jobs') {
+      /* a job or a chat: the page it was opened from; if there is none, its parent page */
+      var m = /^#\/chat\/(.+)$/.exec(h), parent = m ? '#/job/' + m[1] : /^#\/dm\//.test(h) ? '#/chats' : '#/jobs';
+      history.back();
+      setTimeout(function () { if (location.hash === h) location.hash = parent; }, 250);
+      return 'stay';
+    }
+    if (Date.now() - backAt < 2000) return 'exit';
+    backAt = Date.now();
+    toast('กดกลับอีกครั้งเพื่อออกจากแอพ');
+    return 'stay';
+  };
   /* back on screen after the phone slept or another app: pull fresh jobs */
+  /* MainActivity calls this every time the app comes back on screen (the WebView does not always
+     fire visibilitychange then); checkUpdate itself skips a second look within a minute */
+  window.imodeResume = function () { checkUpdate(false); };
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') checkUpdate(false);
     if (document.visibilityState === 'visible' && me && !busy) {
@@ -1058,7 +1112,7 @@
      downloads and checks the files behind a loading page, and the app starts again on them. A new APK is needed only
      when version.json asks for newer native features than this APK has. */
   var UPDATE_URL = 'https://imodeservice.github.io/Imodesystem/apps/tech-android/www/version.json';
-  var upd = { at: 0, busy: false, offer: null, running: false, later: '' };
+  var upd = { at: 0, busy: false, offer: null, running: false, later: '', laterAt: 0 };
   function cmpVer(a, b) {
     var x = String(a).split('.'), y = String(b).split('.');
     for (var i = 0; i < Math.max(x.length, y.length); i++) { var d = (parseInt(x[i], 10) || 0) - (parseInt(y[i], 10) || 0); if (d) return d < 0 ? -1 : 1; }
@@ -1069,14 +1123,14 @@
   async function checkUpdate(force) {
     var P = chrome();
     if (!P || !P.downloadBundle || upd.busy || upd.running) return 'busy';
-    if (upd.offer) { if (force) showOffer(true); else showOffer(); return 'new'; }
-    if (!force && Date.now() - upd.at < 10 * 60000) return 'busy';
+    /* looked less than a minute ago: offer what was found then, without asking the server again */
+    if (!force && Date.now() - upd.at < 60000) { if (upd.offer) { showOffer(); return 'new'; } return 'busy'; }
     upd.busy = true; upd.at = Date.now();
     try {
       var r = await fetch(UPDATE_URL + '?t=' + Date.now(), { cache: 'no-store' });
       if (!r.ok) return 'none';
       var text = await r.text(), m = JSON.parse(text);
-      if (!m || !m.version || !m.files || cmpVer(m.version, VERSION) <= 0) return 'none';
+      if (!m || !m.version || !m.files || cmpVer(m.version, VERSION) <= 0) { upd.offer = null; return 'none'; }
       var info = await P.info();
       if ((m.native || 1) > (info.native || 1)) { if (force) toast('มีเวอร์ชัน ' + m.version + ' ต้องติดตั้งแอพตัวใหม่ (APK) ขอไฟล์จากผู้ดูแลระบบ'); return 'apk'; }
       upd.offer = { version: String(m.version), text: text, m: m };
@@ -1089,7 +1143,8 @@
      keeps quiet until the app is opened again (ตรวจหาอัปเดต on ฉัน still offers it at once) */
   function showOffer(force) {
     if (!upd.offer || upd.running || document.querySelector('.upd-pop')) return;
-    if (!force && upd.later === upd.offer.version) return;
+    /* อัปเดตภายหลัง counts until the app is opened again: a fresh start, or back on screen after 30 minutes */
+    if (!force && upd.later === upd.offer.version && Date.now() - upd.laterAt < 30 * 60000) return;
     var w = document.createElement('div');
     w.innerHTML = '<div class="scrim upd-pop" role="alertdialog" aria-modal="true" aria-labelledby="up-t" aria-describedby="up-d"><div class="pop">' +
       '<span class="pop-ico" aria-hidden="true">' + I.refresh + '</span>' +
@@ -1100,7 +1155,7 @@
     var t = document.querySelector('.toast'); if (t) t.remove();
     document.getElementById('up-now').onclick = function () { s.remove(); runUpdate(); };
     document.getElementById('up-later').onclick = function () {
-      s.remove(); upd.later = upd.offer.version;
+      s.remove(); upd.later = upd.offer.version; upd.laterAt = Date.now();
       toast('อัปเดตได้ทีหลังที่ ฉัน › ตรวจหาอัปเดต');
     };
     setTimeout(function () { try { document.getElementById('up-now').focus(); } catch (e) {} }, 50);

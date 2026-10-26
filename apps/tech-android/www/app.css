@@ -136,8 +136,8 @@ html[data-t="dark"] .login-motif,html[data-t="gold"] .login-motif{opacity:.1}
 .mday.out{opacity:.35}
 .mday.today>span:first-child{width:28px;height:28px;border-radius:14px;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;margin-top:-4px}
 .mday.pick{background:var(--field);box-shadow:inset 0 0 0 2px var(--accent)}
-.mdots{display:flex;align-items:center;gap:2px;min-height:8px}
-.mdots i{width:7px;height:7px;border-radius:4px}
+.mdots{display:flex;align-items:center;gap:2px;min-height:10px}
+.mdots i{width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 1px rgba(128,128,128,.3)}
 .mdots em{font-style:normal;font-size:9px;color:var(--ink2);margin-left:1px}
 .cal-day{display:flex;flex-direction:column;gap:8px}
 .cal-day h3{margin:4px 2px 0;font-size:14px;color:var(--ink2);display:flex;align-items:center;gap:8px}
@@ -232,6 +232,11 @@ html[data-t="gold"] .steps span.now{background:#ffc845}
 .upd small{font-size:12px;color:var(--ink2)}
 .upd button{height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--btn);color:var(--btn-ink);font-weight:700;font-size:14px;flex:none}
 .upd button.later{background:transparent;color:var(--ink2);padding:0 8px}
+
+/* ---- dialog at the top (keyboard-safe) ---- */
+.scrim.top-dialog{justify-content:flex-start;padding:calc(var(--safe-t) + 16px) 12px 12px}
+.scrim.top-dialog .sheet{border-radius:24px;padding:20px var(--pad) 18px;animation:down .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes down{from{transform:translateY(-30px);opacity:.4}}
 
 /* ---- update pop-up ---- */
 .scrim.upd-pop{justify-content:center;align-items:center;padding:24px;z-index:35}

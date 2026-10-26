@@ -1,9 +1,9 @@
 {
- "version": "0.3.2",
+ "version": "0.5",
  "native": 1,
  "files": {
-  "app.css": "ae201dc4bccf54e39d1a415097e5a0d60ad683ed96d5d4d6651ba89ce58cf2c2",
-  "app.js": "e2d3516fb466a491a3a618b8aea4accbca4500d685cf9e1b4b9449b82ab7a5e5",
+  "app.css": "1703a13fea714be9d1d9d24ca94fbac5f79a26ccdd55a0c4cc17d44d930f22f9",
+  "app.js": "776446529cdbea8ecb41b3fa36058c5775c8372ca7a93ba121fc5a7909048aab",
   "config.js": "1d91ccd3e4273cede078b74314eed62e91e3895164c344325f50756aa6817ff2",
   "fonts/OFL.txt": "0eda9417087c7f8fd73ef70d2598e66bbf2e5fabc121fe796fa2e36b9eb16789",
   "fonts/ibm-plex-sans-thai-latin-400-normal.woff2": "82ddd36544e4776857cce6ab26d0e509d10c1eeddf872c1b16f421489b0096a7",
@@ -18,8 +18,8 @@
   "vendor/supabase.min.js": "2eebfe06b1b5309985dc1526e8981ea3a18b71beeef83e7f38e04c303e142d6d"
  },
  "sizes": {
-  "app.css": 26232,
-  "app.js": 92897,
+  "app.css": 26598,
+  "app.js": 96254,
   "config.js": 739,
   "fonts/OFL.txt": 4796,
   "fonts/ibm-plex-sans-thai-latin-400-normal.woff2": 17736,
