@@ -12,7 +12,7 @@
   'use strict';
 
   var C = window.IMODE_CONFIG || {};
-  var VERSION = '0.2.1';      /* bump for every release; tools/make-version.js copies it into version.json */
+  var VERSION = '0.2.2';      /* bump for every release; tools/make-version.js copies it into version.json */
   var NATIVE = 1;           /* the native (APK) features this bundle needs; see AppChromePlugin.NATIVE */
   var STEPS = ['กำลังเดินทาง', 'ถึงหน้างาน', 'เริ่มตรวจเช็ก', 'กำลัง PM / Maintenance', 'กำลังซ่อม Service', 'ทดสอบเครื่อง', 'รอลูกค้าตรวจรับ', 'จบงาน'];
   var HOLD = 'รออะไหล่';
@@ -289,6 +289,7 @@
   function navHTML(cur) {
     return '<nav class="nav" aria-label="เมนูหลัก">' +
       '<button type="button" data-go="#/jobs"' + (cur === 'jobs' ? ' aria-current="page"' : '') + '>' + I.jobs + 'งาน</button>' +
+      '<button type="button" data-go="#/chats"' + (cur === 'chats' ? ' aria-current="page"' : '') + '><span class="nav-ico">' + I.chat + '<i class="badge" id="nb"' + (unread ? '' : ' hidden') + '>' + (unread > 99 ? '99+' : unread) + '</i></span>แชท</button>' +
       '<button type="button" data-go="#/me"' + (cur === 'me' ? ' aria-current="page"' : '') + '>' + I.user + 'ฉัน</button></nav>';
   }
   function chipFor(c) {
@@ -346,7 +347,7 @@
   }
   async function refreshJobs(say) {
     if (location.hash.indexOf('#/jobs') === 0 && !jobs.length) renderJobs(true);
-    try { await loadJobs(); if (say) toast('อัปเดตรายการงานแล้ว'); }
+    try { await loadJobs(); if (say) toast('อัปเดตรายการงานแล้ว'); loadChatTops().catch(function () {}); }
     catch (e) { toast(e.message); }
     if (location.hash.indexOf('#/jobs') === 0 || !location.hash) renderJobs();
   }
@@ -523,6 +524,7 @@
     var feed = document.getElementById('cf'); if (!feed || !chat) return;
     var near = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 120;
     feed.innerHTML = chatFeed();
+    if (chat.last && chat.last > seenAt(chat.id)) lsSet('imode.chatSeen.' + chat.id, chat.last);
     if (stick || near) feed.scrollTop = feed.scrollHeight;
   }
   function chatPending() {
@@ -617,6 +619,59 @@
     s.onclick = function () { s.remove(); };
   }
 
+  /* ---------------------------------------------------------- chat list ---- */
+  /* แชท tab: the chats of my open jobs, newest first, with the last line and how many messages
+     came from others since I last opened that chat (kept on this phone: imode.chatSeen.<case>). */
+  var unread = 0, chatTops = {};
+  function seenAt(id) { return lsGet('imode.chatSeen.' + id) || ''; }
+  function unreadIn(id, list) {
+    var seen = seenAt(id), from = seen || new Date(Date.now() - 2 * 86400000).toISOString();
+    return list.filter(function (m) { return m.author_id !== me.id && m.created_at > from; }).length;
+  }
+  async function loadChatTops() {
+    var ids = jobs.map(function (c) { return c.id; });
+    chatTops = {};
+    if (!ids.length) { unread = 0; return; }
+    var r = await client().from('case_messages').select('id,case_id,body,author_id,author_name,created_at')
+      .in('case_id', ids).order('created_at', { ascending: false }).limit(500);
+    if (r.error) throw new Error(/PGRST205|42P01|does not exist/i.test(String(r.error.code + ' ' + r.error.message)) ? 'ระบบแชทยังไม่ได้เปิดใช้ ติดต่อผู้ดูแลระบบ' : friendly(r.error));
+    (r.data || []).forEach(function (m) { (chatTops[m.case_id] = chatTops[m.case_id] || []).push(m); });
+    unread = ids.reduce(function (n, id) { return n + unreadIn(id, chatTops[id] || []); }, 0);
+    paintBadge();
+  }
+  function paintBadge() {
+    var b = document.getElementById('nb'); if (!b) return;
+    b.hidden = !unread; b.textContent = unread > 99 ? '99+' : String(unread);
+  }
+  function renderChats(loading) {
+    var rows = jobs.map(function (c) { var l = chatTops[c.id] || []; return { c: c, last: l[0] || null, n: unreadIn(c.id, l) }; })
+      .sort(function (a, b) { return String(b.last ? b.last.created_at : '').localeCompare(String(a.last ? a.last.created_at : '')); });
+    app.innerHTML = '<div class="screen"><header class="head"><div class="head-row"><div class="grow"><small>แชทเคสของงานที่ได้รับมอบหมาย</small><h1>แชท</h1></div>' +
+      '<button type="button" class="icon-btn" id="hr" aria-label="โหลดแชทใหม่">' + I.refresh + '</button></div></header>' +
+      '<div class="scroll"><div class="list">' +
+      (loading ? '<div class="loading"><span class="spin" aria-hidden="true"></span>กำลังโหลดแชท</div>'
+        : rows.length ? rows.map(function (x) {
+          var m = x.last, d = m ? new Date(m.created_at) : null;
+          var line = m ? (m.author_id === me.id ? 'คุณ: ' : (m.author_name ? m.author_name + ': ' : '')) + (String(m.body || '').trim() || '📷 รูปภาพ') : 'ยังไม่มีข้อความ';
+          return '<button type="button" class="job thread" data-chat="' + esc(x.c.id) + '">' +
+            '<div class="job-top"><span class="chip">' + esc(x.c.ticket || '') + '</span><small class="at">' + (d ? (dayKey(d) === dayKey(new Date()) ? hhmm(d) : esc(dayLabel(d))) : '') + '</small></div>' +
+            '<b>' + esc(x.c.customer || '') + '</b>' +
+            '<div class="thread-row"><span class="sub">' + esc(line) + '</span>' + (x.n ? '<i class="badge">' + (x.n > 99 ? '99+' : x.n) + '</i>' : '') + '</div></button>';
+        }).join('') : '<div class="empty"><b>ยังไม่มีงานที่ได้รับมอบหมาย</b>แชทของแต่ละเคสจะขึ้นที่นี่</div>') +
+      '</div></div>' + navHTML('chats') + '</div>';
+    document.getElementById('hr').onclick = function () { refreshChats(true); };
+    app.querySelectorAll('[data-chat]').forEach(function (b) { b.onclick = function () { location.hash = '#/chat/' + encodeURIComponent(b.getAttribute('data-chat')); }; });
+    wireNav();
+  }
+  async function refreshChats(say) {
+    try {
+      if (!jobs.length) await loadJobs();
+      await loadChatTops();
+      if (say) toast('อัปเดตแชทแล้ว');
+    } catch (e) { toast(e.message); }
+    if (location.hash === '#/chats') renderChats();
+  }
+
   /* ----------------------------------------------------------------- me ---- */
   function renderMe() {
     var th = THEMES.filter(function (x) { return x.id === appTheme(); })[0];
@@ -651,6 +706,7 @@
     chatStop();
     if ((m = /^#\/job\/(.+)$/.exec(h))) return renderJob(decodeURIComponent(m[1]));
     if (h === '#/me') return renderMe();
+    if (h === '#/chats') { renderChats(!Object.keys(chatTops).length); return refreshChats(); }
     renderJobs(!jobs.length);
     if (!jobs.length) refreshJobs();
   }
@@ -660,7 +716,7 @@
     if (document.visibilityState === 'visible') checkUpdate(false);
     if (document.visibilityState === 'visible' && me && !busy) {
       if (chat) { chatPull().catch(function () {}); return; }   /* keep what is being typed */
-      loadJobs().then(function () { if (!document.querySelector('.scrim')) route(); }, function () {});
+      loadJobs().then(function () { if (!document.querySelector('.scrim')) route(); if (location.hash !== '#/chats') loadChatTops().catch(function () {}); }, function () {});
     }
   });
 
