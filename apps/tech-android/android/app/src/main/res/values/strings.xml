@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">I-MODE ช่าง</string>
+    <string name="title_activity_main">I-MODE ช่าง</string>
+    <string name="package_name">th.co.imode.tech</string>
+    <string name="custom_url_scheme">th.co.imode.tech</string>
+</resources>

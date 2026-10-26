@@ -150,7 +150,8 @@
   var drop=[];
   for(i=0;i<rows.length;i++){
    var c=caseList().filter(function(x){return x.id===rows[i].getAttribute('data-case')})[0];
-   if(c&&isClosed(c)){done++;drop.push(rows[i])}
+   /* 2026-10-25: a case closed today stays until midnight (js/145). */
+   if(c&&isClosed(c)&&(typeof window.imodeCaseHiddenFromLists!=='function'||window.imodeCaseHiddenFromLists(c))){done++;drop.push(rows[i])}
   }
   var mine=myTechId();
   var closedTotal=mine?caseList().filter(function(c){

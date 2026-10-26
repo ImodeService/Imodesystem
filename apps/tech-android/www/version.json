@@ -1,0 +1,20 @@
+{
+ "version": "0.2.1",
+ "native": 1,
+ "files": {
+  "app.css": "8fcef8937d7fa7719faf26475b4de16edb4bf374642eca5cf5c8fc43f19941fe",
+  "app.js": "c398387b658f5199c4a4fe7c7e91e6317908073c4cdce2ce9571b5e52daf04ce",
+  "config.js": "1d91ccd3e4273cede078b74314eed62e91e3895164c344325f50756aa6817ff2",
+  "fonts/OFL.txt": "0eda9417087c7f8fd73ef70d2598e66bbf2e5fabc121fe796fa2e36b9eb16789",
+  "fonts/ibm-plex-sans-thai-latin-400-normal.woff2": "82ddd36544e4776857cce6ab26d0e509d10c1eeddf872c1b16f421489b0096a7",
+  "fonts/ibm-plex-sans-thai-latin-600-normal.woff2": "2a1bc932c82cf188c06d8f29797dd31bc0604229571e08f340d816aa9e4014b4",
+  "fonts/ibm-plex-sans-thai-latin-700-normal.woff2": "ed45a51e88e4dac8cd8e0279327b96d3c899bb4c8a4acccd07f296c470284bba",
+  "fonts/ibm-plex-sans-thai-thai-400-normal.woff2": "2d66381c26d32bf2a95bfe559d1a5ed5475fcdac3fa128e45a33301010d42056",
+  "fonts/ibm-plex-sans-thai-thai-600-normal.woff2": "ea935955dc3bccb684f8fb772dbd429250dd0d3dfee9483995a3ee3456471df8",
+  "fonts/ibm-plex-sans-thai-thai-700-normal.woff2": "0862e44c00761da16f929a078d2c6d5ed302b9eef84b143bc1c5a1c8a3a31878",
+  "img/logo-white.png": "85e0926c0b3d3831df642198fb029dfaeee0804301265336e2531ade63d2463f",
+  "img/logo.png": "e2dba896254578d6228085593b50a7e7f3666373b49643e25ea638dfec393de2",
+  "index.html": "bac3847dff7ac686b5b03b13f3663321d96f23b6a72f978bc1802a6d41ceec29",
+  "vendor/supabase.min.js": "2eebfe06b1b5309985dc1526e8981ea3a18b71beeef83e7f38e04c303e142d6d"
+ }
+}

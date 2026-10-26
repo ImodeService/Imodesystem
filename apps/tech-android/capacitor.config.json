@@ -1,0 +1,9 @@
+{
+  "appId": "th.co.imode.tech",
+  "appName": "I-MODE ช่าง",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "adjustMarginsForEdgeToEdge": "disable"
+  }
+}

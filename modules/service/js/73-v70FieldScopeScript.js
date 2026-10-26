@@ -186,7 +186,8 @@
 
  function jobs(){
   return caseList().filter(function(c){
-   if(isClosed(c))return false;
+   /* 2026-10-25: a case closed today stays until midnight (js/145). */
+   if(isClosed(c)&&(typeof window.imodeCaseHiddenFromLists!=='function'||window.imodeCaseHiddenFromLists(c)))return false;
    if(!(c.assignee||(c.assignees||[]).length))return false;   /* not handed out yet */
    if(state.tech&&!onCase(c,state.tech))return false;
    var s=state.q.trim().toLowerCase();
