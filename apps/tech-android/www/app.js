@@ -12,7 +12,7 @@
   'use strict';
 
   var C = window.IMODE_CONFIG || {};
-  var VERSION = '0.5';      /* bump for every release; tools/make-version.js copies it into version.json */
+  var VERSION = '0.6';      /* bump for every release; tools/make-version.js copies it into version.json */
   var NATIVE = 1;           /* the native (APK) features this bundle needs; see AppChromePlugin.NATIVE */
   var STEPS = ['กำลังเดินทาง', 'ถึงหน้างาน', 'เริ่มตรวจเช็ก', 'กำลัง PM / Maintenance', 'กำลังซ่อม Service', 'ทดสอบเครื่อง', 'รอลูกค้าตรวจรับ', 'จบงาน'];
   var HOLD = 'รออะไหล่';
@@ -1025,7 +1025,9 @@
       '<button type="button" class="row-btn" id="mt">' + I.palette + '<span class="grow"><b>ธีมหน้าจอ</b><small>' + esc(th ? th.name : '') + '</small></span></button>' +
       (chrome() && chrome().downloadBundle ? '<button type="button" class="row-btn" id="mu">' + I.refresh + '<span class="grow"><b>ตรวจหาอัปเดต</b><small>เวอร์ชันที่ใช้อยู่ ' + VERSION + '</small></span></button>' : '') +
       '<button type="button" class="row-btn danger" id="mo">' + I.out + '<span class="grow"><b>ออกจากระบบ</b></span></button>' +
-      '<p class="note">I-MODE แอพทีมช่าง เวอร์ชัน ' + VERSION + '</p></div></div>' + navHTML('me') + '</div>';
+      '<p class="note">I-MODE แอพทีมช่าง เวอร์ชัน ' + VERSION + '<span id="mapk"></span></p></div></div>' + navHTML('me') + '</div>';
+    var P = chrome();
+    if (P && P.info) P.info().then(function (i) { var x = document.getElementById('mapk'); if (x) x.textContent = ' · ตัวแอพ ' + (i.name || 'รุ่นเก่ากว่า 0.6'); }, function () {});
     document.getElementById('mt').onclick = function () { openThemeSheet(); };
     document.getElementById('mo').onclick = signOut;
     var mu = document.getElementById('mu');
@@ -1096,7 +1098,15 @@
   /* back on screen after the phone slept or another app: pull fresh jobs */
   /* MainActivity calls this every time the app comes back on screen (the WebView does not always
      fire visibilitychange then); checkUpdate itself skips a second look within a minute */
-  window.imodeResume = function () { checkUpdate(false); };
+  window.imodeResume = function () {
+    /* back from Android's "install unknown apps" page: open the install screen now */
+    if (upd.apkWait && document.querySelector('.updating')) {
+      var P = chrome();
+      if (P) P.info().then(function (i) { if (i.canInstall) { upd.apkWait = false; installApk(); } }, function () {});
+      return;
+    }
+    checkUpdate(false);
+  };
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') checkUpdate(false);
     if (document.visibilityState === 'visible' && me && !busy) {
@@ -1112,7 +1122,11 @@
      downloads and checks the files behind a loading page, and the app starts again on them. A new APK is needed only
      when version.json asks for newer native features than this APK has. */
   var UPDATE_URL = 'https://imodeservice.github.io/Imodesystem/apps/tech-android/www/version.json';
-  var upd = { at: 0, busy: false, offer: null, running: false, later: '', laterAt: 0 };
+  /* a newer APK (version.json "apk": code, name, path under apps/tech-android/, sha256, size) is
+     offered the same way: the app downloads it and opens Android's install screen (APK 0.6+);
+     an older APK has no download of its own, so the phone's browser downloads the file instead */
+  var APK_BASE = 'https://imodeservice.github.io/Imodesystem/apps/tech-android/';
+  var upd = { at: 0, busy: false, offer: null, running: false, later: '', laterAt: 0, apkWait: false, apk: null };
   function cmpVer(a, b) {
     var x = String(a).split('.'), y = String(b).split('.');
     for (var i = 0; i < Math.max(x.length, y.length); i++) { var d = (parseInt(x[i], 10) || 0) - (parseInt(y[i], 10) || 0); if (d) return d < 0 ? -1 : 1; }
@@ -1130,8 +1144,16 @@
       var r = await fetch(UPDATE_URL + '?t=' + Date.now(), { cache: 'no-store' });
       if (!r.ok) return 'none';
       var text = await r.text(), m = JSON.parse(text);
-      if (!m || !m.version || !m.files || cmpVer(m.version, VERSION) <= 0) { upd.offer = null; return 'none'; }
+      if (!m || !m.version || !m.files) return 'none';
       var info = await P.info();
+      upd.apk = info;
+      var a = m.apk;
+      if (a && a.code > (info.code || 0) && /^release\/[A-Za-z0-9_.\-]+\.apk$/.test(String(a.path)) && /^[0-9a-f]{64}$/.test(String(a.sha256))) {
+        upd.offer = { apk: a, version: String(a.name || a.code), own: !!(info.apk && P.downloadApk) };
+        showOffer(force);
+        return 'new';
+      }
+      if (cmpVer(m.version, VERSION) <= 0) { upd.offer = null; return 'none'; }
       if ((m.native || 1) > (info.native || 1)) { if (force) toast('มีเวอร์ชัน ' + m.version + ' ต้องติดตั้งแอพตัวใหม่ (APK) ขอไฟล์จากผู้ดูแลระบบ'); return 'apk'; }
       upd.offer = { version: String(m.version), text: text, m: m };
       showOffer(force);
@@ -1144,18 +1166,24 @@
   function showOffer(force) {
     if (!upd.offer || upd.running || document.querySelector('.upd-pop')) return;
     /* อัปเดตภายหลัง counts until the app is opened again: a fresh start, or back on screen after 30 minutes */
-    if (!force && upd.later === upd.offer.version && Date.now() - upd.laterAt < 30 * 60000) return;
+    var key = (upd.offer.apk ? 'apk ' : '') + upd.offer.version;
+    if (!force && upd.later === key && Date.now() - upd.laterAt < 30 * 60000) return;
+    var head = upd.offer.apk ? 'มีแอพเวอร์ชันใหม่' : 'มีอัปเดตใหม่';
+    var body = upd.offer.apk
+      ? 'แอพเวอร์ชัน ' + esc(upd.offer.version) + (upd.apk && upd.apk.name ? ' (ตอนนี้ใช้ ' + esc(upd.apk.name) + ')' : '') + '<br>' +
+        (upd.offer.own ? 'แอพจะโหลดไฟล์ให้ แล้วกด ติดตั้ง ในหน้าต่างของ Android' : 'เบราว์เซอร์จะโหลดไฟล์ให้ แตะไฟล์ที่โหลดเสร็จแล้วกด ติดตั้ง') + '<br>ข้อมูลและการล็อกอินอยู่ครบ'
+      : 'เวอร์ชัน ' + esc(upd.offer.version) + ' พร้อมให้อัปเดต (ตอนนี้ใช้ ' + esc(VERSION) + ')<br>ใช้เวลาไม่ถึงนาที แอพจะเริ่มใหม่เอง';
     var w = document.createElement('div');
     w.innerHTML = '<div class="scrim upd-pop" role="alertdialog" aria-modal="true" aria-labelledby="up-t" aria-describedby="up-d"><div class="pop">' +
       '<span class="pop-ico" aria-hidden="true">' + I.refresh + '</span>' +
-      '<h2 id="up-t">มีอัปเดตใหม่</h2><p id="up-d">เวอร์ชัน ' + esc(upd.offer.version) + ' พร้อมให้อัปเดต (ตอนนี้ใช้ ' + esc(VERSION) + ')<br>ใช้เวลาไม่ถึงนาที แอพจะเริ่มใหม่เอง</p>' +
+      '<h2 id="up-t">' + head + '</h2><p id="up-d">' + body + '</p>' +
       '<button type="button" class="pop-btn primary" id="up-now">อัปเดตเลย</button>' +
       '<button type="button" class="pop-btn" id="up-later">อัปเดตภายหลัง</button></div></div>';
     var s = w.firstChild; document.body.appendChild(s);
     var t = document.querySelector('.toast'); if (t) t.remove();
     document.getElementById('up-now').onclick = function () { s.remove(); runUpdate(); };
     document.getElementById('up-later').onclick = function () {
-      s.remove(); upd.later = upd.offer.version; upd.laterAt = Date.now();
+      s.remove(); upd.later = key; upd.laterAt = Date.now();
       toast('อัปเดตได้ทีหลังที่ ฉัน › ตรวจหาอัปเดต');
     };
     setTimeout(function () { try { document.getElementById('up-now').focus(); } catch (e) {} }, 50);
@@ -1166,6 +1194,7 @@
   async function runUpdate() {
     var P = chrome(), o = upd.offer;
     if (!P || !o || upd.running) return;
+    if (o.apk) return runApk();
     var t = document.getElementById('ctext');
     if (chat && t && t.value.trim()) { toast('ส่งข้อความที่พิมพ์ค้างไว้ก่อน แล้วค่อยอัปเดต'); return; }
     upd.running = true;
@@ -1216,6 +1245,78 @@
       try { if (h && h.remove) h.remove(); } catch (e) {}
     }
   }
+  /* a newer APK: download it with the same loading page, then Android's install screen.
+     Android asks once whether this app may install apps; its settings page opens, and when the
+     technician comes back the install screen opens by itself (imodeResume). */
+  async function runApk() {
+    var P = chrome(), o = upd.offer;
+    if (!o || !o.apk) return;
+    var url = APK_BASE + o.apk.path + '?v=' + String(o.apk.sha256).slice(0, 12);
+    if (!o.own) {
+      /* APK 0.5 or older: an address outside the app opens in the phone's browser, which downloads the file */
+      toast('กำลังเปิดเบราว์เซอร์ แตะไฟล์ที่โหลดเสร็จแล้วกด ติดตั้ง');
+      setTimeout(function () { location.href = url; }, 300);
+      return;
+    }
+    var t = document.getElementById('ctext');
+    if (chat && t && t.value.trim()) { toast('ส่งข้อความที่พิมพ์ค้างไว้ก่อน แล้วค่อยอัปเดต'); return; }
+    upd.running = true;
+    var old = document.querySelector('.upd-pop'); if (old) old.remove();
+    var w = document.createElement('div');
+    w.className = 'updating'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'กำลังอัปเดตแอพ');
+    w.innerHTML = '<img class="updating-logo" src="img/' + (document.documentElement.getAttribute('data-t') === 'light' || document.documentElement.getAttribute('data-t') === 'glass' ? 'logo.png' : 'logo-white.png') + '" alt="I-MODE">' +
+      '<h2 id="ut">กำลังโหลดแอพเวอร์ชัน ' + esc(o.version) + '</h2>' +
+      '<div class="ubar run" id="ub" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="ความคืบหน้า"><i id="uf"></i></div>' +
+      '<div class="urow"><b id="up"></b><small id="us">กำลังเตรียมไฟล์</small></div>' +
+      '<p class="unote" id="un">อย่าเพิ่งปิดแอพ</p><div class="uact" id="ua" hidden></div>';
+    document.body.appendChild(w);
+    var bar = document.getElementById('ub'), fill = document.getElementById('uf');
+    function set(pct, sub) {
+      pct = Math.max(0, Math.min(100, Math.round(pct)));
+      bar.classList.remove('run'); fill.style.width = pct + '%'; bar.setAttribute('aria-valuenow', String(pct));
+      document.getElementById('up').textContent = pct + '%';
+      if (sub) document.getElementById('us').textContent = sub;
+    }
+    function actions(html, wire) { var act = document.getElementById('ua'); act.hidden = false; act.innerHTML = html; wire(act); }
+    var h = null;
+    try { h = await P.addListener('bundleProgress', function (e) { if (e && e.total) set(e.done / e.total * 100, kb(e.done) + ' จาก ' + kb(e.total)); }); } catch (e) {}
+    try {
+      await P.downloadApk({ path: o.apk.path, sha256: o.apk.sha256, size: o.apk.size || 0 });
+      set(100, 'ตรวจไฟล์ครบแล้ว');
+      upd.running = false;
+      document.getElementById('ut').textContent = 'โหลดแอพเวอร์ชัน ' + o.version + ' เสร็จแล้ว';
+      document.getElementById('un').textContent = 'กด ติดตั้ง ในหน้าต่างของ Android แอพจะปิดแล้วเปิดเป็นเวอร์ชันใหม่';
+      actions('<button type="button" class="ghost">ภายหลัง</button><button type="button" class="primary">ติดตั้ง</button>', function (act) {
+        act.querySelector('.ghost').onclick = function () { upd.apkWait = false; w.remove(); upd.later = 'apk ' + o.version; upd.laterAt = Date.now(); };
+        act.querySelector('.primary').onclick = function () { installApk(); };
+      });
+      installApk();
+    } catch (e) {
+      upd.running = false;
+      bar.classList.remove('run'); bar.classList.add('bad');
+      document.getElementById('ut').textContent = 'โหลดแอพไม่สำเร็จ';
+      document.getElementById('us').textContent = 'เช็กอินเทอร์เน็ตแล้วลองใหม่';
+      document.getElementById('up').textContent = '';
+      document.getElementById('un').textContent = 'แอพยังใช้เวอร์ชันเดิมได้ตามปกติ';
+      actions('<button type="button" class="ghost">ปิด</button><button type="button" class="primary">ลองอีกครั้ง</button>', function (act) {
+        act.querySelector('.ghost').onclick = function () { w.remove(); };
+        act.querySelector('.primary').onclick = function () { w.remove(); runApk(); };
+      });
+    } finally {
+      try { if (h && h.remove) h.remove(); } catch (e) {}
+    }
+  }
+  async function installApk() {
+    var P = chrome(); if (!P || !P.installApk) return;
+    try {
+      var r = await P.installApk();
+      upd.apkWait = !!(r && r.needPermission);
+      var n = document.getElementById('un');
+      if (n) n.textContent = upd.apkWait ? 'เปิด "อนุญาตจากแหล่งที่มานี้" ให้แอพ I-MODE ช่าง แล้วกดย้อนกลับมาที่แอพ'
+        : 'กด ติดตั้ง ในหน้าต่างของ Android แอพจะปิดแล้วเปิดเป็นเวอร์ชันใหม่ ถ้าหน้าต่างหายไป กดปุ่ม ติดตั้ง ด้านล่าง';
+    } catch (e) { toast('เปิดหน้าติดตั้งไม่ได้ ลองกด ติดตั้ง อีกครั้ง'); }
+  }
+
   /* the native side keeps the last good set; a new set that never reaches this point is dropped
      after two tries and the app goes back to the previous one */
   function bootOk() {

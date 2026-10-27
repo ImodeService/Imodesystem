@@ -57,12 +57,24 @@
     var m = mode(), r = document.documentElement;
     if (r.getAttribute('data-theme') !== m) r.setAttribute('data-theme', m);
     swapLogos(m);
+    shellLook(r);
     var t = get();
     if (shown && shown !== t + m) {
       try { window.dispatchEvent(new CustomEvent('imode-theme', { detail: { theme: t, mode: m } })); } catch (e) {}
     }
     shown = t + m;
     if (box) mark();
+  }
+
+  /* 2026-10-27: the icon style, sidebar colours and sidebar movement used to be Service's alone.
+     The same three choices now dress every module built on shared/module-shell (QC & R&D first,
+     "ปรับแต่งหน้าตา UI ได้แบบ service"). They stay in Service's localStorage keys, so one choice
+     changes Service and the other modules together. Attributes, not Service's own data-sidebar:
+     Service's js/130 and js/131 keep theirs, and module-shell.css reads only these. */
+  function shellLook(r) {
+    if (typeof SV === 'undefined' || !SV) return;
+    var want = { 'data-sh-icons': sv('icons'), 'data-sh-side': sv('side'), 'data-sh-motion': sv('motion') };
+    Object.keys(want).forEach(function (a) { if (r.getAttribute(a) !== want[a]) r.setAttribute(a, want[a]); });
   }
 
   /* ---------- account ---------- */
@@ -129,12 +141,12 @@
       { id: 'emoji', name: 'Icon emoji', desc: 'ไอคอนสีสันแบบอีโมจิ (ค่าเริ่มต้น)', pv: '<span class="itp-emo">📋👥📅</span>' },
       { id: 'line', name: 'แบบเส้น', desc: 'ไอคอนเส้นสีเดียว เรียบ', pv: '<svg width="44" height="18" viewBox="0 0 44 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="11" height="14" rx="2"/><path d="M5 7h5M5 11h5"/><circle cx="22" cy="7" r="3"/><path d="M17 16c0-3 2.5-5 5-5s5 2 5 5"/><rect x="31" y="3" width="11" height="12" rx="2"/><path d="M31 7h11"/></svg>' }
     ] },
-    { key: 'side', title: 'สไตล์แถบเมนูด้านข้าง (Service)', opts: [
+    { key: 'side', title: 'สไตล์แถบเมนูด้านข้าง', opts: [
       { id: 'navy', name: 'กรมท่า (เดิม)', desc: 'แถบเมนูสีน้ำเงินเข้ม โลโก้สีขาว', pv: '<span class="itp-bar" style="background:#0c225e"><i></i><i style="background:#f79009"></i><i></i></span>' },
-      { id: 'light', name: 'สว่าง', desc: 'แถบเมนูสีขาว เมนูที่เปิดอยู่เป็นแถบสีฟ้าอ่อน', pv: '<span class="itp-bar" style="background:#f8fafd;border-color:#d0d7e6"><i style="background:#c9d2e3"></i><i style="background:#0b5cd6"></i><i style="background:#c9d2e3"></i></span>' },
+      { id: 'light', name: 'เรียบ', desc: 'แถบเมนูสีขาว เมนูที่เปิดอยู่เป็นแถบสีฟ้าอ่อน', pv: '<span class="itp-bar" style="background:#f8fafd;border-color:#d0d7e6"><i style="background:#c9d2e3"></i><i style="background:#0b5cd6"></i><i style="background:#c9d2e3"></i></span>' },
       { id: 'game', name: 'ราตรีสีทอง', desc: 'แถบเมนูสีน้ำเงินม่วงเข้ม เมนูที่เปิดอยู่เป็นสีทอง', pv: '<span class="itp-bar" style="background:linear-gradient(90deg,#080e2e,#1a2a8a)"><i></i><i style="background:#ffc845"></i><i></i></span>' }
     ] },
-    { key: 'motion', title: 'การเคลื่อนไหวของแถบเมนู (Service)', opts: [
+    { key: 'motion', title: 'การเคลื่อนไหวของแถบเมนู', opts: [
       { id: 'normal', name: 'ปกติ', desc: 'แถบเมนูกางเต็มตลอด', pv: '<span class="itp-bar" style="background:#f3f5f9;border-style:dashed;border-color:#9aa6bd"><i style="background:#9aa6bd"></i><i style="background:#0b5cd6"></i><i style="background:#9aa6bd"></i></span>' },
       { id: 'rov', name: 'เลื่อนแบบสไลด์', desc: 'ย่อเหลือแต่ไอคอน ชี้เมาส์แล้วเมนูเลื่อนออกมาทับหน้าจอ', pv: '<span class="itp-bar" style="width:20px;background:#f3f5f9;border-style:dashed;border-color:#9aa6bd"><i style="background:#9aa6bd"></i><i style="background:#0b5cd6"></i><i style="background:#9aa6bd"></i></span>' }
     ] }
@@ -228,6 +240,7 @@
   function setOne(k, v) {
     if (k === 'theme') { set(v); return; }
     lsSet(SV[k], v);
+    apply();
   }
   function applyPreset(p) {
     set(p.set.theme); setOne('icons', p.set.icons); setOne('side', p.set.side); setOne('motion', p.set.motion);
@@ -262,7 +275,7 @@
             '<span class="itp-txt"><span class="itp-name">' + esc(o.name) + ok + '</span><small>' + esc(o.desc) + '</small></span></button>';
         }).join('') + '</div>';
       }).join('') +
-      '<p class="itp-foot">ธีมจำไว้กับบัญชีของคุณ ส่วนไอคอนและแถบเมนูของ Service จำไว้ในเครื่องนี้</p></div>';
+      '<p class="itp-foot">ธีมจำไว้กับบัญชีของคุณ ส่วนไอคอนและแถบเมนูจำไว้ในเครื่องนี้ ใช้กับทุกโมดูลเหมือนกัน</p></div>';
     document.body.appendChild(box);
     mark();
     box.addEventListener('click', function (e) {
@@ -307,7 +320,10 @@
 
   /* ---------- wiring ---------- */
   apply();
-  window.addEventListener('storage', function (e) { if (e.key === KEY || e.key === LEGACY) apply(); if (box) mark(); });
+  window.addEventListener('storage', function (e) {
+    if (e.key === KEY || e.key === LEGACY || e.key === SV.icons || e.key === SV.side || e.key === SV.motion) apply();
+    if (box) mark();
+  });
   if (mq) {
     var onMq = function () { if (get() === 'auto') apply(); };
     if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);

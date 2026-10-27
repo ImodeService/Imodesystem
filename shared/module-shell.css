@@ -283,3 +283,89 @@ html[data-theme="dark"] .sh-toast { background: #333; box-shadow: 0 10px 28px -6
   html[data-theme="dark"] .sh-side { box-shadow: 12px 0 32px -12px rgba(0,0,0,.7); }
   html[data-theme="dark"] .shell.nav-open .sh-scrim { background: rgba(0,0,0,.55); }
 }
+
+/* ---------- look chosen in ธีมหน้าจอ, same as Service (2026-10-27) ----------
+   shared/theme-pref.js copies Service's icon style, sidebar colours and sidebar movement onto
+   html[data-sh-icons|data-sh-side|data-sh-motion], so the modules dress like Service does.
+   'light' is this shell's own white bar, so it needs no rules. */
+
+/* กรมท่า: Service's flat navy bar, orange edge on the open page */
+html[data-sh-side="navy"] .sh-page { --side-bg: #0c225e; }
+html[data-sh-side="navy"][data-theme="dark"] .sh-page { --side-bg: #111111; }
+html[data-sh-side="navy"] .sh-side,
+html[data-sh-side="game"] .sh-side { border-right: 0; scrollbar-color: rgba(255,255,255,.25) transparent; color: #fff; }
+html[data-sh-side="navy"] .sh-brand,
+html[data-sh-side="game"] .sh-brand { border-bottom-color: rgba(255,255,255,.12); }
+html[data-sh-side="navy"] .sh-brand img,
+html[data-sh-side="game"] .sh-brand img { content: url("../assets/brand/imode-logo-white.png"); }
+html[data-sh-side="navy"] .sh-side .sh-icon-btn,
+html[data-sh-side="game"] .sh-side .sh-icon-btn { color: #fff; }
+html[data-sh-side="navy"] .sh-group,
+html[data-sh-side="navy"] .sh-soon summary { color: rgba(255,255,255,.62); }
+html[data-sh-side="navy"] .sh-link { color: #fff; border-radius: 0; border-left: 4px solid transparent; padding-left: 8px; }
+html[data-sh-side="navy"] .sh-link.sh-home svg { color: rgba(255,255,255,.75); }
+html[data-sh-side="navy"] .sh-link:hover,
+html[data-sh-side="navy"] .sh-soon summary:hover { background: rgba(255,255,255,.08); color: #fff; }
+html[data-sh-side="navy"] .sh-link[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff; box-shadow: none; border-left-color: #f79009; }
+html[data-sh-side="navy"] .sh-link.is-soon,
+html[data-sh-side="navy"] .sh-link.is-soon:hover { color: rgba(255,255,255,.5); background: none; }
+html[data-sh-side="navy"] .sh-soon-n,
+html[data-sh-side="game"] .sh-soon-n { background: rgba(255,255,255,.14); color: #fff; }
+
+/* ราตรีสีทอง: indigo bar, gold on the open page */
+html[data-sh-side="game"] .sh-side { background: linear-gradient(90deg, rgba(8,14,46,.99) 0%, rgba(14,24,78,.97) 70%, rgba(14,24,78,.95) 100%); box-shadow: inset -1px 0 0 rgba(255,200,69,.22); color: #e9eeff; }
+html[data-sh-side="game"] .sh-brand { border-bottom-color: rgba(255,200,69,.28); }
+html[data-sh-side="game"] .sh-group,
+html[data-sh-side="game"] .sh-soon summary { color: rgba(255,214,120,.8); }
+html[data-sh-side="game"] .sh-link { color: #e6ebff; border-radius: 10px; }
+html[data-sh-side="game"] .sh-link.sh-home svg { color: rgba(230,235,255,.75); }
+html[data-sh-side="game"] .sh-link:hover,
+html[data-sh-side="game"] .sh-soon summary:hover { background: linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,0)); color: #fff; }
+html[data-sh-side="game"] .sh-link[aria-current="page"] { background: linear-gradient(90deg, rgba(255,200,69,.32) 0%, rgba(255,200,69,.08) 65%, rgba(255,200,69,0) 100%); color: #ffd772; box-shadow: inset 3px 0 0 #ffc845; }
+html[data-sh-side="game"] .sh-link[aria-current="page"] svg { filter: drop-shadow(0 0 6px rgba(255,200,69,.85)); }
+html[data-sh-side="game"] .sh-link.is-soon,
+html[data-sh-side="game"] .sh-link.is-soon:hover { color: rgba(230,236,255,.5); background: none; }
+html[data-sh-side="navy"] .sh-side :focus-visible,
+html[data-sh-side="game"] .sh-side :focus-visible { outline-color: #ffc845; }
+
+/* แบบเส้น: the coloured module pictures become one colour, like Service's line icons */
+html[data-sh-icons="line"] :is(.sh-link, .sh-head-icon) svg :is(path, rect, circle, ellipse, polygon)[fill]:not([fill="none"]):not([fill="#fff"]) { fill: currentColor; }
+html[data-sh-icons="line"] :is(.sh-link, .sh-head-icon) svg [stroke]:not([stroke="none"]):not([stroke="#fff"]) { stroke: currentColor; }
+html[data-sh-icons="line"] .sh-head-icon { color: var(--navy); }
+html[data-sh-icons="line"][data-theme="dark"] .sh-head-icon { color: var(--ink); }
+html[data-sh-icons="line"] .sh-head-icon svg [fill="#fff"] { fill: var(--surface); }
+html[data-sh-icons="line"] .sh-head-icon svg [stroke="#fff"] { stroke: var(--surface); }
+html[data-sh-icons="line"]:not([data-sh-side="light"]) .sh-link svg [fill="#fff"] { fill: var(--side-bg, #0c225e); }
+html[data-sh-icons="line"]:not([data-sh-side="light"]) .sh-link svg [stroke="#fff"] { stroke: var(--side-bg, #0c225e); }
+html[data-sh-icons="line"][data-sh-side="game"] .sh-link svg [fill="#fff"] { fill: #0e184e; }
+html[data-sh-icons="line"][data-sh-side="game"] .sh-link svg [stroke="#fff"] { stroke: #0e184e; }
+
+/* เลื่อนแบบสไลด์: on a PC with a mouse the bar rests as an icon rail and slides open over the page */
+@media (min-width: 1025px) and (hover: hover) {
+  html[data-sh-motion="rov"] .sh-page { --side-w: 76px; }
+  html[data-sh-motion="rov"] .sh-main { grid-column: 2; }
+  html[data-sh-motion="rov"] .sh-side {
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 40; width: 76px; overflow-x: hidden;
+    transition: width .34s cubic-bezier(.2,.8,.2,1), box-shadow .34s;
+  }
+  html[data-sh-motion="rov"] .sh-side:is(:hover, :focus-within) { width: 280px; box-shadow: 12px 0 36px -10px rgba(0,0,0,.35); }
+  html[data-sh-motion="rov"] .sh-brand,
+  html[data-sh-motion="rov"] .sh-nav { width: 280px; }
+  html[data-sh-motion="rov"] .sh-brand { padding-left: 14px; }
+  html[data-sh-motion="rov"] .sh-brand img { width: 48px; transition: width .3s cubic-bezier(.2,.8,.2,1); }
+  html[data-sh-motion="rov"] .sh-side:is(:hover, :focus-within) .sh-brand img { width: 108px; }
+  html[data-sh-motion="rov"] .sh-link,
+  html[data-sh-motion="rov"] .sh-soon summary { width: 260px; }
+  html[data-sh-motion="rov"] :is(.sh-link > span, .sh-group, .sh-soon summary) { opacity: 0; transform: translateX(-12px); transition: opacity .16s ease-out, transform .2s ease-out; white-space: nowrap; }
+  html[data-sh-motion="rov"] .sh-side:is(:hover, :focus-within) :is(.sh-link > span, .sh-group, .sh-soon summary) {
+    opacity: 1; transform: none; transition: opacity .26s ease-out 90ms, transform .3s cubic-bezier(.2,.8,.2,1) 90ms;
+  }
+  html[data-sh-motion="rov"] .sh-side::after {
+    content: ""; position: absolute; right: 7px; top: 50%; width: 4px; height: 46px; margin-top: -23px; border-radius: 4px;
+    background: currentColor; opacity: .35; transition: opacity .2s;
+  }
+  html[data-sh-motion="rov"] .sh-side:is(:hover, :focus-within)::after { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-sh-motion="rov"] .sh-side, html[data-sh-motion="rov"] .sh-side * { transition: none !important; }
+}

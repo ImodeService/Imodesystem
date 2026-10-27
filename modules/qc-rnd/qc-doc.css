@@ -33,12 +33,14 @@
 .qc-photo-slot .photo-empty{font-size:10px;color:#8995a8;text-align:center;padding:12px}
 .qc-photo-slot .photo-caption{flex:0 0 auto;border-top:1px solid #d5dce7;padding:4px 6px;font-size:8.5px;color:#52627d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff}
 .qc-photo-extra{margin-top:6px;font-size:9px;color:#6a7588;text-align:right}
+/* 2026-10-27: the seven required photos + one more fit page 2 as four rows */
+.qc-photo-sheet.is-8 .qc-photo-slot{height:38mm}
 @media(max-width:900px){
   .qc-doc-page{width:100%;min-height:auto;padding:18px}.qc-doc-page-head{grid-template-columns:120px minmax(0,1fr)}.qc-doc-page-head img{width:115px;height:54px}
   .qc-doc-info,.qc-doc-note-grid{grid-template-columns:1fr}.qc-doc-note-box.full{grid-column:auto}.qc-doc-sign{grid-template-columns:1fr}.qc-doc-sign>div{min-height:58px}.qc-doc-sign b{margin-top:18px}
 }
 @media(max-width:640px){
-  .qc-photo-sheet{grid-template-columns:1fr}.qc-photo-slot{height:220px}
+  .qc-photo-sheet{grid-template-columns:1fr}.qc-photo-slot,.qc-photo-sheet.is-8 .qc-photo-slot{height:220px}
   .qc-doc-page-head{grid-template-columns:1fr;text-align:left}.qc-doc-page-head img{width:150px;height:60px}.qc-doc-table th,.qc-doc-table td{font-size:8.5px;padding:3px}.qc-doc-table .remark{width:95px}.qc-doc-table .result{width:65px}
 }
 @media print{
@@ -48,4 +50,5 @@
   .qc-doc-page{width:210mm!important;min-height:297mm!important;margin:0!important;padding:10mm!important;border:0!important;border-radius:0!important;box-shadow:none!important;break-after:page;page-break-after:always}
   .qc-doc-page:last-child{break-after:auto;page-break-after:auto}
   .qc-photo-slot{height:50mm!important}
+  .qc-photo-sheet.is-8 .qc-photo-slot{height:38mm!important}
 }

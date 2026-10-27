@@ -1,6 +1,13 @@
 package th.co.imode.tech;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
+import androidx.core.content.FileProvider;
+import androidx.core.content.pm.PackageInfoCompat;
 import android.content.SharedPreferences;
 import android.view.Window;
 import androidx.core.view.WindowCompat;
@@ -28,12 +35,17 @@ import org.json.JSONObject;
    - live update: fetch a newer set of screen files (listed with SHA-256 in version.json, published
      with the web system), keep it under files/bundles/<version>, and serve the app from it.
      Files that did not change are copied from the set in use instead of downloaded.
-     MainActivity drops a new set that never confirms it started (markGood). */
+     MainActivity drops a new set that never confirms it started (markGood).
+   - APK update: download a newer APK published next to it (apps/tech-android/release/, SHA-256 in
+     version.json "apk"), then open Android's own install screen for it. Android asks the technician
+     to tap ติดตั้ง, and installs it only when it is signed with the same key as this app. */
 @CapacitorPlugin(name = "AppChrome")
 public class AppChromePlugin extends Plugin {
     /* raise when a release needs native code this APK does not have; version.json "native" */
     static final int NATIVE = 1;
     static final String BASE = "https://imodeservice.github.io/Imodesystem/apps/tech-android/www/";
+    static final String APK_BASE = "https://imodeservice.github.io/Imodesystem/apps/tech-android/";
+    private static final Pattern APK_PATH = Pattern.compile("^release/[A-Za-z0-9_\\-.]+\\.apk$");
     static final String CAP_PREFS = "CapWebViewSettings", CAP_PATH = "serverBasePath";
     static final String UPD_PREFS = "imode_update";
     private static final Pattern SAFE = Pattern.compile("^[A-Za-z0-9_\\-]+(/[A-Za-z0-9_\\-.]+)*\\.[A-Za-z0-9]+$");
@@ -64,6 +76,10 @@ public class AppChromePlugin extends Plugin {
         r.put("native", NATIVE);
         r.put("path", capPath());
         r.put("bad", upd().getString("badVersion", ""));
+        r.put("code", apkCode());
+        r.put("name", apkName());
+        r.put("apk", true);
+        r.put("canInstall", canInstall());
         call.resolve(r);
     }
 
@@ -164,6 +180,104 @@ public class AppChromePlugin extends Plugin {
         upd().edit().putString("trial", path).putString("trialVersion", version).putInt("tries", 0).commit();
         call.resolve();
         if (now) getActivity().runOnUiThread(() -> getBridge().setServerBasePath(path));
+    }
+
+    /* download the APK named in version.json into the cache and check its SHA-256 */
+    @PluginMethod
+    public void downloadApk(PluginCall call) {
+        final String path = call.getString("path", "");
+        final String want = call.getString("sha256", "").toLowerCase();
+        final long size = Math.max(0, call.getLong("size", 0L));
+        new Thread(() -> {
+            try {
+                if (!APK_PATH.matcher(path).matches() || path.contains("..")) throw new Exception("bad path");
+                if (!want.matches("^[0-9a-f]{64}$")) throw new Exception("bad hash");
+                File dir = new File(getContext().getCacheDir(), "apk");
+                deleteTree(dir);
+                if (!dir.mkdirs()) throw new Exception("cannot write");
+                File out = new File(dir, "update.apk");
+                MessageDigest md = MessageDigest.getInstance("SHA-256");
+                HttpURLConnection c = (HttpURLConnection) new URL(APK_BASE + path + "?v=" + want.substring(0, 12)).openConnection();
+                c.setConnectTimeout(15000);
+                c.setReadTimeout(30000);
+                c.setUseCaches(false);
+                try {
+                    if (c.getResponseCode() != 200) throw new Exception("HTTP " + c.getResponseCode());
+                    long total = size > 0 ? size : Math.max(1, c.getContentLengthLong());
+                    long done = 0;
+                    progress(0, total, true, path);
+                    try (InputStream in = c.getInputStream(); FileOutputStream o = new FileOutputStream(out)) {
+                        byte[] buf = new byte[65536];
+                        int n;
+                        while ((n = in.read(buf)) > 0) {
+                            o.write(buf, 0, n);
+                            md.update(buf, 0, n);
+                            done += n;
+                            progress(Math.min(done, total), total, true, path);
+                        }
+                    }
+                } finally {
+                    c.disconnect();
+                }
+                StringBuilder h = new StringBuilder();
+                for (byte x : md.digest()) h.append(String.format("%02x", x));
+                if (!h.toString().equals(want)) { deleteTree(dir); throw new Exception("checksum"); }
+                call.resolve(new JSObject());
+            } catch (Exception e) {
+                call.reject(String.valueOf(e.getMessage()));
+            }
+        }).start();
+    }
+
+    /* open Android's install screen for the downloaded APK. The first time, Android has to be
+       told that this app may install apps: the settings page for that opens instead
+       (answer needPermission), and the page calls this again when the app is back on screen. */
+    @PluginMethod
+    public void installApk(PluginCall call) {
+        File f = new File(new File(getContext().getCacheDir(), "apk"), "update.apk");
+        if (!f.isFile()) { call.reject("no apk"); return; }
+        JSObject r = new JSObject();
+        try {
+            if (!canInstall()) {
+                Intent s = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
+                s.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(s);
+                r.put("needPermission", true);
+                call.resolve(r);
+                return;
+            }
+            Uri u = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", f);
+            Intent i = new Intent(Intent.ACTION_VIEW);
+            i.setDataAndType(u, "application/vnd.android.package-archive");
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(i);
+            r.put("needPermission", false);
+            call.resolve(r);
+        } catch (Exception e) {
+            call.reject(String.valueOf(e.getMessage()));
+        }
+    }
+
+    private boolean canInstall() {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.O || getContext().getPackageManager().canRequestPackageInstalls();
+    }
+
+    private String apkName() {
+        try {
+            String n = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).versionName;
+            return n == null ? "" : n;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private long apkCode() {
+        try {
+            PackageInfo i = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
+            return PackageInfoCompat.getLongVersionCode(i);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private SharedPreferences upd() { return getContext().getSharedPreferences(UPD_PREFS, Context.MODE_PRIVATE); }

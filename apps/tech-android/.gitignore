@@ -1,5 +1,6 @@
 node_modules/
 *.apk
+!release/*.apk
 *.jks
 *.keystore
 .idea/
