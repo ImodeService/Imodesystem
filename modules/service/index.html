@@ -882,7 +882,7 @@
 <!-- Beta: ดูใบเสนอราคา for the coordinator, and the ส่งให้ลูกค้า step that was missing —
      a quotation left at ร่าง is invisible on the customer home page by design. Reuses the
      existing quotation.view key, so it registers nothing in PERMISSION_CATALOG. -->
-<script src="./js/43-v70QuoteViewScript.js"></script>
+<script src="./js/43-v70QuoteViewScript.js?v=20261027"></script>
 
 <!-- Beta: what happens when a technician finishes. Loads after js/32 and js/16 so its
      wrappers sit outside the หน้างาน workspace and งานของฉัน. -->
@@ -1147,6 +1147,10 @@
 <script src="./js/147-v70MachineStickyHeadScript.js"></script>
 <!-- 2026-10-27: machines still in QC & R&D (machines.lifecycle qc / ready) stay off เครื่องจักร until QC hands them over (js/148). -->
 <script src="./js/148-v70QcStageHideScript.js?v=20261027"></script>
+<!-- 2026-10-27: Role "Engineer" seeded into settings.roles with Technician permissions (js/149). -->
+<script src="./js/149-v70EngineerRoleScript.js?v=20261027"></script>
+<!-- 2026-10-27: เคส / ลูกค้า / คำขอจากลูกค้า — tiles, head and search rows stay on screen while the list scrolls, like เครื่องจักร (js/150). -->
+<script src="./js/150-v70ListStickyHeadScript.js?v=20261027b"></script>
 
 </body>
 </html>

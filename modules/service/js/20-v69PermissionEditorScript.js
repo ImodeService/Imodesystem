@@ -205,7 +205,7 @@
   if(/lead|หัวหน้า/.test(n))return 'lead';
   /* 'R&D' is a technician role with no technician word in its name; without r&d here it fell
      into the office catch-all. 'R&D Lead' is caught by the lead test above first. */
-  if(/technician|ช่าง|r&d/.test(n))return 'tech';
+  if(/technician|ช่าง|r&d|engineer/.test(n))return 'tech';
   return 'office';
  }
 

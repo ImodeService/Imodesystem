@@ -653,6 +653,16 @@
  +'#quoteViewPagination{padding:4px 14px 16px}'
  +'.qv-draftnote{margin-bottom:12px;padding:10px 13px;border-radius:12px;background:#fff8ef;'
  +'border:1px solid #f3ddbd;color:#9a6516;font-size:12.5px;font-weight:700}'
+ /* 2026-10-27: dark theme — the rows kept a hard-coded white card while the page forced light
+    text onto it, so id/amount/customer were unreadable. */
+ +'html[data-theme="dark"] .qv-row{background:var(--fx-surface,#262626);border-color:var(--fx-line,#3a3a3a)}'
+ +'html[data-theme="dark"] .qv-row.is-draft{background:var(--fx-surface,#262626);border-color:#7a5a24}'
+ +'html[data-theme="dark"] .qv-row:hover{border-color:#5aa0ff;box-shadow:0 6px 16px rgba(0,0,0,.4)}'
+ +'html[data-theme="dark"] .qv-row-top b,html[data-theme="dark"] .qv-amount{color:var(--fx-text,#f1f1f1)}'
+ +'html[data-theme="dark"] .qv-row-main small{color:var(--fx-muted,#a9adb4)}'
+ +'html[data-theme="dark"] .qv-go{color:#7db4ff}'
+ +'html[data-theme="dark"] .qv-unsent{background:#3a2c14;border-color:#6b4f1f;color:#f0c27a}'
+ +'html[data-theme="dark"] .qv-draftnote{background:#3a2c14;border-color:#6b4f1f;color:#f0c27a}'
  +'@media (max-width:640px){'
  +'.qv-row{flex-direction:column;align-items:stretch;gap:9px}'
  +'.qv-row-side{flex-direction:row;align-items:center;justify-content:space-between}'

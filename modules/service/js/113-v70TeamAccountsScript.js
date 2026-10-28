@@ -32,7 +32,7 @@
 
  function isTechRole(role){
   var r=String(role||'').trim();
-  return /^technician\b/i.test(r)||/^r&d$/i.test(r)||/\blead$/i.test(r);
+  return /^technician\b/i.test(r)||/^r&d$/i.test(r)||/^engineer$/i.test(r)||/\blead$/i.test(r);
  }
  window.imodeIsTechRole=isTechRole;
 
@@ -331,7 +331,7 @@
  }
 
  var ROLE_ORDER=['Dev','CEO','Service Manager','Admin','Admin / Coordinator','Sale / Admin','Sales',
-  'Technical Lead','R&D Lead','Technician','Technician - Technical','R&D','Technician - R&D'];
+  'Technical Lead','R&D Lead','Technician','Technician - Technical','Engineer','R&D','Technician - R&D'];
  function groupsHTML(list){
   var by={};
   list.forEach(function(a){var r=a.role||tl('ไม่ระบุบทบาท','No role');(by[r]=by[r]||[]).push(a)});
