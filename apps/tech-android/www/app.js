@@ -12,13 +12,13 @@
   'use strict';
 
   var C = window.IMODE_CONFIG || {};
-  var VERSION = '0.6';      /* bump for every release; tools/make-version.js copies it into version.json */
+  var VERSION = '0.7';      /* bump for every release; tools/make-version.js copies it into version.json */
   var NATIVE = 1;           /* the native (APK) features this bundle needs; see AppChromePlugin.NATIVE */
   var STEPS = ['กำลังเดินทาง', 'ถึงหน้างาน', 'เริ่มตรวจเช็ก', 'กำลัง PM / Maintenance', 'กำลังซ่อม Service', 'ทดสอบเครื่อง', 'รอลูกค้าตรวจรับ', 'จบงาน'];
   var HOLD = 'รออะไหล่';
   var TRAVEL = STEPS[0], ARRIVED = STEPS[1], DONE = STEPS[STEPS.length - 1];
   var CLOSED = ['เสร็จสิ้น', 'ปิดเคส'];
-  var COLS = 'id,ticket,customer,contact,phone,location,branch,map_url,latitude,longitude,machine,model,serial,warranty,service_type,priority,issue,note,status,assignee,appointment,field_status,field_status_log,updated_at';
+  var COLS = 'id,ticket,customer_id,machine_id,customer,contact,phone,location,branch,map_url,latitude,longitude,machine,model,serial,warranty,service_type,priority,issue,note,status,assignee,appointment,field_status,field_status_log,updated_at';
 
   var THEMES = [
     { id: 'light', name: 'เรียบ สว่าง', desc: 'มาตรฐาน พื้นสว่าง แถบบนกรมท่า', sw: '#f3f3f3', dot: '#0c225e', web: 'flat-light' },
@@ -237,7 +237,7 @@
     if (opts.gps) { entry.latitude = opts.gps.lat; entry.longitude = opts.gps.lng; }
     var status = c.status;
     if (to === HOLD) status = 'รออะไหล่';
-    else if (to === DONE) status = 'รอส่งงาน';
+    else if (to === DONE) status = 'เสร็จสิ้น';
     else if (CLOSED.indexOf(status) < 0) status = 'กำลังดำเนินการ';
     var log = Array.isArray(c.field_status_log) ? c.field_status_log.slice() : [];
     log.push(entry);
@@ -428,12 +428,13 @@
       '<span>สถานที่</span><span>' + esc(c.location || c.branch || '-') + '</span>' +
       (c.note ? '<span>หมายเหตุ</span><span>' + esc(c.note) + '</span>' : '') + '</div></section>' +
       (cur && !onHold && at >= 2 && at < STEPS.length - 1 ? '<button type="button" class="hold" id="jh">📦 ' + HOLD + '</button>' : '') +
-      (atReport ? '<p class="note">ใบตรวจงาน ลายเซ็นลูกค้า และการจบงาน ทำบนเว็บไปก่อน รอบถัดไปจะมีในแอพ</p>' : '') +
+      (at >= 1 ? '<button type="button" class="row-btn" id="jr">' + I.pen + '<span class="grow"><b>ใบตรวจงาน</b><small>' + (lsGet('imode.reportDraft.' + c.id) ? 'มีฉบับร่างในเครื่อง กดเพื่อทำต่อ' : 'กรอกได้ระหว่างทำงาน ส่งตอนจบงาน') + '</small></span>' + I.arrow + '</button>' : '') +
       '</div></div>' +
       '<div class="bar">' +
       (backTo ? '<button type="button" class="back" id="jk" aria-label="ย้อนขั้นตอนไป ' + esc(backTo) + '">' + I.undo + '</button>' : '') +
       (next ? '<button type="button" class="next" id="jx">ถัดไป: ' + esc(next) + I.arrow + '</button>'
-        : '<span class="final">' + (cur === DONE ? 'จบงานแล้ว' : 'ขั้นถัดไปคือทำใบตรวจงานบนเว็บ') + '</span>') +
+        : cur === DONE ? '<span class="final">จบงานแล้ว</span>'
+        : '<button type="button" class="next" id="jd">ใบตรวจ ลายเซ็น และจบงาน' + I.arrow + '</button>') +
       '</div></div>';
 
     document.getElementById('jb').onclick = function () { history.length > 1 ? history.back() : (location.hash = '#/jobs'); };
@@ -453,6 +454,8 @@
       await moveStep(c.id, next, { mustBe: cur, gps: gps });
       toast('อัปเดตเป็น ' + next);
     }); };
+    var br = document.getElementById('jr'), bd = document.getElementById('jd');
+    [br, bd].forEach(function (b) { if (b) b.onclick = function () { location.hash = '#/report/' + encodeURIComponent(c.id); }; });
     var bk = document.getElementById('jk');
     if (bk) bk.onclick = async function () {
       var ok = await confirmSheet('ย้อนขั้นตอน?', 'ย้อนกลับไปที่ "' + backTo + '" ระบบจะแจ้งในแชทของเคสนี้ด้วย', 'ย้อนกลับ');
@@ -474,6 +477,296 @@
     busy = false;
     var m = /^#\/job\/(.+)$/.exec(location.hash);
     if (m) renderJob(decodeURIComponent(m[1]));
+  }
+
+  /* ------------------------------------------------------------ report ---- */
+  /* ใบตรวจงาน, the web's sheet (js/03 openServiceReport + saveServiceReport, js/77 checklist /
+     PM date / satisfaction, js/70 signature undo, js/68 signature gate, js/44 + js/63 จบงาน)
+     on a phone. It writes the same service_reports row the web writes, so the office opens,
+     prints and sends it exactly as before. Until it is sent the sheet is kept as a draft on
+     this phone (imode.reportDraft.<caseId>), photos included, videos not (too big). */
+  var CHECKS = {
+    PM: ['ตรวจสภาพภายนอก โครงสร้าง ฝาครอบ และจุดยึด', 'ตรวจระบบไฟฟ้า สายไฟ ปลั๊ก ขั้วต่อ และสายดิน', 'ตรวจอุปกรณ์นิรภัย ปุ่มหยุดฉุกเฉิน อินเตอร์ล็อก และเซนเซอร์นิรภัย', 'ทำความสะอาดภายใน ภายนอก และจุดสะสมฝุ่นหรือคราบ', 'ตรวจระบบกลไก การเคลื่อนที่ สายพาน ลูกปืน รางนำ และสกรู', 'ตรวจและเติมสารหล่อลื่นตามจุดที่กำหนด', 'ตรวจระบบลม สุญญากาศ ระบบระบายความร้อน ไส้กรอง และพัดลม (ถ้ามี)', 'ตรวจเซนเซอร์ สวิตช์ ลิมิต เอนโค้ดเดอร์ และสัญญาณผิดปกติ', 'ตรวจวัสดุสิ้นเปลืองและชิ้นส่วนสึกหรอ พร้อมประเมินอายุการใช้งาน', 'ทดสอบการทำงาน สอบเทียบ และทดลองเดินเครื่องหลัง PM', 'ตรวจบันทึกข้อผิดพลาดและสัญญาณเตือน พร้อมบันทึกค่าที่สำคัญ', 'ติดป้าย PM และกำหนดวัน PM ครั้งถัดไป'],
+    Maintenance: ['ตรวจสภาพเครื่องและอาการผิดปกติก่อนบำรุงรักษา', 'ตรวจชิ้นส่วนกลไก แนวศูนย์ ระยะห่าง และจุดยึด', 'ตรวจระบบไฟฟ้า แหล่งจ่ายไฟ ระบบควบคุม และขั้วต่อ', 'ตรวจระบบลม สุญญากาศ และระบบระบายความร้อน', 'ตรวจเซนเซอร์ อุปกรณ์ขับเคลื่อน มอเตอร์ และชุดควบคุม', 'ทำความสะอาดและหล่อลื่นจุดสำคัญ', 'ปรับตั้ง แนวศูนย์ และขันยึดตามความจำเป็น', 'ตรวจชิ้นส่วนสึกหรอและวางแผนรายการที่ควรเปลี่ยน', 'ตรวจการสอบเทียบ ค่าพารามิเตอร์ และซอฟต์แวร์ (ถ้ามี)', 'ทดสอบการทำงานและทดสอบภาระหลังบำรุงรักษา', 'บันทึกคำแนะนำและแผนบำรุงรักษาครั้งถัดไป'],
+    Service: ['ยืนยันอาการเสียกับลูกค้าและตรวจรับอาการ', 'ตรวจรหัสข้อผิดพลาด สัญญาณเตือน บันทึกเหตุการณ์ และอาการที่เกิดขึ้น', 'ตรวจระบบไฟฟ้า แหล่งจ่ายไฟ ขั้วต่อ ฟิวส์ และเบรกเกอร์', 'ตรวจระบบกลไก การเคลื่อนที่ เซนเซอร์ และอุปกรณ์ขับเคลื่อน', 'วิเคราะห์สาเหตุของปัญหา', 'ดำเนินการซ่อมและปรับตั้ง', 'ตรวจและบันทึกอะไหล่ที่เปลี่ยน หมายเลขอะไหล่ จำนวน และหมายเลขประจำชิ้น', 'ทดสอบการทำงานหลังซ่อม', 'ทดสอบร่วมกับลูกค้าและยืนยันว่าแก้ปัญหาแล้ว', 'แจ้งคำแนะนำและแนวทางป้องกันปัญหาซ้ำ', 'ส่งมอบงานและบันทึกการรับทราบของลูกค้า']
+  };
+  var RESULTS = [{ v: 'ผ่าน', cls: 'ok', icon: '✓' }, { v: 'พอใช้', cls: 'fair', icon: '~' }, { v: 'แก้ไข', cls: 'fix', icon: '!' }];
+  var FACES = [[1, '😞', 'ไม่พอใจมาก'], [2, '🙁', 'ไม่พอใจ'], [3, '😐', 'พอใช้'], [4, '🙂', 'พอใจ'], [5, '😍', 'พอใจมาก']];
+  var MAX_PHOTOS = 4, MAX_VIDEOS = 2, MAX_VIDEO_MB = 2.5, INK_MIN = 16;
+  var rep = null;
+
+  function workTypeOf(c) {
+    var s = String(c && c.service_type || '').toLowerCase();
+    return s.indexOf('pm') >= 0 || s.indexOf('preventive') >= 0 ? 'PM' : s.indexOf('maintenance') >= 0 ? 'Maintenance' : 'Service';
+  }
+  /* old reports answered OK / NG; map what maps and leave the rest unanswered (js/77) */
+  function normResult(v) {
+    v = String(v || '');
+    if (RESULTS.some(function (r) { return r.v === v; })) return v;
+    return v === 'OK' ? 'ผ่าน' : v === 'NG' ? 'แก้ไข' : '';
+  }
+  /* only the labels come from the template; an answer is carried over only from a real earlier one */
+  function checklistFor(type, prior) {
+    prior = Array.isArray(prior) ? prior : [];
+    return (CHECKS[type] || CHECKS.Service).map(function (label, i) {
+      var p = prior.filter(function (o) { return o && o.label === label; })[0] || prior[i] || null;
+      return { label: label, result: p ? normResult(p.result) : '', note: p ? String(p.note || '') : '' };
+    });
+  }
+  function draftKey(id) { return 'imode.reportDraft.' + id; }
+  function saveDraft() {
+    if (!rep) return;
+    var f = Object.assign({}, rep.f, { videos: [] });
+    try { localStorage.setItem(draftKey(rep.c.id), JSON.stringify({ at: Date.now(), f: f })); }
+    catch (e) { try { localStorage.setItem(draftKey(rep.c.id), JSON.stringify({ at: Date.now(), f: Object.assign({}, f, { before: [], after: [] }) })); } catch (e2) {} }
+  }
+  var draftTimer = null;
+  function touch() { clearTimeout(draftTimer); draftTimer = setTimeout(saveDraft, 400); }
+
+  async function openReport(id) {
+    app.innerHTML = '<div class="screen"><div class="loading"><span class="spin" aria-hidden="true"></span>กำลังเปิดใบตรวจงาน</div></div>';
+    try {
+      var c = await freshCase(id);
+      var r = await client().from('service_reports').select('*').eq('case_id', id).order('updated_at', { ascending: false }).limit(1);
+      if (r.error) throw new Error(friendly(r.error));
+      var old = (r.data && r.data[0]) || null, fb = null;
+      try {
+        var s = await client().from('system_settings').select('fb:data->caseFeedback').eq('id', 'main').maybeSingle();
+        fb = s.data && s.data.fb && s.data.fb[id] || null;
+      } catch (e) {}
+      var o = old || {}, type = o.work_type || workTypeOf(c);
+      var f = {
+        workType: type, checklist: checklistFor(type, o.checklist), diagnosis: o.diagnosis || '', work: o.work_performed || '',
+        recommend: o.recommendation || '', parts: Array.isArray(o.parts) ? o.parts : [], before: o.before_photos || [], after: o.after_photos || [],
+        videos: o.videos || [], accept: o.customer_accept || c.contact || '', nextPm: o.next_pm || '',
+        rating: fb ? Number(fb.rating) || 0 : 0, comment: fb ? String(fb.comment || '') : '', csig: o.customer_signature || '', tsig: o.tech_signature || ''
+      };
+      var d = null; try { d = JSON.parse(lsGet(draftKey(id)) || 'null'); } catch (e) {}
+      var fromDraft = !!(d && d.f && (!old || d.at > Date.parse(old.updated_at || 0)));
+      if (fromDraft) { var v = f.videos; f = Object.assign(f, d.f); if (!f.videos.length) f.videos = v; }
+      rep = { c: c, old: old, f: f, undo: { cs: [], ts: [] } };
+      if (location.hash !== '#/report/' + encodeURIComponent(id)) return;
+      renderReport();
+      if (fromDraft) toast('เปิดฉบับร่างที่ยังไม่ได้ส่ง');
+    } catch (e) { toast(e.message); history.back(); }
+  }
+
+  function photoGrid(kind) {
+    var list = rep.f[kind];
+    return '<div class="rp-photos">' + list.map(function (src, i) {
+      return '<span class="rp-ph"><img src="' + esc(src) + '" alt="" data-view="' + kind + '|' + i + '"><button type="button" class="rp-del" data-del="' + kind + '|' + i + '" aria-label="ลบรูป">' + I.x + '</button></span>';
+    }).join('') + (list.length < MAX_PHOTOS ? '<label class="rp-add">' + I.cam + '<span>เพิ่มรูป</span><input type="file" accept="image/*" multiple hidden data-add="' + kind + '"></label>' : '') + '</div>';
+  }
+  function partsHTML() {
+    var p = rep.f.parts;
+    return (p.length ? p.map(function (x, i) {
+      return '<div class="rp-part" data-part="' + i + '"><div class="rp-part-row"><input placeholder="Part No." value="' + esc(x.partNo || '') + '" data-pf="partNo"><input type="number" min="1" inputmode="numeric" value="' + (Number(x.qty) || 1) + '" data-pf="qty" aria-label="จำนวน"></div>' +
+        '<input placeholder="ชื่ออะไหล่" value="' + esc(x.name || '') + '" data-pf="name"><div class="rp-part-row"><input placeholder="หมายเหตุ / S/N" value="' + esc(x.note || '') + '" data-pf="note">' +
+        '<button type="button" class="rp-del2" data-pdel="' + i + '" aria-label="ลบอะไหล่">' + I.x + '</button></div></div>';
+    }).join('') : '<p class="rp-empty">ยังไม่มีอะไหล่ที่เปลี่ยน</p>') + '<button type="button" class="rp-more" id="rpPart">＋ เพิ่มอะไหล่</button>';
+  }
+  function checkHTML() {
+    return rep.f.checklist.map(function (x, i) {
+      return '<div class="rp-chk' + (x.result ? '' : ' blank') + '"><div class="rp-chk-t"><span>' + (i + 1) + '</span><b>' + esc(x.label) + '</b></div>' +
+        '<div class="rp-pick">' + RESULTS.map(function (r) {
+          return '<button type="button" class="is-' + r.cls + '" data-set="' + i + '|' + r.v + '" aria-pressed="' + (x.result === r.v) + '"><i aria-hidden="true">' + r.icon + '</i>' + r.v + '</button>';
+        }).join('') + '<button type="button" class="rp-note' + (x.note ? ' on' : '') + '" data-note="' + i + '" aria-label="หมายเหตุข้อ ' + (i + 1) + '">📝</button></div>' +
+        (x.note ? '<p class="rp-notetext">' + esc(x.note) + '</p>' : '') + '</div>';
+    }).join('');
+  }
+  function padHTML(key, label) {
+    return '<div class="rp-sign"><div class="rp-sign-h"><b>' + label + '</b><span><button type="button" data-sundo="' + key + '">↶ ย้อนกลับ</button><button type="button" data-sclr="' + key + '">ล้าง</button></span></div>' +
+      '<canvas id="sig-' + key + '" width="560" height="180" aria-label="' + label + '"></canvas><small>ใช้นิ้วเซ็นในกรอบ</small></div>';
+  }
+  function renderReport() {
+    var c = rep.c, f = rep.f, closed = CLOSED.indexOf(String(c.status || '')) >= 0;
+    var answered = f.checklist.filter(function (x) { return x.result; }).length;
+    app.innerHTML = '<div class="screen"><header class="head"><div class="head-row">' +
+      '<button type="button" class="icon-btn" id="rb" aria-label="กลับ">' + I.back + '</button>' +
+      '<div class="grow"><small>' + esc([c.ticket, rep.old && rep.old.report_no].filter(Boolean).join(' · ')) + '</small><b class="t">ใบตรวจงาน · ' + esc(c.customer || '-') + '</b></div></div></header>' +
+      '<div class="scroll" id="rs"><div class="body rp">' +
+      '<section class="info"><h2>ประเภทใบตรวจ</h2><div class="rp-seg" role="radiogroup" aria-label="ประเภทใบตรวจ">' +
+      ['PM', 'Maintenance', 'Service'].map(function (t) { return '<button type="button" role="radio" data-wt="' + t + '" aria-checked="' + (f.workType === t) + '">' + t + '</button>'; }).join('') + '</div>' +
+      '<small class="rp-hint">เครื่อง ' + esc([c.machine, c.model].filter(Boolean).join(' ') || '-') + ' · ซีเรียล ' + esc(c.serial || '-') + '</small></section>' +
+      '<section class="info"><h2>เช็กลิสต์ตรวจเครื่อง <small class="rp-count">' + answered + '/' + f.checklist.length + '</small></h2><small class="rp-hint">เลือก ผ่าน / พอใช้ / แก้ไข ทีละข้อ กด 📝 เพื่อเขียนหมายเหตุ</small><div class="rp-chks" id="rpChk">' + checkHTML() + '</div></section>' +
+      '<section class="info"><h2>งานที่ดำเนินการ</h2>' +
+      '<div class="field"><label for="rpDia">การวิเคราะห์ / ผลการตรวจพบ</label><textarea id="rpDia" rows="3" data-ff="diagnosis" placeholder="เช่น ลูกปืนแกน X สึก มีเสียงดังตอนเดินเครื่อง">' + esc(f.diagnosis) + '</textarea></div>' +
+      '<div class="field"><label for="rpWork">งานที่ดำเนินการ</label><textarea id="rpWork" rows="3" data-ff="work" placeholder="เช่น เปลี่ยนลูกปืน ปรับตั้งแนวศูนย์ ทดสอบเดินเครื่อง 30 นาที">' + esc(f.work) + '</textarea></div>' +
+      '<div class="field"><label for="rpRec">คำแนะนำ / งานที่ควรทำต่อ</label><textarea id="rpRec" rows="2" data-ff="recommend" placeholder="เช่น ควรเปลี่ยนสายพานภายใน 3 เดือน">' + esc(f.recommend) + '</textarea></div></section>' +
+      '<section class="info"><h2>อะไหล่ที่เปลี่ยน</h2><div id="rpParts">' + partsHTML() + '</div></section>' +
+      '<section class="info"><h2>รูปก่อนทำงาน <small class="rp-count">' + f.before.length + '/' + MAX_PHOTOS + '</small></h2>' + photoGrid('before') +
+      '<h2>รูปหลังทำงาน <small class="rp-count">' + f.after.length + '/' + MAX_PHOTOS + '</small></h2>' + photoGrid('after') +
+      '<h2>วิดีโอ <small class="rp-count">' + f.videos.length + '/' + MAX_VIDEOS + '</small></h2><div class="rp-videos">' +
+      f.videos.map(function (v, i) { return '<div class="rp-vid"><span>🎬 ' + esc(v.name || 'วิดีโอ') + '</span><button type="button" class="rp-del2" data-vdel="' + i + '" aria-label="ลบวิดีโอ">' + I.x + '</button></div>'; }).join('') +
+      (f.videos.length < MAX_VIDEOS ? '<label class="rp-more">🎥 เพิ่มวิดีโอ (ไม่เกิน ' + MAX_VIDEO_MB + ' MB)<input type="file" accept="video/*" hidden id="rpVid"></label>' : '') + '</div></section>' +
+      '<section class="info"><h2>ส่งมอบงาน</h2>' +
+      '<div class="field"><label for="rpAcc">ผู้รับมอบงาน / ลูกค้า</label><input id="rpAcc" data-ff="accept" value="' + esc(f.accept) + '" autocomplete="off"></div>' +
+      '<div class="field' + (f.workType === 'PM' ? '' : ' off') + '"><label for="rpPm">PM ครั้งถัดไป</label><input id="rpPm" type="date" data-ff="nextPm" value="' + esc(f.nextPm) + '"' + (f.workType === 'PM' ? '' : ' disabled') + '>' + (f.workType === 'PM' ? '' : '<small class="rp-hint">ใช้ได้เฉพาะใบตรวจประเภท PM</small>') + '</div>' +
+      padHTML('cs', 'ลายเซ็นลูกค้า / ผู้รับมอบงาน') + padHTML('ts', 'ลายเซ็นทีมช่าง') + '</section>' +
+      '<section class="info"><h2>ความพึงพอใจของลูกค้า</h2><small class="rp-hint">ให้ลูกค้าให้คะแนนหลังเซ็นรับงาน</small><div class="rp-faces" role="radiogroup" aria-label="คะแนนความพึงพอใจ">' +
+      FACES.map(function (x) { return '<button type="button" role="radio" data-rate="' + x[0] + '" aria-checked="' + (f.rating === x[0]) + '"><i aria-hidden="true">' + x[1] + '</i><span>' + x[2] + '</span></button>'; }).join('') + '</div>' +
+      '<div class="field"><label for="rpCom">ความเห็นของลูกค้า</label><textarea id="rpCom" rows="2" data-ff="comment" placeholder="ความเห็นเพิ่มเติม (ถ้ามี)">' + esc(f.comment) + '</textarea></div></section>' +
+      '<p class="note">ข้อมูลที่กรอกจะเก็บเป็นฉบับร่างในเครื่องนี้ จนกว่าจะกดส่ง</p>' +
+      '</div></div>' +
+      '<div class="bar"><button type="button" class="next" id="rsend">' + (closed ? 'บันทึกใบตรวจ' : 'ส่งใบตรวจ และจบงาน') + I.arrow + '</button></div></div>';
+    wireReport();
+  }
+  function wireReport() {
+    var f = rep.f, root = app;
+    document.getElementById('rb').onclick = function () { saveDraft(); history.length > 1 ? history.back() : (location.hash = '#/job/' + encodeURIComponent(rep.c.id)); };
+    root.querySelectorAll('[data-ff]').forEach(function (el) { el.oninput = function () { f[el.getAttribute('data-ff')] = el.value; touch(); }; });
+    root.querySelectorAll('[data-wt]').forEach(function (b) { b.onclick = function () {
+      var t = b.getAttribute('data-wt'); if (t === f.workType) return;
+      f.workType = t; f.checklist = checklistFor(t, f.checklist); touch(); keepScroll(renderReport);
+    }; });
+    var chk = document.getElementById('rpChk');
+    chk.onclick = function (e) {
+      var s = e.target.closest('[data-set]'), n = e.target.closest('[data-note]');
+      if (s) { var a = s.getAttribute('data-set').split('|'), x = f.checklist[+a[0]]; x.result = x.result === a[1] ? '' : a[1]; touch(); keepScroll(renderReport); }
+      if (n) noteSheet(+n.getAttribute('data-note'));
+    };
+    var parts = document.getElementById('rpParts');
+    parts.oninput = function (e) {
+      var row = e.target.closest('[data-part]'), k = e.target.getAttribute('data-pf'); if (!row || !k) return;
+      var p = f.parts[+row.getAttribute('data-part')]; p[k] = k === 'qty' ? (Number(e.target.value) || 1) : e.target.value; touch();
+    };
+    parts.onclick = function (e) {
+      if (e.target.closest('#rpPart')) { f.parts.push({ partNo: '', name: '', qty: 1, note: '' }); touch(); keepScroll(renderReport); }
+      var d = e.target.closest('[data-pdel]'); if (d) { f.parts.splice(+d.getAttribute('data-pdel'), 1); touch(); keepScroll(renderReport); }
+    };
+    root.querySelectorAll('[data-add]').forEach(function (inp) { inp.onchange = async function () {
+      var kind = inp.getAttribute('data-add'), files = [].slice.call(inp.files || []).slice(0, MAX_PHOTOS - f[kind].length);
+      for (var i = 0; i < files.length; i++) { try { f[kind].push(await shrink(files[i], 1000, 0.78)); } catch (e) { toast(e.message); } }
+      touch(); keepScroll(renderReport);
+    }; });
+    root.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = async function () {
+      var a = b.getAttribute('data-del').split('|');
+      if (await confirmSheet('ลบรูปนี้?', 'รูปจะหายจากใบตรวจงาน', 'ลบรูป')) { f[a[0]].splice(+a[1], 1); touch(); keepScroll(renderReport); }
+    }; });
+    root.querySelectorAll('[data-view]').forEach(function (im) { im.onclick = function () { viewPic(im.getAttribute('src')); }; });
+    var vid = document.getElementById('rpVid');
+    if (vid) vid.onchange = function () {
+      var file = vid.files && vid.files[0]; if (!file) return;
+      if (file.size > MAX_VIDEO_MB * 1048576) { toast('วิดีโอใหญ่เกิน ' + MAX_VIDEO_MB + ' MB ลองถ่ายให้สั้นลง'); return; }
+      var rd = new FileReader();
+      rd.onload = function () { f.videos.push({ name: file.name, type: file.type, size: file.size, data: rd.result }); keepScroll(renderReport); };
+      rd.readAsDataURL(file);
+    };
+    root.querySelectorAll('[data-vdel]').forEach(function (b) { b.onclick = function () { f.videos.splice(+b.getAttribute('data-vdel'), 1); keepScroll(renderReport); }; });
+    root.querySelectorAll('[data-rate]').forEach(function (b) { b.onclick = function () { var v = +b.getAttribute('data-rate'); f.rating = f.rating === v ? 0 : v; touch(); keepScroll(renderReport); }; });
+    initPad('cs'); initPad('ts');
+    document.getElementById('rsend').onclick = sendReport;
+  }
+  function keepScroll(fn) { var s = document.getElementById('rs'), y = s ? s.scrollTop : 0; fn(); var n = document.getElementById('rs'); if (n) n.scrollTop = y; }
+  function noteSheet(i) {
+    var x = rep.f.checklist[i], w = document.createElement('div');
+    w.innerHTML = '<div class="scrim top-dialog" role="dialog" aria-modal="true" aria-labelledby="nt-t"><form class="sheet" id="nt-f">' +
+      '<h2 id="nt-t">📝 หมายเหตุข้อ ' + (i + 1) + '</h2><p>' + esc(x.label) + '</p>' +
+      '<div class="field"><textarea id="nt-i" rows="4" placeholder="พิมพ์สิ่งที่พบ หรือสิ่งที่ต้องแก้ไข">' + esc(x.note) + '</textarea></div>' +
+      '<div class="sheet-actions"><button type="button" id="nt-c">ยกเลิก</button><button type="submit" class="primary">บันทึก</button></div></form></div>';
+    var s = w.firstChild; document.body.appendChild(s);
+    var t = document.getElementById('nt-i'); setTimeout(function () { try { t.focus(); } catch (e) {} }, 120);
+    s.addEventListener('click', function (e) { if (e.target === s) s.remove(); });
+    document.getElementById('nt-c').onclick = function () { s.remove(); };
+    document.getElementById('nt-f').onsubmit = function (e) {
+      e.preventDefault(); var v = t.value.trim(); x.note = v; s.remove(); touch(); keepScroll(renderReport);
+      toast(v ? 'เพิ่มหมายเหตุแล้ว' : 'ลบหมายเหตุแล้ว');
+    };
+  }
+  /* the signature pads: the same 560×180 transparent PNG the web stores; ย้อนกลับ undoes one stroke, ล้าง too */
+  function initPad(key) {
+    var cv = document.getElementById('sig-' + key); if (!cv) return;
+    var g = cv.getContext('2d'), field = key === 'cs' ? 'csig' : 'tsig', stack = rep.undo[key], drawing = false;
+    function style() { g.lineWidth = 3; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#173b8f'; }
+    function load(src, done) { g.clearRect(0, 0, cv.width, cv.height); if (!src) return done && done(); var im = new Image(); im.onload = function () { g.drawImage(im, 0, 0, cv.width, cv.height); if (done) done(); }; im.src = src; }
+    function pos(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * cv.width / r.width, y: (e.clientY - r.top) * cv.height / r.height }; }
+    style(); load(rep.f[field]);
+    cv.onpointerdown = function (e) { e.preventDefault(); stack.push(rep.f[field]); if (stack.length > 20) stack.shift(); drawing = true; style(); var p = pos(e); g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x + .1, p.y + .1); g.stroke(); try { cv.setPointerCapture(e.pointerId); } catch (x) {} };
+    cv.onpointermove = function (e) { if (!drawing) return; var p = pos(e); g.lineTo(p.x, p.y); g.stroke(); };
+    cv.onpointerup = cv.onpointercancel = function () { if (!drawing) return; drawing = false; rep.f[field] = cv.toDataURL('image/png'); touch(); };
+    app.querySelector('[data-sundo="' + key + '"]').onclick = function () { if (!stack.length) return toast('ไม่มีอะไรให้ย้อนกลับ'); rep.f[field] = stack.pop(); load(rep.f[field]); touch(); };
+    app.querySelector('[data-sclr="' + key + '"]').onclick = function () { if (!rep.f[field]) return; stack.push(rep.f[field]); rep.f[field] = ''; load(''); touch(); };
+  }
+  /* js/68: a blank pad still makes a valid (transparent) PNG, so count the ink, not the string */
+  function hasInk(src) {
+    return new Promise(function (res) {
+      if (!src) return res(false);
+      var im = new Image();
+      im.onload = function () {
+        var cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height;
+        var g = cv.getContext('2d'); g.drawImage(im, 0, 0);
+        var d = g.getImageData(0, 0, cv.width, cv.height).data, n = 0;
+        for (var i = 3; i < d.length; i += 4) if (d[i] > 0 && ++n > INK_MIN) return res(true);
+        res(false);
+      };
+      im.onerror = function () { res(false); };
+      im.src = src;
+    });
+  }
+  async function nextReportNo() {
+    var d = new Date(), p = 'SR-' + d.getFullYear() + pad2(d.getMonth() + 1) + '-', n = 1;
+    var r = await client().from('service_reports').select('report_no').like('report_no', p + '%');
+    if (r.error) throw new Error(friendly(r.error));
+    (r.data || []).forEach(function (x) { n = Math.max(n, (parseInt(String(x.report_no).split('-').pop(), 10) || 0) + 1); });
+    return p + String(n).padStart(3, '0');
+  }
+  async function sendReport() {
+    if (busy || !rep) return;
+    var f = rep.f, c = rep.c, closed = CLOSED.indexOf(String(c.status || '')) >= 0;
+    if (!(await hasInk(f.csig))) {
+      var go = await confirmSheet('ยังไม่ได้ลายเซ็นลูกค้า', 'ต้องให้ลูกค้าเซ็นรับงานก่อนถึงจะส่งใบตรวจและจบงานได้', 'ไปที่ช่องเซ็น');
+      if (go) { var pad = document.getElementById('sig-cs'); if (pad) pad.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      return;
+    }
+    var blank = f.checklist.filter(function (x) { return !x.result; }).length;
+    var ok = await confirmSheet(closed ? 'บันทึกใบตรวจ?' : 'ส่งใบตรวจและจบงาน?',
+      (blank ? 'เช็กลิสต์ยังไม่ได้เลือก ' + blank + ' ข้อ (จะพิมพ์เป็นช่องว่าง) ' : '') + (closed ? 'ใบตรวจของงานนี้จะถูกแก้ตามที่กรอก' : 'งานนี้จะย้ายออกจากงานของฉัน และออฟฟิศจะเห็นใบตรวจทันที'),
+      closed ? 'บันทึก' : 'จบงาน');
+    if (!ok) return;
+    busy = true;
+    var btn = document.getElementById('rsend'); btn.disabled = true; btn.textContent = 'กำลังส่งใบตรวจ…';
+    try {
+      var fresh = await freshCase(c.id), now = new Date().toISOString(), old = rep.old;
+      var arrived = (fresh.field_status_log || []).filter(function (x) { return x && x.status === ARRIVED; })[0];
+      var row = {
+        id: old ? old.id : uid(), report_no: old && old.report_no ? old.report_no : await nextReportNo(), case_id: fresh.id,
+        customer_id: fresh.customer_id || null, machine_id: fresh.machine_id || null, tech_id: fresh.assignee || null,
+        service_type: fresh.service_type || '', work_type: f.workType, check_in_at: arrived ? arrived.createdAt : (old && old.check_in_at) || null,
+        appointment: fresh.appointment || null, checklist: f.checklist, diagnosis: f.diagnosis.trim(), work_performed: f.work.trim(),
+        recommendation: f.recommend.trim(), parts: f.parts.filter(function (p) { return p.partNo || p.name; }), before_photos: f.before, after_photos: f.after,
+        videos: f.videos, status_log: fresh.field_status_log || [], customer_accept: f.accept.trim(), customer_signature: f.csig, tech_signature: f.tsig,
+        next_pm: f.workType === 'PM' && f.nextPm ? f.nextPm : (old && old.next_pm) || null, line_sent_at: old ? old.line_sent_at : null,
+        line_send_status: old ? old.line_send_status || '' : '', status: 'Completed', created_at: old ? old.created_at : now, updated_at: now
+      };
+      var w = await client().from('service_reports').upsert(row);
+      if (w.error) throw new Error(friendly(w.error));
+      var stillClosed = CLOSED.indexOf(String(fresh.status || '')) >= 0;
+      if (!stillClosed) {
+        var log = (fresh.field_status_log || []).slice();
+        log.push({ id: uid(), status: DONE, note: 'บันทึกใบตรวจและลงลายเซ็นจบงาน', media: [], createdAt: now, techId: me.techId, source: 'app' });
+        var u = await client().from('service_cases').update({ field_status: DONE, field_status_log: log, status: 'เสร็จสิ้น', updated_at: now }).eq('id', fresh.id).select('id').maybeSingle();
+        if (u.error) throw new Error(friendly(u.error));
+      }
+      if (f.rating || f.comment.trim()) {
+        try {
+          var s = await client().from('system_settings').select('data').eq('id', 'main').maybeSingle();
+          if (s.data && s.data.data) {
+            var data = s.data.data; data.caseFeedback = data.caseFeedback || {};
+            data.caseFeedback[fresh.id] = { rating: f.rating, comment: f.comment.trim(), at: now, by: me.name || me.username || '' };
+            await client().from('system_settings').update({ data: data, updated_at: now }).eq('id', 'main');
+          }
+        } catch (e) {}
+      }
+      client().from('case_messages').insert({ case_id: fresh.id, body: stillClosed ? '📝 ช่างแก้ใบตรวจงาน ' + row.report_no : '✅ ช่างส่งใบตรวจ ' + row.report_no + ' และจบงานแล้ว', photos: [] }).then(function () {}, function () {});
+      try { localStorage.removeItem(draftKey(fresh.id)); } catch (e) {}
+      if (!stillClosed) jobs = jobs.filter(function (x) { return x.id !== fresh.id; });
+      rep = null; busy = false;
+      toast(stillClosed ? 'บันทึกใบตรวจ ' + row.report_no + ' แล้ว' : 'ส่งใบตรวจ ' + row.report_no + ' และจบงานแล้ว');
+      location.replace('#/jobs');
+    } catch (e) {
+      busy = false; btn.disabled = false; btn.innerHTML = (closed ? 'บันทึกใบตรวจ' : 'ส่งใบตรวจ และจบงาน') + I.arrow;
+      saveDraft(); toast(e.message + ' (ข้อมูลยังเก็บไว้ในเครื่อง ลองส่งใหม่ได้)');
+    }
   }
 
   /* --------------------------------------------------------------- chat ---- */
@@ -589,15 +882,15 @@
     box.hidden = !chat.pending.length;
     box.innerHTML = chat.pending.map(function (src, i) { return '<span class="pend"><img src="' + src + '" alt=""><button type="button" data-rm="' + i + '" aria-label="เอารูปออก">' + I.x + '</button></span>'; }).join('');
   }
-  function shrink(file) {
+  function shrink(file, max, q) {
     return new Promise(function (res, rej) {
       if (!file || !/^image\//.test(file.type)) return rej(new Error('ไม่ใช่ไฟล์รูป'));
       var url = URL.createObjectURL(file), img = new Image();
       img.onload = function () {
-        var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, 1280 / Math.max(w, h));
+        var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, (max || 1280) / Math.max(w, h));
         var cv = document.createElement('canvas'); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
         var g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0, cv.width, cv.height);
-        URL.revokeObjectURL(url); res(cv.toDataURL('image/jpeg', 0.72));
+        URL.revokeObjectURL(url); res(cv.toDataURL('image/jpeg', q || 0.72));
       };
       img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('เปิดรูปไม่ได้')); };
       img.src = url;
@@ -1051,6 +1344,8 @@
     if ((m = /^#\/chat\/(.+)$/.exec(h))) return renderChat('case', decodeURIComponent(m[1]));
     if ((m = /^#\/dm\/(.+)$/.exec(h))) return renderChat('dm', decodeURIComponent(m[1]));
     chatStop();
+    if ((m = /^#\/report\/(.+)$/.exec(h))) return openReport(decodeURIComponent(m[1]));
+    rep = null;
     if ((m = /^#\/job\/(.+)$/.exec(h))) return renderJob(decodeURIComponent(m[1]));
     if (h === '#/me') return renderMe();
     if (h === '#/cal') { renderCal(!allCases.length || !techs.length); return refreshCal(); }
@@ -1085,7 +1380,8 @@
     if (me && TABS.indexOf(h) >= 0) { location.hash = '#/jobs'; return 'stay'; }
     if (me && h !== '#/jobs') {
       /* a job or a chat: the page it was opened from; if there is none, its parent page */
-      var m = /^#\/chat\/(.+)$/.exec(h), parent = m ? '#/job/' + m[1] : /^#\/dm\//.test(h) ? '#/chats' : '#/jobs';
+      var m = /^#\/(?:chat|report)\/(.+)$/.exec(h), parent = m ? '#/job/' + m[1] : /^#\/dm\//.test(h) ? '#/chats' : '#/jobs';
+      if (rep) saveDraft();
       history.back();
       setTimeout(function () { if (location.hash === h) location.hash = parent; }, 250);
       return 'stay';
@@ -1111,6 +1407,7 @@
     if (document.visibilityState === 'visible') checkUpdate(false);
     if (document.visibilityState === 'visible' && me && !busy) {
       if (chat) { chatPull().catch(function () {}); return; }   /* keep what is being typed */
+      if (rep) return;   /* the ใบตรวจ is open: coming back from the camera must not redraw it */
       loadJobs().then(function () { if (!document.querySelector('.scrim')) route(); if (location.hash !== '#/chats') loadHub().catch(function () {}); }, function () {});
     }
   });
