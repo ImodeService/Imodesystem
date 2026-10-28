@@ -12,7 +12,7 @@
   'use strict';
 
   var C = window.IMODE_CONFIG || {};
-  var VERSION = '0.7';      /* bump for every release; tools/make-version.js copies it into version.json */
+  var VERSION = '0.8';      /* bump for every release; tools/make-version.js copies it into version.json */
   var NATIVE = 1;           /* the native (APK) features this bundle needs; see AppChromePlugin.NATIVE */
   var STEPS = ['กำลังเดินทาง', 'ถึงหน้างาน', 'เริ่มตรวจเช็ก', 'กำลัง PM / Maintenance', 'กำลังซ่อม Service', 'ทดสอบเครื่อง', 'รอลูกค้าตรวจรับ', 'จบงาน'];
   var HOLD = 'รออะไหล่';
@@ -416,6 +416,7 @@
       '<button type="button" class="action" id="jn"' + (url ? '' : ' disabled') + '>' + I.nav + 'นำทาง</button>' +
       '<button type="button" class="action" id="jc"' + (tel ? '' : ' disabled') + '>' + I.phone + 'โทรลูกค้า</button>' +
       '<button type="button" class="action" id="jm">' + I.chat + 'แชทเคส</button></div>' +
+      stepLogHTML(c) +
       '<section class="info"><h2>เครื่องที่ต้องดู</h2><div class="kv">' +
       '<span>เครื่อง</span><span>' + esc([c.machine, c.model].filter(Boolean).join(' ') || '-') + '</span>' +
       '<span>ซีเรียล</span><span>' + esc(c.serial || '-') + '</span>' +
@@ -454,6 +455,9 @@
       await moveStep(c.id, next, { mustBe: cur, gps: gps });
       toast('อัปเดตเป็น ' + next);
     }); };
+    app.querySelectorAll('[data-step]').forEach(function (b) { b.onclick = function () {
+      var v = b.getAttribute('data-step'), k = v.indexOf('|'); stepSheet(c.id, v.slice(0, k), v.slice(k + 1));
+    }; });
     var br = document.getElementById('jr'), bd = document.getElementById('jd');
     [br, bd].forEach(function (b) { if (b) b.onclick = function () { location.hash = '#/report/' + encodeURIComponent(c.id); }; });
     var bk = document.getElementById('jk');
@@ -477,6 +481,98 @@
     busy = false;
     var m = /^#\/job\/(.+)$/.exec(location.hash);
     if (m) renderJob(decodeURIComponent(m[1]));
+  }
+
+  /* ------------------------------------------------------- step records ---- */
+  /* หน้างาน steps carry a note and photos, as on the web (js/03 saveFieldStatus media, js/91):
+     they go into the entry the step already has in field_status_log (one step, one entry), and
+     a correction keeps the version it replaced in entry.revisions (last 5; photos only when they
+     changed), so the office's step drawer and the printed timeline show them unchanged. */
+  var STEP_PHOTOS = 6, STEP_VIDEOS = 2, REV_CAP = 5;
+  function stepLogHTML(c) {
+    var log = (Array.isArray(c.field_status_log) ? c.field_status_log : []).filter(function (e) { return e && e.status && !e.caseCat; });
+    if (!log.length) return '';
+    var seen = {}, rows = [];
+    for (var i = log.length - 1; i >= 0; i--) { if (seen[log[i].status]) continue; seen[log[i].status] = 1; rows.unshift(log[i]); }
+    return '<section class="info"><h2>บันทึกหน้างาน <small class="rp-count">แตะขั้นเพื่อเพิ่มรูปหรือหมายเหตุ</small></h2><div class="sl">' +
+      rows.map(function (e) {
+        var media = Array.isArray(e.media) ? e.media : [], pics = media.filter(function (m) { return m && m.type !== 'video'; }), vids = media.length - pics.length;
+        var isNow = e.status === c.field_status, t = e.createdAt ? new Date(e.createdAt) : null;
+        return '<button type="button" class="sl-row' + (isNow ? ' now' : '') + '" data-step="' + esc(e.id || '') + '|' + esc(e.status) + '">' +
+          '<span class="sl-dot" aria-hidden="true"></span><span class="sl-main"><b>' + esc(e.status) + (isNow ? ' <em>ขั้นปัจจุบัน</em>' : '') + '</b>' +
+          '<small>' + (t ? esc(thDate(t) + ' ' + hhmm(t) + ' น.') : '') + (e.editedAt ? ' · แก้ไขแล้ว' : '') + '</small>' +
+          (e.note ? '<span class="sl-note">' + esc(e.note) + '</span>' : '') +
+          (pics.length ? '<span class="sl-pics">' + pics.slice(0, 4).map(function (m) { return '<img src="' + esc(m.data) + '" alt="">'; }).join('') + (pics.length > 4 ? '<i>+' + (pics.length - 4) + '</i>' : '') + '</span>' : '') +
+          (vids ? '<small>🎬 วิดีโอ ' + vids + ' ไฟล์</small>' : '') + '</span>' +
+          '<span class="sl-add" aria-hidden="true">' + (media.length || e.note ? I.pen : I.cam) + '</span></button>';
+      }).join('') + '</div></section>';
+  }
+  function sameMedia(a, b) {
+    a = a || []; b = b || [];
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) if (String((a[i] || {}).data || '') !== String((b[i] || {}).data || '')) return false;
+    return true;
+  }
+  function stepSheet(caseId, entryId, status) {
+    var c = jobs.filter(function (x) { return x.id === caseId; })[0]; if (!c) return;
+    var log = c.field_status_log || [], e = log.filter(function (x) { return x && x.id === entryId; })[0] || lastEntryFor(c, status);
+    if (!e) return;
+    var st = { note: e.note || '', media: JSON.parse(JSON.stringify(e.media || [])) };
+    var w = document.createElement('div');
+    w.innerHTML = '<div class="scrim top-dialog" role="dialog" aria-modal="true" aria-labelledby="sp-t"><form class="sheet sp" id="sp-f">' +
+      '<h2 id="sp-t">' + esc(status) + '</h2><p>รูปและหมายเหตุของขั้นนี้ ออฟฟิศเห็นในไทม์ไลน์ของเคส</p><div id="sp-media"></div>' +
+      '<div class="field"><label for="sp-n">หมายเหตุ</label><textarea id="sp-n" rows="3" placeholder="เช่น ถึงหน้างาน รอเจ้าหน้าที่เปิดห้องเครื่อง">' + esc(st.note) + '</textarea></div>' +
+      '<div class="sheet-actions"><button type="button" id="sp-c">ยกเลิก</button><button type="submit" class="primary" id="sp-s">บันทึก</button></div></form></div>';
+    var s = w.firstChild; document.body.appendChild(s);
+    function paintMedia() {
+      var pics = st.media.filter(function (m) { return m.type !== 'video'; }).length, vids = st.media.length - pics;
+      document.getElementById('sp-media').innerHTML = '<div class="rp-photos">' + st.media.map(function (m, i) {
+        return '<span class="rp-ph">' + (m.type === 'video' ? '<span class="sp-vid">🎬</span>' : '<img src="' + esc(m.data) + '" alt="">') +
+          '<button type="button" class="rp-del" data-mdel="' + i + '" aria-label="ลบ">' + I.x + '</button></span>';
+      }).join('') +
+        (pics < STEP_PHOTOS ? '<label class="rp-add">' + I.cam + '<span>เพิ่มรูป</span><input type="file" accept="image/*" multiple hidden id="sp-pf"></label>' : '') +
+        (vids < STEP_VIDEOS ? '<label class="rp-add"><span style="font-size:20px">🎬</span><span>วิดีโอ</span><input type="file" accept="video/*" hidden id="sp-vf"></label>' : '') + '</div>' +
+        '<small class="rp-hint">รูปได้ ' + STEP_PHOTOS + ' รูป วิดีโอ ' + STEP_VIDEOS + ' ไฟล์ ไม่เกินไฟล์ละ ' + MAX_VIDEO_MB + ' MB</small>';
+      var pf = document.getElementById('sp-pf');
+      if (pf) pf.onchange = async function () {
+        var files = [].slice.call(pf.files || []).slice(0, STEP_PHOTOS - pics);
+        for (var i = 0; i < files.length; i++) { try { st.media.push({ type: 'image', name: files[i].name, data: await shrink(files[i], 1000, 0.78), size: files[i].size }); } catch (x) { toast(x.message); } }
+        paintMedia();
+      };
+      var vf = document.getElementById('sp-vf');
+      if (vf) vf.onchange = function () {
+        var f = vf.files && vf.files[0]; if (!f) return;
+        if (f.size > MAX_VIDEO_MB * 1048576) { toast('วิดีโอใหญ่เกิน ' + MAX_VIDEO_MB + ' MB ลองถ่ายให้สั้นลง'); return; }
+        var rd = new FileReader(); rd.onload = function () { st.media.push({ type: 'video', name: f.name, data: rd.result, size: f.size }); paintMedia(); }; rd.readAsDataURL(f);
+      };
+      s.querySelectorAll('[data-mdel]').forEach(function (b) { b.onclick = function () { st.media.splice(+b.getAttribute('data-mdel'), 1); paintMedia(); }; });
+    }
+    paintMedia();
+    s.addEventListener('click', function (ev) { if (ev.target === s) s.remove(); });
+    document.getElementById('sp-c').onclick = function () { s.remove(); };
+    document.getElementById('sp-f').onsubmit = async function (ev) {
+      ev.preventDefault();
+      var note = document.getElementById('sp-n').value.trim();
+      if (note === String(e.note || '') && sameMedia(e.media, st.media)) { s.remove(); return; }
+      var btn = document.getElementById('sp-s'); btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
+      try {
+        var fresh = await freshCase(caseId), flog = (fresh.field_status_log || []).slice();
+        var k = -1; flog.forEach(function (x, i) { if (x && (x.id === e.id || (!e.id && x.status === status))) k = i; });
+        if (k < 0) throw new Error('ไม่พบบันทึกของขั้นนี้แล้ว ลองโหลดงานใหม่');
+        var cur = Object.assign({}, flog[k]), revs = Array.isArray(cur.revisions) ? cur.revisions.slice() : [];
+        var prev = { note: cur.note || '', at: cur.editedAt || cur.createdAt || '', by: cur.editedBy || cur.techId || '' };
+        if (!sameMedia(cur.media, st.media)) prev.media = cur.media || [];
+        if (cur.note || (cur.media && cur.media.length)) { revs.push(prev); while (revs.length > REV_CAP) revs.shift(); }
+        cur.note = note; cur.media = st.media; cur.revisions = revs; cur.editedAt = new Date().toISOString(); cur.editedBy = me.name || me.username || '';
+        flog[k] = cur;
+        var r = await client().from('service_cases').update({ field_status_log: flog, updated_at: cur.editedAt }).eq('id', caseId).select(COLS).maybeSingle();
+        if (r.error) throw new Error(friendly(r.error));
+        if (!r.data) throw new Error('บันทึกไม่สำเร็จ บัญชีนี้อาจไม่มีสิทธิ์แก้งานนี้');
+        var j = jobs.findIndex(function (x) { return x.id === caseId; }); if (j >= 0) jobs[j] = r.data;
+        s.remove(); toast('บันทึกขั้น ' + status + ' แล้ว');
+        if (location.hash === '#/job/' + encodeURIComponent(caseId)) renderJob(caseId);
+      } catch (x) { btn.disabled = false; btn.textContent = 'บันทึก'; toast(x.message); }
+    };
   }
 
   /* ------------------------------------------------------------ report ---- */
