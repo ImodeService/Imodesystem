@@ -365,3 +365,8 @@ html[data-t="dark"] .rp-pick .is-fair[aria-pressed="true"],html[data-t="gold"] .
 .sp .rp-photos{grid-template-columns:repeat(4,minmax(0,1fr))}
 .sp-vid{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px}
 .scrim.top-dialog .sheet.sp{max-height:calc(100vh - var(--safe-t) - 32px - var(--safe-b));overflow-y:auto}
+.bar .cam-btn{cursor:pointer;color:var(--accent-text);border-color:var(--orange)}
+/* the step button stays on one line beside the camera: the label shrinks, then ends in … */
+.next .one{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar:has(.cam-btn) .next{font-size:14px;gap:6px;padding:0 10px}
+.bar:has(.cam-btn) .back{width:52px}

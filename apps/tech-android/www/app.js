@@ -12,7 +12,7 @@
   'use strict';
 
   var C = window.IMODE_CONFIG || {};
-  var VERSION = '0.8';      /* bump for every release; tools/make-version.js copies it into version.json */
+  var VERSION = '0.9';      /* bump for every release; tools/make-version.js copies it into version.json */
   var NATIVE = 1;           /* the native (APK) features this bundle needs; see AppChromePlugin.NATIVE */
   var STEPS = ['กำลังเดินทาง', 'ถึงหน้างาน', 'เริ่มตรวจเช็ก', 'กำลัง PM / Maintenance', 'กำลังซ่อม Service', 'ทดสอบเครื่อง', 'รอลูกค้าตรวจรับ', 'จบงาน'];
   var HOLD = 'รออะไหล่';
@@ -214,9 +214,18 @@
     var r = await client().from('service_cases').select(COLS).eq('id', id).maybeSingle();
     if (r.error) throw new Error(friendly(r.error));
     if (!r.data) throw new Error('ไม่พบงานนี้ อาจถูกลบหรือย้ายไปแล้ว');
+    var a = allCases.findIndex(function (c) { return c.id === id; });
+    if (a >= 0) allCases[a] = r.data; else allCases.push(r.data);
     var i = jobs.findIndex(function (c) { return c.id === id; });
-    if (i >= 0) jobs[i] = r.data; else jobs.push(r.data);
+    if (CLOSED.indexOf(String(r.data.status || '')) >= 0) { if (i >= 0) jobs.splice(i, 1); }   /* finished work lives in เสร็จแล้ว */
+    else if (i >= 0) jobs[i] = r.data; else jobs.push(r.data);
     return r.data;
+  }
+  function findCase(id) { return jobs.filter(function (x) { return x.id === id; })[0] || allCases.filter(function (x) { return x.id === id; })[0]; }
+  /* เสร็จแล้ว, the web's งานที่สำเร็จแล้ว (js/45) for a technician: closed cases they were on, crew included, newest first */
+  function doneJobs() {
+    return allCases.filter(function (c) { return crewOf(c).indexOf(me.techId) >= 0 && CLOSED.indexOf(String(c.status || '')) >= 0; })
+      .sort(function (a, b) { return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); });
   }
   function getGps() {
     return new Promise(function (resolve) {
@@ -306,17 +315,19 @@
     return '<span class="chip">ยังไม่เริ่ม</span>';
   }
   function jobCard(c) {
-    var d = apptDate(c), live = c.field_status && c.field_status !== DONE;
-    var when = d ? (dayKey(d) === dayKey(new Date()) ? hhmm(d) + ' น.' : d.getDate() + ' ' + TH_MON[d.getMonth()] + ' · ' + hhmm(d) + ' น.') : 'ยังไม่นัดหมาย';
+    var d = apptDate(c), live = c.field_status && c.field_status !== DONE, closed = CLOSED.indexOf(String(c.status || '')) >= 0;
+    var u = closed && c.updated_at ? new Date(c.updated_at) : null;
+    var when = u ? 'เสร็จ ' + u.getDate() + ' ' + TH_MON[u.getMonth()] + ' · ' + hhmm(u) + ' น.' : d ? (dayKey(d) === dayKey(new Date()) ? hhmm(d) + ' น.' : d.getDate() + ' ' + TH_MON[d.getMonth()] + ' · ' + hhmm(d) + ' น.') : 'ยังไม่นัดหมาย';
     var where = c.location || c.branch || '';
     return '<button type="button" class="job' + (live ? ' live' : '') + '" data-job="' + esc(c.id) + '">' +
-      '<span class="job-top"><span class="job-time">' + esc(when) + '</span>' + chipFor(c) + '</span>' +
+      '<span class="job-top"><span class="job-time">' + esc(when) + '</span>' + (closed ? '<span class="chip">' + esc(c.status) + '</span>' : chipFor(c)) + '</span>' +
       '<span style="display:flex;flex-direction:column;gap:2px"><b>' + esc(c.customer || '-') + '</b>' +
       '<span class="sub">' + esc([c.machine, c.service_type].filter(Boolean).join(' · ') || '-') + '</span></span>' +
       (where ? '<span class="where">' + esc(where) + '</span>' : '') + '</button>';
   }
   function visibleJobs() {
     var today = new Date(), tm = new Date(Date.now() + 86400000);
+    if (filter === 'done') return doneJobs();
     return jobs.filter(function (c) {
       if (filter === 'all') return true;
       var d = apptDate(c);
@@ -331,19 +342,19 @@
     var liveN = jobs.filter(function (c) { return c.field_status && c.field_status !== DONE; }).length;
     var weekN = jobs.filter(function (c) { var d = apptDate(c); return d && d >= now && d <= week; }).length;
     var list = visibleJobs();
-    var empty = filter === 'today' ? 'วันนี้ไม่มีงานที่นัดไว้' : filter === 'tomorrow' ? 'พรุ่งนี้ยังไม่มีงานที่นัดไว้' : 'ยังไม่มีงานที่ได้รับมอบหมาย';
+    var empty = filter === 'today' ? 'วันนี้ไม่มีงานที่นัดไว้' : filter === 'tomorrow' ? 'พรุ่งนี้ยังไม่มีงานที่นัดไว้' : filter === 'done' ? 'ยังไม่มีงานที่เสร็จ' : 'ยังไม่มีงานที่ได้รับมอบหมาย';
     app.innerHTML = '<div class="screen home"><header class="head"><div class="head-row"><div class="grow">' +
       '<small>' + esc(thDate(now)) + '</small><h1>งานของฉัน</h1></div>' +
       '<button type="button" class="icon-btn" id="jr" aria-label="โหลดงานใหม่">' + I.refresh + '</button>' +
       '<button type="button" class="icon-btn" id="jt" aria-label="เปลี่ยนธีม">' + I.palette + '</button></div></header>' +
       '<div class="stats"><div><b>' + todayN + '</b><span>งานวันนี้</span></div><div><b class="hot">' + liveN + '</b><span>กำลังทำ</span></div><div><b>' + weekN + '</b><span>7 วันข้างหน้า</span></div></div>' +
       '<div class="pills" role="group" aria-label="ช่วงเวลา">' +
-      [['today', 'วันนี้'], ['tomorrow', 'พรุ่งนี้'], ['all', 'ทั้งหมด']].map(function (p) {
+      [['today', 'วันนี้'], ['tomorrow', 'พรุ่งนี้'], ['all', 'ทั้งหมด'], ['done', 'เสร็จแล้ว']].map(function (p) {
         return '<button type="button" data-f="' + p[0] + '" aria-pressed="' + (filter === p[0]) + '">' + p[1] + '</button>';
       }).join('') + '</div>' +
       '<div class="scroll"><div class="list">' +
       (loading ? '<div class="loading"><span class="spin" aria-hidden="true"></span>กำลังโหลดงาน</div>'
-        : list.length ? list.map(jobCard).join('') : '<div class="empty"><b>' + esc(empty) + '</b>ดูงานอื่นได้ที่แท็บ ทั้งหมด</div>') +
+        : list.length ? list.map(jobCard).join('') : '<div class="empty"><b>' + esc(empty) + '</b>' + (filter === 'done' ? 'งานที่ส่งใบตรวจหรือปิดเคสแล้วจะมาอยู่ที่นี่' : 'ดูงานอื่นได้ที่แท็บ ทั้งหมด') + '</div>') +
       '</div></div>' + navHTML('jobs') + '</div>';
     document.getElementById('jt').onclick = openThemeSheet;
     document.getElementById('jr').onclick = function () { refreshJobs(true); };
@@ -371,7 +382,7 @@
     return null;
   }
   function renderJob(id) {
-    var c = jobs.filter(function (x) { return x.id === id; })[0];
+    var c = findCase(id);
     if (!c) {
       app.innerHTML = '<div class="screen"><div class="loading"><span class="spin" aria-hidden="true"></span>กำลังเปิดงาน</div></div>';
       freshCase(id).then(function () { renderJob(id); }, function (e) { toast(e.message); location.hash = '#/jobs'; });
@@ -383,8 +394,10 @@
     var steps = STEPS.map(function (s, k) { return '<span class="' + (k < shown ? 'done' : k === shown ? 'now' : '') + '"></span>'; }).join('');
     var stepLabel = cur ? (at >= 0 ? 'ขั้น ' + (at + 1) + ' จาก ' + STEPS.length : 'พักงานไว้') : 'ยังไม่เริ่มงาน';
 
-    var top;
-    if (cur === TRAVEL) {
+    var top, closed = CLOSED.indexOf(String(c.status || '')) >= 0;
+    if (closed) {
+      top = '<div class="locked"><span class="ring">' + I.lock + '</span><span><b>งานนี้' + esc(c.status) + 'แล้ว</b><small>ดูย้อนหลังได้ เพิ่มรูปในบันทึกหน้างาน หรือแก้ใบตรวจงานได้</small></span></div>';
+    } else if (cur === TRAVEL) {
       top = '<button type="button" class="checkin" id="ci"><span class="ring">' + I.pin + '</span><span><b>Check-in ถึงหน้างาน</b><small>บันทึกเวลาและพิกัด GPS</small></span></button>';
     } else {
       var ci = lastEntryFor(c, ARRIVED), title, sub;
@@ -396,13 +409,14 @@
 
     /* forward / back. On hold the job resumes at the step it was paused on. */
     var next = '', backTo = '';
-    if (onHold) {
+    if (closed) {}
+    else if (onHold) {
       var log = Array.isArray(c.field_status_log) ? c.field_status_log : [], prev = '';
       for (var i = log.length - 1; i >= 0; i--) { if (log[i] && STEPS.indexOf(log[i].status) >= 0) { prev = log[i].status; break; } }
       next = prev || STEPS[2];
     } else if (at < 0) next = TRAVEL;
     else if (at < STEPS.length - 2) next = STEPS[at + 1];
-    if (at > 0) backTo = STEPS[at - 1];
+    if (at > 0 && !closed) backTo = STEPS[at - 1];
     var atReport = at === STEPS.length - 2;   /* รอลูกค้าตรวจรับ: จบงาน needs the service report */
 
     var url = mapUrl(c), tel = String(c.phone || '').replace(/[^\d+]/g, '');
@@ -428,14 +442,15 @@
       '<span>โทร</span><span>' + esc(c.phone || '-') + '</span>' +
       '<span>สถานที่</span><span>' + esc(c.location || c.branch || '-') + '</span>' +
       (c.note ? '<span>หมายเหตุ</span><span>' + esc(c.note) + '</span>' : '') + '</div></section>' +
-      (cur && !onHold && at >= 2 && at < STEPS.length - 1 ? '<button type="button" class="hold" id="jh">📦 ' + HOLD + '</button>' : '') +
-      (at >= 1 ? '<button type="button" class="row-btn" id="jr">' + I.pen + '<span class="grow"><b>ใบตรวจงาน</b><small>' + (lsGet('imode.reportDraft.' + c.id) ? 'มีฉบับร่างในเครื่อง กดเพื่อทำต่อ' : 'กรอกได้ระหว่างทำงาน ส่งตอนจบงาน') + '</small></span>' + I.arrow + '</button>' : '') +
+      (cur && !closed && !onHold && at >= 2 && at < STEPS.length - 1 ? '<button type="button" class="hold" id="jh">📦 ' + HOLD + '</button>' : '') +
+      (at >= 1 || closed ? '<button type="button" class="row-btn" id="jr">' + I.pen + '<span class="grow"><b>ใบตรวจงาน</b><small>' + (lsGet('imode.reportDraft.' + c.id) ? 'มีฉบับร่างในเครื่อง กดเพื่อทำต่อ' : closed ? 'ดูหรือแก้ใบตรวจงานของงานนี้' : 'กรอกได้ระหว่างทำงาน ส่งตอนจบงาน') + '</small></span>' + I.arrow + '</button>' : '') +
       '</div></div>' +
       '<div class="bar">' +
       (backTo ? '<button type="button" class="back" id="jk" aria-label="ย้อนขั้นตอนไป ' + esc(backTo) + '">' + I.undo + '</button>' : '') +
-      (next ? '<button type="button" class="next" id="jx">ถัดไป: ' + esc(next) + I.arrow + '</button>'
-        : cur === DONE ? '<span class="final">จบงานแล้ว</span>'
+      (next ? '<button type="button" class="next" id="jx"><span class="one">ถัดไป: ' + esc(next) + '</span>' + I.arrow + '</button>'
+        : closed || cur === DONE ? '<span class="final">' + (closed ? 'งานนี้' + esc(c.status) + 'แล้ว' : 'จบงานแล้ว') + '</span>'
         : '<button type="button" class="next" id="jd">ใบตรวจ ลายเซ็น และจบงาน' + I.arrow + '</button>') +
+      (cur && !closed && lastEntryFor(c, cur) ? '<label class="back cam-btn" aria-label="ถ่ายรูปขั้น ' + esc(cur) + '">' + I.cam + '<input type="file" accept="image/*" capture="environment" hidden id="jcam"></label>' : '') +
       '</div></div>';
 
     document.getElementById('jb').onclick = function () { history.length > 1 ? history.back() : (location.hash = '#/jobs'); };
@@ -455,6 +470,11 @@
       await moveStep(c.id, next, { mustBe: cur, gps: gps });
       toast('อัปเดตเป็น ' + next);
     }); };
+    var bcam = document.getElementById('jcam');
+    if (bcam) bcam.onchange = function () {
+      var f = bcam.files && bcam.files[0]; if (!f) return;
+      run(null, function () { return quickPhoto(c.id, f); });
+    };
     app.querySelectorAll('[data-step]').forEach(function (b) { b.onclick = function () {
       var v = b.getAttribute('data-step'), k = v.indexOf('|'); stepSheet(c.id, v.slice(0, k), v.slice(k + 1));
     }; });
@@ -513,8 +533,42 @@
     for (var i = 0; i < a.length; i++) if (String((a[i] || {}).data || '') !== String((b[i] || {}).data || '')) return false;
     return true;
   }
+  /* writes one step entry back into field_status_log, read fresh from the server first;
+     change(cur) returns the new {note, media}. The replaced version goes into entry.revisions. */
+  async function saveStep(caseId, e, status, change) {
+    var fresh = await freshCase(caseId), flog = (fresh.field_status_log || []).slice();
+    var k = -1; flog.forEach(function (x, i) { if (x && (x.id === e.id || (!e.id && x.status === status))) k = i; });
+    if (k < 0) throw new Error('ไม่พบบันทึกของขั้นนี้แล้ว ลองโหลดงานใหม่');
+    var cur = Object.assign({}, flog[k]), next = change(cur), revs = Array.isArray(cur.revisions) ? cur.revisions.slice() : [];
+    var prev = { note: cur.note || '', at: cur.editedAt || cur.createdAt || '', by: cur.editedBy || cur.techId || '' };
+    if (!sameMedia(cur.media, next.media)) prev.media = cur.media || [];
+    if (cur.note || (cur.media && cur.media.length)) { revs.push(prev); while (revs.length > REV_CAP) revs.shift(); }
+    cur.note = next.note; cur.media = next.media; cur.revisions = revs; cur.editedAt = new Date().toISOString(); cur.editedBy = me.name || me.username || '';
+    flog[k] = cur;
+    var r = await client().from('service_cases').update({ field_status_log: flog, updated_at: cur.editedAt }).eq('id', caseId).select(COLS).maybeSingle();
+    if (r.error) throw new Error(friendly(r.error));
+    if (!r.data) throw new Error('บันทึกไม่สำเร็จ บัญชีนี้อาจไม่มีสิทธิ์แก้งานนี้');
+    var j = jobs.findIndex(function (x) { return x.id === caseId; }); if (j >= 0) jobs[j] = r.data;
+    var a = allCases.findIndex(function (x) { return x.id === caseId; }); if (a >= 0) allCases[a] = r.data;
+    return cur;
+  }
+  /* the camera button beside ถัดไป: a photo straight into the step the job is at now */
+  async function quickPhoto(caseId, file) {
+    var c = findCase(caseId), e = c && lastEntryFor(c, c.field_status);
+    if (!e) return;
+    var data = await shrink(file, 1000, 0.78);
+    toast('กำลังบันทึกรูป…');
+    await saveStep(caseId, e, e.status, function (cur) {
+      var media = (cur.media || []).slice();
+      if (media.filter(function (m) { return m && m.type !== 'video'; }).length >= STEP_PHOTOS) throw new Error('ขั้นนี้มีรูปครบ ' + STEP_PHOTOS + ' รูปแล้ว ลบรูปเก่าในบันทึกหน้างานก่อน');
+      media.push({ type: 'image', name: file.name || 'photo.jpg', data: data, size: file.size });
+      return { note: cur.note || '', media: media };
+    });
+    toast('เพิ่มรูปในขั้น ' + e.status + ' แล้ว');
+  }
+
   function stepSheet(caseId, entryId, status) {
-    var c = jobs.filter(function (x) { return x.id === caseId; })[0]; if (!c) return;
+    var c = findCase(caseId); if (!c) return;
     var log = c.field_status_log || [], e = log.filter(function (x) { return x && x.id === entryId; })[0] || lastEntryFor(c, status);
     if (!e) return;
     var st = { note: e.note || '', media: JSON.parse(JSON.stringify(e.media || [])) };
@@ -556,19 +610,7 @@
       if (note === String(e.note || '') && sameMedia(e.media, st.media)) { s.remove(); return; }
       var btn = document.getElementById('sp-s'); btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
       try {
-        var fresh = await freshCase(caseId), flog = (fresh.field_status_log || []).slice();
-        var k = -1; flog.forEach(function (x, i) { if (x && (x.id === e.id || (!e.id && x.status === status))) k = i; });
-        if (k < 0) throw new Error('ไม่พบบันทึกของขั้นนี้แล้ว ลองโหลดงานใหม่');
-        var cur = Object.assign({}, flog[k]), revs = Array.isArray(cur.revisions) ? cur.revisions.slice() : [];
-        var prev = { note: cur.note || '', at: cur.editedAt || cur.createdAt || '', by: cur.editedBy || cur.techId || '' };
-        if (!sameMedia(cur.media, st.media)) prev.media = cur.media || [];
-        if (cur.note || (cur.media && cur.media.length)) { revs.push(prev); while (revs.length > REV_CAP) revs.shift(); }
-        cur.note = note; cur.media = st.media; cur.revisions = revs; cur.editedAt = new Date().toISOString(); cur.editedBy = me.name || me.username || '';
-        flog[k] = cur;
-        var r = await client().from('service_cases').update({ field_status_log: flog, updated_at: cur.editedAt }).eq('id', caseId).select(COLS).maybeSingle();
-        if (r.error) throw new Error(friendly(r.error));
-        if (!r.data) throw new Error('บันทึกไม่สำเร็จ บัญชีนี้อาจไม่มีสิทธิ์แก้งานนี้');
-        var j = jobs.findIndex(function (x) { return x.id === caseId; }); if (j >= 0) jobs[j] = r.data;
+        await saveStep(caseId, e, status, function () { return { note: note, media: st.media }; });
         s.remove(); toast('บันทึกขั้น ' + status + ' แล้ว');
         if (location.hash === '#/job/' + encodeURIComponent(caseId)) renderJob(caseId);
       } catch (x) { btn.disabled = false; btn.textContent = 'บันทึก'; toast(x.message); }
@@ -1488,6 +1530,10 @@
     return 'stay';
   };
   /* back on screen after the phone slept or another app: pull fresh jobs */
+  /* a file picker or the camera sends the app to the background; coming back from it must not
+     redraw the page under the input that is about to report its file */
+  var pickAt = 0;
+  document.addEventListener('click', function (e) { if (e.target && e.target.type === 'file') pickAt = Date.now(); }, true);
   /* MainActivity calls this every time the app comes back on screen (the WebView does not always
      fire visibilitychange then); checkUpdate itself skips a second look within a minute */
   window.imodeResume = function () {
@@ -1504,7 +1550,7 @@
     if (document.visibilityState === 'visible' && me && !busy) {
       if (chat) { chatPull().catch(function () {}); return; }   /* keep what is being typed */
       if (rep) return;   /* the ใบตรวจ is open: coming back from the camera must not redraw it */
-      loadJobs().then(function () { if (!document.querySelector('.scrim')) route(); if (location.hash !== '#/chats') loadHub().catch(function () {}); }, function () {});
+      loadJobs().then(function () { if (!document.querySelector('.scrim') && Date.now() - pickAt > 120000) route(); if (location.hash !== '#/chats') loadHub().catch(function () {}); }, function () {});
     }
   });
 
