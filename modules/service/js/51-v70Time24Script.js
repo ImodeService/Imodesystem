@@ -66,8 +66,8 @@
   var wrap=document.createElement('div');
   wrap.className='t24'+(isDT?' is-dt':'');
   wrap.innerHTML=
-   (isDT?'<input type="date" class="t24-date" value="'+(cur.date||'')+'" aria-label="'
-        +(tl('วันที่','Date'))+'">':'')
+   (isDT?'<span class="t24-dwrap"><input type="date" class="t24-date" value="'+(cur.date||'')+'" aria-label="'
+        +(tl('วันที่','Date'))+'"><span class="t24-dtxt" aria-hidden="true"></span></span>':'')
    +'<span class="t24-clock" aria-hidden="true">🕒</span>'
    +'<select class="t24-h" aria-label="'+(tl('ชั่วโมง (24 ชม.)','Hour (24h)'))+'">'
    +'<option value="">--</option>'+hourOptions(cur.h)+'</select>'
@@ -95,6 +95,18 @@
   input.parentNode.insertBefore(wrap,input.nextSibling);
 
   var dEl=wrap.querySelector('.t24-date'),hEl=wrap.querySelector('.t24-h'),mEl=wrap.querySelector('.t24-m');
+  /* A native date input writes its text in the order of the PC's language (month/day/year on an
+     English Windows). The coordinator reads day/month/year, so the native text is made
+     transparent and this overlay shows the date as วว/ดด/ปปปป; the calendar still comes from
+     the native control underneath. */
+  var dTxt=wrap.querySelector('.t24-dtxt');
+  function showDate(){
+   if(!dEl||!dTxt)return;
+   var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(dEl.value||'');
+   dTxt.textContent=m?(m[3]+'/'+m[2]+'/'+m[1]):'วว/ดด/ปปปป';
+   dTxt.classList.toggle('is-empty',!m);
+  }
+  showDate();
   function push(){
    var h=hEl.value,m=mEl.value;
    if(isDT){
@@ -115,7 +127,7 @@
    try{input.dispatchEvent(new Event('input',{bubbles:true}))}catch(e){}
    input.__t24Self=false;
   }
-  if(dEl)dEl.addEventListener('change',push);
+  if(dEl)dEl.addEventListener('change',function(){showDate();push()});
   hEl.addEventListener('change',push);
   mEl.addEventListener('change',push);
 
@@ -144,6 +156,7 @@
    if(input.__t24Self)return;
    var v=splitValue(input);
    if(dEl)dEl.value=v.date||'';
+   showDate();
    if(v.h&&!hEl.querySelector('option[value="'+v.h+'"]'))hEl.insertAdjacentHTML('beforeend','<option value="'+v.h+'">'+v.h+'</option>');
    if(v.m&&!mEl.querySelector('option[value="'+v.m+'"]'))mEl.insertAdjacentHTML('beforeend','<option value="'+v.m+'">'+v.m+'</option>');
    hEl.value=v.h||'';mEl.value=v.m||'';
@@ -199,6 +212,11 @@
  +'.t24-date{flex:1 1 130px;min-width:0;border:0;background:transparent;color:#0c225e;'
  +'font-size:13px;padding:4px 2px}'
  +'.t24-date:focus{outline:none}'
+ +'.t24-dwrap{position:relative;display:flex;flex:1 1 130px;min-width:0}'
+ +'.t24-dwrap .t24-date{flex:1 1 auto;width:100%}'
+ +'.t24-dwrap .t24-date::-webkit-datetime-edit{color:transparent}'
+ +'.t24-dtxt{position:absolute;left:2px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:13px;color:#0c225e}'
+ +'.t24-dtxt.is-empty{color:#7f8ba5}'
  +'.t24-clock{font-size:13px;opacity:.55}'
  +'.t24-h,.t24-m{border:1px solid #e2ecfb;border-radius:8px;background:#f8fbff;color:#0c225e;'
  +'font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;padding:5px 4px;min-height:30px}'

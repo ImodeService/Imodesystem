@@ -783,3 +783,22 @@ html[data-ui="flat-dark"]:is(:root,#fx) .ch-msg.is-auto .ch-bub { background-col
 html[data-ui="flat-dark"]:is(:root,#fx) .ch-av.is-case { background: var(--fx-accent-soft) !important; color: #cfe2ff !important; }
 html[data-ui="flat-dark"]:is(:root,#fx) .ch-link { color: var(--fx-accent) !important; }
 html[data-ui="flat-dark"]:is(:root,#fx) .ch-ph button { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line) !important; }
+
+/* ผู้ใช้งานและสิทธิ์ (2026-10-29): การ์ดในหน้านี้ยังพื้นขาว/ฟ้าอ่อน แต่ตัวอักษรเป็นสีสว่างของธีมมืด อ่านไม่ออก */
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .roles-top-note,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .info-box,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permx-tab:not(.is-on),
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permx-userbtn,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permx-single,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permx-group,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permx-hint,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permx-acc,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .role-card,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permission-check,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permission-group { background: var(--fx-surface-2) !important; border-color: var(--fx-line) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permx-tab.is-on { background: var(--fx-accent-fill) !important; color: #fff !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .role-card input,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .role-card select { background: var(--fx-bg) !important; color: var(--fx-text) !important; border-color: var(--fx-line-strong) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permission-check small,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permx-tab small,
+html[data-ui="flat-dark"]:is(:root,#fx) .modal .permx-hint { color: var(--fx-muted) !important; }

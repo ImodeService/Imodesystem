@@ -924,7 +924,7 @@
 <!-- Beta 1.0: every time picker is 24-hour. Chrome formats a native time/datetime-local
      input from the BROWSER's locale and ignores `lang` (measured), so the visible control is
      ours while the native input stays in the DOM as the value the save paths read. -->
-<script src="./js/51-v70Time24Script.js"></script>
+<script src="./js/51-v70Time24Script.js?v=20261029"></script>
 
 <!-- Beta 1.0: delete buttons that lead to the 30-day bin (case, quotation, machine) and an
      explicit แก้ไข on a quotation row. The two new bin types are registered in js/40, which
@@ -1151,6 +1151,10 @@
 <script src="./js/149-v70EngineerRoleScript.js?v=20261027"></script>
 <!-- 2026-10-27: เคส / ลูกค้า / คำขอจากลูกค้า — tiles, head and search rows stay on screen while the list scrolls, like เครื่องจักร (js/150). -->
 <script src="./js/150-v70ListStickyHeadScript.js?v=20261027b"></script>
+<!-- 2026-10-29: dark theme — light-background cards that swallow the light text (js/151). -->
+<script src="./js/151-v70DarkContrastFixScript.js?v=20261029c"></script>
+<!-- 2026-10-29: service_cases.reported - the first problem text, kept when ลงรายละเอียดเคส changes it (js/152, supabase/17) -->
+<script src="./js/152-v70CaseReportedScript.js?v=20261029"></script>
 
 </body>
 </html>

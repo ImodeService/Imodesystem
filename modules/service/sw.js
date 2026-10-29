@@ -36,7 +36,7 @@
    activate. To remove this entirely: `imodeDisableOffline()` in the console, or delete the
    registration in js/111 — nothing else depends on it. */
 
-var VERSION = 'v5-2026-10-14';
+var VERSION = 'v5-2026-10-29';
 var CACHE = 'imode-offline-' + VERSION;
 
 /* The handful the document never references, so js/111 cannot discover them: the customer

@@ -3,11 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
 <title>รายละเอียดเคสงานบริการ · I-MODE Plus Service &amp; Maintenance · Version 1.0</title>
 <!-- platform sign-in (G:\imodeservice): same project and shared session as the launcher -->
 <script src="../../shared/config.js"></script>
 <script src="./js/00-platform.js"></script>
+<!-- 2026-10-29: the screen theme chosen in Settings (shared with every module) also applies here -->
+<script src="../../shared/theme-pref.js?v=20261026"></script>
 <!-- 2026-10-21 (ข้อ 3): nothing on this page shows until js/143 has checked the sign-in -->
 <style id="scdGateStyle">html.scd-gate body{visibility:hidden}</style>
 <script>document.documentElement.classList.add('scd-gate')</script>
@@ -45,6 +47,17 @@
   --radius:16px; --shadow:0 12px 30px rgba(18,58,128,.08);
   color-scheme:only light;
 }
+/* 2026-10-29: dark theme. Everything that reads these variables follows; fixed light backgrounds
+   are caught by js/151, which also runs on this page. Same greys as Service's flat-dark. */
+html[data-theme="dark"]{
+  --bg:#1b1b1b; --card:#262626; --ink:#f1f1f1; --muted:#a9adb4; --line:#3a3a3a; --line-2:#3a3a3a;
+  --imode-navy:#e8eefc; --imode-navy-2:#9cc0ff; --imode-blue:#5b9bff;
+  --shadow:none; color-scheme:only dark;
+}
+html[data-theme="dark"] .scd-user .av,html[data-theme="dark"] #scdToast{background:#2563c9}
+html[data-theme="dark"] h1,html[data-theme="dark"] h2,html[data-theme="dark"] h3,html[data-theme="dark"] h4,
+html[data-theme="dark"] .t24-colon,html[data-theme="dark"] .t24-date,html[data-theme="dark"] .t24-dtxt{color:var(--imode-navy)}
+html[data-theme="dark"] .t24-dtxt.is-empty{color:var(--muted)}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
@@ -109,6 +122,17 @@ a{color:var(--imode-blue)}
 .badge-status.is-hold{background:var(--warn);color:#3a2500}
 .badge-prio{background:#eef4ff;border-color:#cfe0fa;color:var(--imode-navy-2)}
 .badge-prio.is-urgent{background:#fdeaea;border-color:#f6cccc;color:#a51f1f}
+.badge-field{cursor:pointer;font:inherit;font-weight:700;border-width:1px;border-style:solid}
+.badge-field:hover{filter:brightness(.97)}
+.badge-field:focus-visible{outline:2px solid var(--imode-blue);outline-offset:2px}
+.badge-field.ftone-yellow{background:#f5b400;border-color:#d99a00;color:#3d2c00}
+.badge-field.ftone-green{background:#16a34a;border-color:#128a3e;color:#fff}
+.badge-field.ftone-orange{background:#ea7a0c;border-color:#c96508;color:#fff}
+.badge-field.ftone-red{background:#dc2626;border-color:#b91c1c;color:#fff}
+html[data-theme="dark"] .badge-field.ftone-yellow{background:#f5b400!important;border-color:#d99a00!important;color:#3d2c00!important}
+html[data-theme="dark"] .badge-field.ftone-green{background:#16a34a!important;border-color:#22c55e!important;color:#fff!important}
+html[data-theme="dark"] .badge-field.ftone-orange{background:#ea7a0c!important;border-color:#f59e0b!important;color:#fff!important}
+html[data-theme="dark"] .badge-field.ftone-red{background:#dc2626!important;border-color:#ef4444!important;color:#fff!important}
 .badge-sub{background:#fff6e8;border-color:#f5dcb4;color:#8a5200}
 .scd-sla{background:var(--card);border:1px solid var(--line-2);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px}
 .scd-sla h3{margin:0 0 8px;font-size:13px;color:var(--muted);letter-spacing:.4px}
@@ -315,6 +339,7 @@ a{color:var(--imode-blue)}
   font:inherit;font-size:13px;font-weight:700;color:var(--imode-navy);cursor:pointer}
 .sd-status:hover{border-color:var(--imode-blue);color:var(--imode-blue)}
 .sd-status.is-now{background:var(--imode-blue);border-color:var(--imode-blue);color:#fff;cursor:default}
+.sd-status.tone-orange{border-color:#f59e0b;color:#b45309}.sd-status.tone-green{border-color:#22c55e;color:#15803d}.sd-status.tone-red{border-color:#ef4444;color:#b42318}.sd-status.is-now.tone-orange{background:#e07a1f;border-color:#e07a1f;color:#fff}.sd-status.is-now.tone-green{background:#15803d;border-color:#15803d;color:#fff}.sd-status.is-now.tone-red{background:#b42318;border-color:#b42318;color:#fff}
 .sd-status:focus-visible{outline:2px solid var(--imode-blue);outline-offset:2px}
 
 /* ---------- the ใบตรวจ inside เอกสาร & รูปภาพ ---------- */
@@ -416,6 +441,10 @@ a{color:var(--imode-blue)}
 .problem .card-head .ic{background:#fdeaea;color:var(--danger)}
 .problem h3{margin:0;font-size:22px;color:#b3202c;line-height:1.35}
 .problem .desc{margin:8px 0 0;font-size:16px;color:#7a2a2a}
+.prob-tabs{display:flex;gap:6px;margin:2px 0 12px;flex-wrap:wrap}
+.prob-tab{border:1px solid var(--line-2);background:var(--card);color:var(--imode-navy);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer}
+.prob-tab.is-on{background:var(--imode-blue);border-color:var(--imode-blue);color:#fff}
+.prob-tab:focus-visible{outline:2px solid var(--imode-blue);outline-offset:2px}
 .media-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
 .media-thumb{width:110px;height:82px;border-radius:11px;border:1px solid var(--line);background:#f2f5fb center/cover no-repeat;display:grid;place-items:center;color:var(--muted);font-size:11.5px;overflow:hidden}
 .media-add{width:110px;height:82px;border-radius:11px;border:1.5px dashed #c9d8ef;background:#fbfdff;color:var(--imode-blue);font-size:12.5px;font-weight:700;cursor:pointer}
@@ -847,7 +876,7 @@ body.scd-modal-open{overflow:hidden}
      datetime-local it finds and keeps sweeping on a MutationObserver, so markup this page
      builds inside a popup is caught with no wiring here. The hidden native input keeps its id
      and its value, which is what doAssign() reads. -->
-<script src="./js/51-v70Time24Script.js"></script>
+<script src="./js/51-v70Time24Script.js?v=20261029"></script>
 <!-- 2026-09-25: status bars animate when the status moves on — the same file index.html loads. -->
 <script src="./js/121-v70TrackAnimScript.js"></script>
 <!-- 2026-10-20: type-to-search ลูกค้า / เครื่องจักร in ลงรายละเอียดเคส — the application's own combo (js/35). -->
@@ -1402,6 +1431,7 @@ var CaseWrite=(function(){
     }
     if(!hit)return Promise.resolve({ok:false,reason:'not-found'});
     var prevStatus=hit.status;
+    var hadMedia=hit.media;
     for(var k in changes)if(Object.prototype.hasOwnProperty.call(changes,k))hit[k]=changes[k];
     hit.updatedAt=new Date().toISOString();
     /* This page cannot load js/69 — it is a document of its own — so it writes its own entry.
@@ -1412,7 +1442,19 @@ var CaseWrite=(function(){
       noteStatusChange(caseId,prevStatus,changes.status,
         why||(('assignees' in changes||'assignee' in changes)?'มอบหมายช่าง':''));
     }
-    try{localStorage.setItem(K.cases,JSON.stringify(list))}catch(e){return Promise.resolve({ok:false,reason:'storage'})}
+    try{localStorage.setItem(K.cases,JSON.stringify(list))}catch(e){
+      /* 2026-10-29: photos are stored inside the case as base64, so a few cases with photos fill
+         the browser's ~5 MB. The save then failed as a whole — the panel stayed open and nothing
+         was kept ("แนบรูปแล้วกดบันทึกไม่ได้"). When the server is there, the new files go to the
+         server and only the local copy leaves them out; without a server the person is told why. */
+      var saved=false;
+      if('media' in changes&&db()){
+        hit.media=hadMedia;
+        try{localStorage.setItem(K.cases,JSON.stringify(list));saved=true}catch(e2){}
+        if(!saved)hit.media=changes.media;
+      }
+      if(!saved)return Promise.resolve({ok:false,reason:'storage'});
+    }
     /* keep the page's own model in step so the next render shows the new state */
     try{if(caseDetailModel&&caseDetailModel.case&&caseDetailModel.case.id===caseId){
       if('status' in changes)caseDetailModel.case.status=changes.status;
@@ -1447,17 +1489,65 @@ var CaseWrite=(function(){
       /* 2026-10-20: files staff add to the problem (ข้อ 11/12) — service_cases.media, 06-v70-case-media.sql */
       media:'media'};
     for(var ck in COLS)if(Object.prototype.hasOwnProperty.call(changes,ck))row[COLS[ck]]=changes[ck];
-    try{
-      return Promise.resolve(sb.from('service_cases').update(row).eq('id',caseId))
-        .then(function(r){
-          if(r&&r.error){console.warn('[scd] cloud update failed',r.error);return {ok:true,cloud:false,error:r.error}}
-          return {ok:true,cloud:true};
-        },function(e){console.warn('[scd] cloud update threw',e);return {ok:true,cloud:false,error:e}});
-    }catch(e){return Promise.resolve({ok:true,cloud:false,error:e})}
+    function send(){
+      try{
+        return Promise.resolve(sb.from('service_cases').update(row).eq('id',caseId))
+          .then(function(r){
+            if(r&&r.error){console.warn('[scd] cloud update failed',r.error);return {ok:true,cloud:false,error:r.error}}
+            return {ok:true,cloud:true};
+          },function(e){console.warn('[scd] cloud update threw',e);return {ok:true,cloud:false,error:e}});
+      }catch(e){return Promise.resolve({ok:true,cloud:false,error:e})}
+    }
+    /* service_cases.reported (supabase/17-case-reported.sql) is sent only once it is known to
+       exist: an update naming a missing column fails as a whole, and that would take the rest of
+       the details down with it. */
+    if(changes.reported&&typeof sb.from==='function'){
+      return Promise.resolve(sb.from('service_cases').select('reported').limit(1)).then(function(res){
+        if(!(res&&res.error))row.reported=changes.reported;
+        return send();
+      },function(){return send()});
+    }
+    return send();
   }
   return {
     setStatus:function(id,status,why){return patch(id,{status:status},why)},
     setDetails:function(id,changes){return patch(id,changes||{})},
+    /* The case's attachments as the server holds them. js/72 trims the device's copy to stubs
+       (name, type, size — no data) when the browser's storage is full, so a photo can be here
+       as a grey document tile while the file itself is only in the cloud. Null = no answer. */
+    /* The case's ใบตรวจ straight from service_reports. The technician app writes there directly,
+       and the application only copies the rows into this device's storage on its next sync —
+       which a full storage (js/72) can stop — so the page asks the server itself. The mapping is
+       js/03's own (syncCloud). Null = no answer, [] = the server has none. */
+    fetchReports:function(id){
+      var sb=db();
+      if(!sb||!id)return Promise.resolve(null);
+      try{
+        return Promise.resolve(sb.from('service_reports').select('*').eq('case_id',id)).then(function(res){
+          if(!res||res.error||!Array.isArray(res.data))return null;
+          return res.data.map(function(r){return {id:r.id,reportNo:r.report_no,caseId:r.case_id||'',
+            customerId:r.customer_id||'',machineId:r.machine_id||'',techId:r.tech_id||'',
+            serviceType:r.service_type||'',workType:r.work_type||'',checkInAt:r.check_in_at||'',
+            appointment:r.appointment||'',checklist:r.checklist||[],diagnosis:r.diagnosis||'',
+            workPerformed:r.work_performed||'',recommendation:r.recommendation||'',parts:r.parts||[],
+            beforePhotos:r.before_photos||[],afterPhotos:r.after_photos||[],videos:r.videos||[],
+            statusLog:r.status_log||[],customerAccept:r.customer_accept||'',
+            customerSignature:r.customer_signature||'',techSignature:r.tech_signature||'',
+            nextPm:r.next_pm||'',lineSentAt:r.line_sent_at||'',lineSendStatus:r.line_send_status||'',
+            status:r.status||'Completed',createdAt:r.created_at,updatedAt:r.updated_at}});
+        },function(){return null});
+      }catch(e){return Promise.resolve(null)}
+    },
+    fetchMedia:function(id){
+      var sb=db();
+      if(!sb||!id)return Promise.resolve(null);
+      try{
+        return Promise.resolve(sb.from('service_cases').select('media').eq('id',id).limit(1)).then(function(r){
+          var row=r&&r.data&&r.data[0];
+          return row&&Array.isArray(row.media)?row.media:null;
+        },function(){return null});
+      }catch(e){return Promise.resolve(null)}
+    },
     patch:function(id,changes,why){return patch(id,changes||{},why)},
     /* Assigning is the one other thing this page may change. The lead is always ids[0], the
        same rule js/38 enforces, so `assignee` and `assignees` can never disagree. A case
@@ -1497,6 +1587,14 @@ var FIELD_STEPS=['กำลังเดินทาง','ถึงหน้า�
    separately so a finished legacy/stale-cache case can still show the work it necessarily
    passed, without falsely claiming that it waited for parts. */
 var FIELD_HOLD='รออะไหล่';
+/* four colours for the nine field statuses, in FIELD_STEPS order (owner, 2026-10-29: "เหลือ เขียว
+   เหลือง ส้ม แดง"): yellow = on the way / waiting for the customer, green = on site / finished,
+   orange = working, red = waiting for parts. The badge under the case circles uses it (.ftone-*). */
+var FIELD_TONES=['yellow','green','orange','orange','orange','red','orange','yellow','green'];
+function fieldTone(label){
+  var k=FIELD_STEPS.indexOf(String(label||''));
+  return k>=0?FIELD_TONES[k]:'orange';
+}
 var FIELD_MAIN=FIELD_STEPS.filter(function(x){return x!==FIELD_HOLD});
 function fieldLog(m){
   var log=(m&&m.raw&&m.raw.fieldStatusLog)||[];
@@ -1940,7 +2038,15 @@ function renderProgress(m){
   var subs='';
   if(ws)subs+='<span class="badge badge-sub">🏭 งาน Workshop'+(wsTrackNow(m.raw)?' · '+esc(wsTrackNow(m.raw)):'')+'</span>';
   if(HOLD_STATES[m.case.status])subs+='<span class="badge badge-sub">'+esc(HOLD_STATES[m.case.status])+'</span>';
-  if(m.case.subStatus)subs+='<span class="badge badge-prio">หน้างาน: '+esc(m.case.subStatus)+'</span>';
+  if(m.case.subStatus){
+    /* 2026-10-29: the field status is a button. Colour follows the status (FIELD_TONES); pressing it
+       opens กำลังให้บริการ with that status's circle already open, pressing again shuts it. */
+    var fk0=FIELD_STEPS.indexOf(m.case.subStatus);
+    var fopen=openStep===S('service')&&fk0>=0&&openField===fk0;
+    subs+='<button type="button" class="badge badge-prio badge-field ftone-'+fieldTone(m.case.subStatus)+'" data-fbadge="1"'
+      +' aria-expanded="'+fopen+'" title="'+(fopen?'กดเพื่อปิด':'กดเพื่อดูรายละเอียดสถานะหน้างาน')+'">'
+      +'หน้างาน: '+esc(m.case.subStatus)+(fopen?' ▴':' ▾')+'</button>';
+  }
   return '<section class="scd-progress" aria-label="ความคืบหน้าของเคส">'
     +'<ol class="scd-steps">'+lis+'</ol>'
     +onlineBannerHTML(m)
@@ -2662,7 +2768,7 @@ function mediaBlock(label,items){
     +(clips?' · '+clips+' วิดีโอ':'')+'</small><div class="cmp-grid">'+mediaTiles(items)+'</div></div>';
 }
 
-function renderProblem(m){
+function renderProblemFlat(m){
   var c=m.case;
   var imgs=m.attachments.filter(function(a){return a.type==='image'});
   var vids=m.attachments.filter(function(a){return a.type==='video'});
@@ -2695,6 +2801,75 @@ function renderProblem(m){
     +'<div class="note-box"><b>หมายเหตุจากลูกค้า</b><p>'+esc(c.customerNote||'-')+'</p></div>'
     +'</section>';
 }
+
+/* ปัญหาที่ลูกค้าแจ้ง with a copy of what the case was opened with (c.reported, kept the first time
+   ลงรายละเอียดเคส changes it): two tabs to flip between the first report and the staff's details.
+   A case that was never detailed keeps the single card it always had. */
+var problemTab='first';
+function renderProblem(m){
+  var rep=m.raw&&m.raw.reported;
+  if(!rep||typeof rep!=='object')return renderProblemFlat(m);
+  var c=m.case;
+  var tab=problemTab==='detail'?'detail':'first';
+  var indexed=m.attachments.map(function(a,i){return {a:a,i:i}});
+  var staffFiles=indexed.filter(function(x){return x.a.from==='staff'});
+  var firstFiles=indexed.filter(function(x){return x.a.from==='customer'});
+  var fieldFiles=indexed.filter(function(x){return x.a.from!=='customer'&&x.a.from!=='staff'});
+  function count(list,t){return list.filter(function(x){return x.a.type===t}).length}
+  function files(title,list,addBtn){
+    var n=count(list,'image'),v=count(list,'video');
+    return '<div class="cmp-block"><small>📎 '+title+(list.length?' · '+n+' รูป'+(v?' · '+v+' วิดีโอ':''):'')+'</small>'
+      +(list.length||addBtn?'':'<p class="scd-empty" style="margin:0">ไม่มีไฟล์แนบ</p>')
+      +'<div class="cmp-grid">'+mediaTiles(list)
+      +(addBtn?'<button type="button" class="media-add" data-action="add-attachment">＋<br>เพิ่มไฟล์</button>':'')+'</div></div>';
+  }
+  function who(o){
+    var p=[];
+    if(o.contact)p.push('ผู้ติดต่อ: '+esc(o.contact));
+    if(o.phone)p.push(esc(o.phone));
+    if(o.channel)p.push('ช่องทาง: '+esc(o.channel));
+    return p.length?'<p class="scd-hint" style="margin:8px 0 0">'+p.join(' · ')+'</p>':'';
+  }
+  var body;
+  if(tab==='first'){
+    body='<div class="issue-box"><small>📝 รายละเอียดปัญหา (ตอนแรก)</small>'
+        +'<h3>'+esc(rep.issue||'-')+'</h3>'+who(rep)+'</div>'
+      +files('ไฟล์แนบตอนแจ้ง',firstFiles,false)
+      +'<div class="note-box"><b>หมายเหตุจากลูกค้า</b><p>'+esc(rep.note||'-')+'</p></div>';
+  }else{
+    var raw=m.raw||{};
+    body='<div class="issue-box"><small>📝 อาการ / รายละเอียดหลังติดต่อลูกค้า</small>'
+        +'<h3>'+esc(c.issueTitle||'-')+'</h3>'+who({contact:raw.contact,phone:raw.phone,channel:raw.channel})+'</div>'
+      +files('ไฟล์แนบจากเจ้าหน้าที่',staffFiles,true)
+      +mediaBlock('🧰 หลักฐานหน้างาน / ใบตรวจ',fieldFiles)
+      +'<div class="note-box"><b>หมายเหตุ</b><p>'+esc(c.customerNote||'-')+'</p></div>';
+  }
+  var imgs=m.attachments.filter(function(a){return a.type==='image'});
+  var vids=m.attachments.filter(function(a){return a.type==='video'});
+  return '<section class="card problem" aria-label="ปัญหาที่ลูกค้าแจ้ง">'
+    +'<div class="card-head"><span class="ic">❗</span><h2>ปัญหาที่ลูกค้าแจ้ง</h2><span class="spacer"></span>'
+    +(c.priority==='ด่วนมาก'?'<span class="badge badge-prio is-urgent">เร่งด่วน</span>':'')+'</div>'
+    +'<div class="prob-tabs" role="tablist">'
+      +'<button type="button" role="tab" aria-selected="'+(tab==='first')+'" class="prob-tab'+(tab==='first'?' is-on':'')+'" data-problem-tab="first">ที่ลูกค้าแจ้งตอนแรก</button>'
+      +'<button type="button" role="tab" aria-selected="'+(tab==='detail')+'" class="prob-tab'+(tab==='detail'?' is-on':'')+'" data-problem-tab="detail">ลงรายละเอียดเคส</button>'
+    +'</div>'
+    +body
+    +'<div class="media-meta"><span>📷 รูปภาพ '+imgs.length+' ไฟล์</span><span>🎬 วิดีโอ '+vids.length+' ไฟล์</span>'
+      +'<button type="button" data-action="open-attachments">📍 ดูทั้งหมด</button></div>'
+    +'</section>';
+}
+document.addEventListener('click',function(e){
+  var t=e.target.closest&&e.target.closest('[data-problem-tab]');
+  if(!t)return;
+  e.preventDefault();
+  problemTab=t.getAttribute('data-problem-tab')==='detail'?'detail':'first';
+  var sec=document.querySelector('section.card.problem');
+  if(sec&&caseDetailModel){
+    var tmp=document.createElement('div');
+    tmp.innerHTML=renderProblem(caseDetailModel);
+    if(tmp.firstElementChild)sec.replaceWith(tmp.firstElementChild);
+  }
+});
 
 function renderMachine(m){
   var ma=m.machine;
@@ -2754,6 +2929,7 @@ function renderTopbar(m){
 }
 
 function renderPage(m){
+  try{mergeFromServer(m)}catch(e){}
   renderTopbar(m);
   el('scdMain').innerHTML=
      renderCaseHeader(m)
@@ -2771,6 +2947,57 @@ function renderPage(m){
       +'</p></div>'
     +(m.isMock?'<div class="mock-flag">⚠ ตัวอย่างข้อมูล (USE_MOCK_DATA)</div>':'');
   document.title=(m.case.caseNo||'เคสงานบริการ')+' · I-MODE Plus Service';
+  try{askServer(m)}catch(e){}
+}
+
+/* What the server holds that this device may not: photos js/72 trimmed to stubs, and ใบตรวจ the
+   technician app wrote after this device's last sync. Asked once per case per page load, kept
+   here, and merged into every render — load() rebuilds the model from storage every few seconds,
+   so a one-off patch of the model would be gone on the next refresh. The stored copy is untouched. */
+var fromServer={};   /* caseId -> {media:[...]|null, reports:[...]|null} */
+function mergeFromServer(m){
+  var id=m&&m.case&&m.case.id,got=id&&fromServer[id];
+  if(!got)return;
+  if(got.media)got.media.forEach(function(x,i){
+    var a=m.attachments[i];
+    if(a&&x&&x.data&&!a.data&&String(a.name||'')===String(x.name||''))a.data=x.data;
+  });
+  if(got.reports&&got.reports.length){
+    var have={};
+    (m.reports||[]).forEach(function(r){if(r&&r.id)have[r.id]=r});
+    got.reports.forEach(function(r){
+      var mine=have[r.id];
+      if(!mine||String(r.updatedAt||'')>String(mine.updatedAt||''))have[r.id]=r;
+    });
+    var rs=Object.keys(have).map(function(k){return have[k]})
+      .sort(function(a,b){return String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||''))});
+    m.reports=rs;
+    if(m.service)m.service.reportStatus='ready';
+    if(m.closing){
+      m.closing.serviceReportReady=true;
+      m.closing.customerSignature=rs.some(function(x){return !!x.customerSignature});
+      m.closing.technicianSignature=rs.some(function(x){return !!x.techSignature});
+    }
+  }
+}
+function askServer(m){
+  var id=m&&m.case&&m.case.id;
+  if(!id||m.isMock||fromServer[id])return;
+  fromServer[id]={media:null,reports:null};
+  var needMedia=m.attachments.some(function(a){return a.type==='image'&&!a.data});
+  Promise.all([
+    needMedia?CaseWrite.fetchMedia(id):Promise.resolve(null),
+    CaseWrite.fetchReports(id)
+  ]).then(function(r){
+    fromServer[id]={media:r[0],reports:r[1]};
+    if(!caseDetailModel||caseDetailModel.case.id!==id)return;
+    var before=JSON.stringify([(caseDetailModel.reports||[]).length,
+      caseDetailModel.attachments.filter(function(a){return !!a.data}).length]);
+    mergeFromServer(caseDetailModel);
+    var after=JSON.stringify([(caseDetailModel.reports||[]).length,
+      caseDetailModel.attachments.filter(function(a){return !!a.data}).length]);
+    if(before!==after)renderPage(caseDetailModel);
+  });
 }
 
 function renderError(kind){
@@ -3934,13 +4161,22 @@ function saveCaseDetails(customers){
     var withFiles=caseMediaWith(c,ceFilesPending);
     if(withFiles)changes.media=withFiles;
   }
+  /* Keep what the case was opened with before this save replaces it — shown as the first tab of
+     ปัญหาที่ลูกค้าแจ้ง. Taken once, and only when something it holds is really changing. */
+  if(!c.reported&&(changes.issue!==String(c.issue||'')||changes.note!==String(c.note||'')
+      ||changes.contact!==String(c.contact||'')||changes.phone!==String(c.phone||''))){
+    changes.reported={issue:c.issue||'',note:c.note||'',contact:c.contact||'',phone:c.phone||'',
+      channel:c.channel||'',priority:c.priority||'',at:new Date().toISOString()};
+  }
   var addedFiles=ceFilesPending.length;
   var btn=document.querySelector('#scdEditForm .scd-ce-save');
   if(btn){btn.disabled=true;btn.textContent='กำลังบันทึก…'}
   CaseWrite.setDetails(c.id,changes).then(function(r){
     if(!r||!r.ok){
       if(btn){btn.disabled=false;btn.textContent='บันทึกเคส'}
-      toast('บันทึกไม่สำเร็จ');return;
+      toast(r&&r.reason==='storage'
+        ?'พื้นที่เก็บข้อมูลในเครื่องเต็ม บันทึกรูปไม่ได้ — ลองแนบน้อยลง หรือแจ้งผู้ดูแล'
+        :'บันทึกไม่สำเร็จ');return;
     }
     closePanel();
     ceFilesPending=[];
@@ -3956,6 +4192,14 @@ function saveCaseDetails(customers){
 }
 
 /* เปลี่ยนสถานะ — a picker on this page, because the page can write now. */
+/* Colour follows what the status means: waiting = orange, finished = green, dropped = red. */
+function statusTone(x){
+  x=String(x||'');
+  if(/ยกเลิก|ซ้ำ|ไม่อนุมัติ|ปฏิเสธ/.test(x))return 'red';
+  if(/ปิดเคส|เสร็จสิ้น/.test(x))return 'green';
+  if(/รอ/.test(x))return 'orange';
+  return 'blue';
+}
 function changeCaseStatus(){
   var c=caseDetailModel.case;
   var all=[];
@@ -3967,7 +4211,7 @@ function changeCaseStatus(){
   panel('เปลี่ยนสถานะเคส',
     '<p class="sd-hint">สถานะปัจจุบัน: <b>'+esc(c.status||'-')+'</b></p>'
     +'<div class="sd-statuses">'+all.map(function(x){
-      return '<button type="button" class="sd-status'+(x===c.status?' is-now':'')+'"'
+      return '<button type="button" class="sd-status'+(x===c.status?' is-now':'')+' tone-'+statusTone(x)+'"'
         +' data-set-status="'+esc(x)+'">'+esc(x)+'</button>';
      }).join('')+'</div>');
 }
@@ -4690,6 +4934,19 @@ document.addEventListener('click',function(e){
   if(e.target.closest('[data-fstep-close]')){
     e.preventDefault();closeFieldDetail();return;
   }
+  var fbadge=e.target.closest('[data-fbadge]');
+  if(fbadge){
+    e.preventDefault();
+    var fm=caseDetailModel,fsi=S('service');
+    var fkk=FIELD_STEPS.indexOf(String((fm.raw&&fm.raw.fieldStatus)||fm.case.subStatus||''));
+    if(openStep===fsi&&fkk>=0&&openField===fkk){closeStepDrawer();return}
+    if(openStep==null)slideNext='sdStepDrawer';
+    else stepSlideDir=fsi>openStep?1:-1;
+    openStep=fsi;
+    openField=fkk>=0?fkk:null;
+    repaintProgress();
+    return;
+  }
   var fstep=e.target.closest('[data-fstep]');
   if(fstep){
     e.preventDefault();
@@ -5163,5 +5420,7 @@ load().then(function(res){
 <script src="./js/144-v70ChatReactionsScript.js"></script>
 <!-- 2026-10-16: team chat panel on the right of the case + update reminder (js/138). -->
 <script src="./js/138-v70CaseChatScript.js"></script>
+<!-- 2026-10-29: dark theme — light cards that would swallow the light text (js/151) -->
+<script src="./js/151-v70DarkContrastFixScript.js?v=20261029c"></script>
 </body>
 </html>

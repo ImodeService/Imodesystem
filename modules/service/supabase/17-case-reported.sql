@@ -1,0 +1,19 @@
+-- ---------------------------------------------------------------------------
+-- I-MODE Plus Service & Maintenance
+-- 17-case-reported.sql   (run once, in the Supabase SQL Editor — by the owner, not by an agent)
+--
+-- WHY THIS EXISTS
+--
+-- "ลงรายละเอียดเคส" on the case page overwrote the problem text the case was opened with, so
+-- what the customer first reported was gone as soon as staff saved their own details. The page
+-- now keeps a copy of the original before the first change and shows both under
+-- "ปัญหาที่ลูกค้าแจ้ง" as two tabs.
+--
+-- One column, nullable, no default. Cases that were never detailed stay NULL and look exactly
+-- as before. Until this is run the app keeps the copy on that device only (it probes the
+-- column and leaves it out of the payload when it is missing, so nothing else breaks).
+--
+--   { "issue": "...", "note": "...", "contact": "...", "phone": "...",
+--     "channel": "...", "priority": "...", "at": "2026-10-29T09:30:00.000Z" }
+-- ---------------------------------------------------------------------------
+alter table public.service_cases add column if not exists reported jsonb;
