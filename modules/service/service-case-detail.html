@@ -125,14 +125,15 @@ a{color:var(--imode-blue)}
 .badge-field{cursor:pointer;font:inherit;font-weight:700;border-width:1px;border-style:solid}
 .badge-field:hover{filter:brightness(.97)}
 .badge-field:focus-visible{outline:2px solid var(--imode-blue);outline-offset:2px}
-.badge-field.ftone-yellow{background:#f5b400;border-color:#d99a00;color:#3d2c00}
-.badge-field.ftone-green{background:#16a34a;border-color:#128a3e;color:#fff}
-.badge-field.ftone-orange{background:#ea7a0c;border-color:#c96508;color:#fff}
-.badge-field.ftone-red{background:#dc2626;border-color:#b91c1c;color:#fff}
-html[data-theme="dark"] .badge-field.ftone-yellow{background:#f5b400!important;border-color:#d99a00!important;color:#3d2c00!important}
-html[data-theme="dark"] .badge-field.ftone-green{background:#16a34a!important;border-color:#22c55e!important;color:#fff!important}
-html[data-theme="dark"] .badge-field.ftone-orange{background:#ea7a0c!important;border-color:#f59e0b!important;color:#fff!important}
-html[data-theme="dark"] .badge-field.ftone-red{background:#dc2626!important;border-color:#ef4444!important;color:#fff!important}
+.badge-field.ftone-yellow{background:#fff4cc;border-color:#f5b400;color:#8a6100}
+.badge-field.ftone-green{background:#dcf5e3;border-color:#22c55e;color:#15803d}
+.badge-field.ftone-orange{background:#ffe8d1;border-color:#f59e0b;color:#b45309}
+.badge-field.ftone-red{background:#fde2e2;border-color:#ef4444;color:#b42318}
+.badge-field[class*="ftone-"]{border-width:1.5px}
+html[data-theme="dark"] .badge-field.ftone-yellow{background:#3d3210!important;border-color:#f5b400!important;color:#ffd666!important}
+html[data-theme="dark"] .badge-field.ftone-green{background:#123a22!important;border-color:#22c55e!important;color:#86efac!important}
+html[data-theme="dark"] .badge-field.ftone-orange{background:#42290f!important;border-color:#f59e0b!important;color:#fdba74!important}
+html[data-theme="dark"] .badge-field.ftone-red{background:#431b1b!important;border-color:#ef4444!important;color:#fca5a5!important}
 .badge-sub{background:#fff6e8;border-color:#f5dcb4;color:#8a5200}
 .scd-sla{background:var(--card);border:1px solid var(--line-2);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px}
 .scd-sla h3{margin:0 0 8px;font-size:13px;color:var(--muted);letter-spacing:.4px}
@@ -5421,6 +5422,6 @@ load().then(function(res){
 <!-- 2026-10-16: team chat panel on the right of the case + update reminder (js/138). -->
 <script src="./js/138-v70CaseChatScript.js"></script>
 <!-- 2026-10-29: dark theme — light cards that would swallow the light text (js/151) -->
-<script src="./js/151-v70DarkContrastFixScript.js?v=20261029c"></script>
+<script src="./js/151-v70DarkContrastFixScript.js?v=20261029d"></script>
 </body>
 </html>
