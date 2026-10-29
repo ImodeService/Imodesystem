@@ -122,6 +122,9 @@ a{color:var(--imode-blue)}
 .badge-status.is-hold{background:var(--warn);color:#3a2500}
 .badge-prio{background:#eef4ff;border-color:#cfe0fa;color:var(--imode-navy-2)}
 .badge-prio.is-urgent{background:#fdeaea;border-color:#f6cccc;color:#a51f1f}
+.badge-ws{cursor:pointer;font:inherit;font-weight:700;border-width:1.5px;border-style:solid}
+.badge-ws:hover{filter:brightness(.97)}
+.badge-ws:focus-visible{outline:2px solid var(--imode-blue);outline-offset:2px}
 .badge-field{cursor:pointer;font:inherit;font-weight:700;border-width:1px;border-style:solid}
 .badge-field:hover{filter:brightness(.97)}
 .badge-field:focus-visible{outline:2px solid var(--imode-blue);outline-offset:2px}
@@ -2037,7 +2040,14 @@ function renderProgress(m){
       +'</button></li>';
   }).join('');
   var subs='';
-  if(ws)subs+='<span class="badge badge-sub">🏭 งาน Workshop'+(wsTrackNow(m.raw)?' · '+esc(wsTrackNow(m.raw)):'')+'</span>';
+  /* 2026-10-29: a Workshop job has no technician field status, so its badge is the one to press:
+     it opens กำลังให้บริการ, where the Workshop track (wsDrawerHTML) is. Press again to shut. */
+  if(ws){
+    var wsOpen=openStep===S('service');
+    subs+='<button type="button" class="badge badge-sub badge-ws" data-wsbadge="1" aria-expanded="'+wsOpen+'"'
+      +' title="'+(wsOpen?'กดเพื่อปิด':'กดเพื่อดูรายละเอียดงาน Workshop')+'">🏭 งาน Workshop'
+      +(wsTrackNow(m.raw)?' · '+esc(wsTrackNow(m.raw)):'')+(wsOpen?' ▴':' ▾')+'</button>';
+  }
   if(HOLD_STATES[m.case.status])subs+='<span class="badge badge-sub">'+esc(HOLD_STATES[m.case.status])+'</span>';
   if(m.case.subStatus){
     /* 2026-10-29: the field status is a button. Colour follows the status (FIELD_TONES); pressing it
@@ -4934,6 +4944,17 @@ document.addEventListener('click',function(e){
   if(contact){contactCustomer(contact.getAttribute('data-contact'));return}
   if(e.target.closest('[data-fstep-close]')){
     e.preventDefault();closeFieldDetail();return;
+  }
+  if(e.target.closest('[data-wsbadge]')){
+    e.preventDefault();
+    var wsi=S('service');
+    if(openStep===wsi){closeStepDrawer();return}
+    if(openStep==null)slideNext='sdStepDrawer';
+    else stepSlideDir=wsi>openStep?1:-1;
+    openStep=wsi;
+    openField=null;
+    repaintProgress();
+    return;
   }
   var fbadge=e.target.closest('[data-fbadge]');
   if(fbadge){
