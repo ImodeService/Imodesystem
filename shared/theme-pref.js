@@ -180,6 +180,14 @@
     s.id = 'imodeThemeCss';
     s.textContent =
       '.itp-back{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(12,20,40,.45)}' +
+      /* 2026-10-29: the dialog pops in and out (owner: "อยากให้มีอนิเมชั่นตอน pop up เด้งขึ้นมา") */
+      '.itp-back{animation:itp-fade .2s ease both}.itp-back .itp{animation:itp-pop .38s cubic-bezier(.2,1.4,.4,1) both}' +
+      '.itp-back.is-out{animation:itp-fade-out .16s ease both}.itp-back.is-out .itp{animation:itp-pop-out .16s ease both}' +
+      '@keyframes itp-fade{from{background:rgba(12,20,40,0)}to{background:rgba(12,20,40,.45)}}' +
+      '@keyframes itp-fade-out{from{background:rgba(12,20,40,.45)}to{background:rgba(12,20,40,0)}}' +
+      '@keyframes itp-pop{from{opacity:0;transform:translateY(28px) scale(.86)}to{opacity:1;transform:none}}' +
+      '@keyframes itp-pop-out{to{opacity:0;transform:translateY(14px) scale(.94)}}' +
+      '@media (prefers-reduced-motion:reduce){.itp-back,.itp-back .itp{animation:none}}' +
       '.itp{width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:20px;border-radius:12px;background:var(--surface,#fff);color:var(--ink,#0c225e);border:1px solid var(--line-soft,#e3eaf5);box-shadow:0 18px 48px -12px rgba(0,0,0,.4);font-family:inherit}' +
       '.itp-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}' +
       '.itp-head h2{margin:0;font-size:19px;font-weight:700;line-height:1.3}' +
@@ -225,7 +233,9 @@
   }
   function close() {
     if (!box) return;
-    box.remove(); box = null;
+    var gone = box; box = null;
+    gone.classList.add('is-out');              /* closing animation, then removed */
+    setTimeout(function () { gone.remove(); }, 170);
     document.removeEventListener('keydown', onKey, true);
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }

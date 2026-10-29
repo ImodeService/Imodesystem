@@ -228,6 +228,17 @@ html[data-theme="dark"] .login-card { box-shadow: none; }
 .forgot-pop-card h3 { margin: 0 0 6px; font-size: 19px; }
 .forgot-pop-card p { margin: 0 0 18px; line-height: 1.6; color: var(--ink-2); }
 .forgot-pop-ok { width: 100%; }
+.forgot-pop { animation: fp-fade .2s ease both; }
+.forgot-pop .forgot-pop-card { animation: fp-pop .38s cubic-bezier(.2, 1.4, .4, 1) both; }
+.forgot-pop .forgot-pop-ic { animation: fp-ic .5s .12s cubic-bezier(.2, 1.6, .4, 1) both; }
+.forgot-pop.is-out { animation: fp-fade-out .16s ease both; }
+.forgot-pop.is-out .forgot-pop-card { animation: fp-pop-out .16s ease both; }
+@keyframes fp-fade { from { background: rgba(9, 22, 52, 0); } to { background: rgba(9, 22, 52, .5); } }
+@keyframes fp-fade-out { from { background: rgba(9, 22, 52, .5); } to { background: rgba(9, 22, 52, 0); } }
+@keyframes fp-pop { from { opacity: 0; transform: translateY(24px) scale(.82); } to { opacity: 1; transform: none; } }
+@keyframes fp-pop-out { to { opacity: 0; transform: translateY(12px) scale(.92); } }
+@keyframes fp-ic { from { transform: scale(0) rotate(-40deg); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .forgot-pop, .forgot-pop .forgot-pop-card, .forgot-pop .forgot-pop-ic { animation: none; } }
 
 /* quick actions around the palette button (launcher.js wireFab) */
 body.fab-open #imodeThemeFab { z-index: 61; transform: rotate(45deg); background: var(--blue, #0b63e5); color: #fff; border-color: transparent; }

@@ -54,7 +54,14 @@
       + '<h3 id="forgotPopTitle">ลืมรหัสผ่าน</h3>'
       + '<p>กรุณาติดต่อหัวหน้าแผนกหรือผู้ดูแลระบบ เพื่อตั้งรหัสผ่านใหม่ให้</p>'
       + '<button type="button" class="btn-primary forgot-pop-ok">ตกลง</button></div>';
-    function close() { box.remove(); document.removeEventListener('keydown', onKey, true); if (back) try { back.focus(); } catch (e) {} }
+    var closing = false;
+    function close() {
+      if (closing) return; closing = true;
+      document.removeEventListener('keydown', onKey, true);
+      box.classList.add('is-out');                 /* plays the closing animation, then goes */
+      setTimeout(function () { box.remove(); }, 170);
+      if (back) try { back.focus(); } catch (e) {}
+    }
     function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
     box.addEventListener('click', function (e) { if (e.target === box || e.target.closest('.forgot-pop-ok')) close(); });
     document.body.appendChild(box);
