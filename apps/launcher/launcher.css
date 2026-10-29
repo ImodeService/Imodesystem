@@ -194,3 +194,52 @@ html[data-theme="dark"] .glyph-btn { background: rgba(255,255,255,.08); }
 html[data-theme="dark"] .edit-bar, html[data-theme="dark"] .icon-dlg { border-color: #3a3a3a; }
 html[data-theme="dark"] .icon-dlg-back { background: rgba(0,0,0,.6); }
 @media (max-width: 560px) { .edit-bar { bottom: 12px; width: calc(100vw - 24px); } .edit-hint { width: 100%; text-align: center; } }
+
+/* 2026-10-29 — sign-in on a phone, laid out like the technician app's: logo and title centred,
+   the fields in one rounded card, a pill button with the brand's play mark, and the large
+   triangle from the logo behind the card. Desktop is unchanged (.login-card is only a box). */
+.login-card { display: flex; flex-direction: column; gap: 20px; }
+.btn-play { display: none; }
+@media (max-width: 860px) {
+  .login-page { background: var(--bg); }
+  .login-panel { background: var(--bg); position: relative; overflow: hidden; padding: 36px 20px 40px; min-height: 100vh; }
+  .login-panel::after { content: ""; position: absolute; right: -40px; bottom: 6%; width: 230px; height: 260px;
+    background: var(--line-soft); clip-path: polygon(0 0, 100% 50%, 0 100%); opacity: .7; pointer-events: none; }
+  .login-form { position: relative; z-index: 1; max-width: 420px; margin: 0 auto; gap: 18px; text-align: center; }
+  .login-logo-mobile { width: 170px; margin: 8px auto 0; }
+  .login-form h2 { font-size: 28px; }
+  .login-card { text-align: left; background: var(--surface); border: 1px solid var(--line-soft); border-radius: 24px;
+    padding: 22px 18px; gap: 16px; box-shadow: 0 10px 30px rgba(12, 34, 94, .08); }
+  .login-card .field input { border-radius: 16px; min-height: 52px; }
+  .login-card .btn-primary { border-radius: 999px; min-height: 56px; display: flex; align-items: center; justify-content: center;
+    position: relative; padding: 0 64px 0 24px; }
+  .login-card .btn-play { display: block; position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+    width: 42px; height: 42px; border-radius: 50%; background: #fff; }
+  .login-card .btn-play::after { content: ""; position: absolute; left: 16px; top: 13px; border-left: 13px solid #f05a28;
+    border-top: 8px solid transparent; border-bottom: 8px solid transparent; }
+  .login-card .muted.small { text-align: center; }
+}
+html[data-theme="dark"] .login-card { box-shadow: none; }
+
+/* ลืมรหัสผ่าน popup (login.js) */
+.forgot-pop { position: fixed; inset: 0; z-index: 50; background: rgba(9, 22, 52, .5); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.forgot-pop-card { background: var(--surface); color: var(--ink); border: 1px solid var(--line-soft); border-radius: 20px; width: 100%; max-width: 360px; padding: 24px 20px 20px; text-align: center; box-shadow: 0 24px 60px rgba(9, 22, 52, .35); }
+.forgot-pop-ic { font-size: 30px; line-height: 1; margin-bottom: 8px; }
+.forgot-pop-card h3 { margin: 0 0 6px; font-size: 19px; }
+.forgot-pop-card p { margin: 0 0 18px; line-height: 1.6; color: var(--ink-2); }
+.forgot-pop-ok { width: 100%; }
+
+/* quick actions around the palette button (launcher.js wireFab) */
+body.fab-open #imodeThemeFab { z-index: 61; transform: rotate(45deg); background: var(--blue, #0b63e5); color: #fff; border-color: transparent; }
+#imodeThemeFab { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; transition: transform .18s ease, background .18s ease; }
+.fab-menu { position: fixed; inset: 0; z-index: 60; background: rgba(9, 22, 52, 0); transition: background .18s ease; }
+.fab-menu.is-in { background: rgba(9, 22, 52, .55); }
+.fab-act { position: fixed; transform: translate(-50%, -50%) scale(.4); opacity: 0; transition: transform .2s cubic-bezier(.2, .9, .3, 1.3), opacity .15s ease;
+  transition-delay: calc(var(--i) * 40ms); display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; padding: 0; cursor: pointer; font: inherit; color: #fff; }
+.fab-menu.is-in .fab-act { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+.fab-ic { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: var(--surface, #fff); color: var(--ink, #0c225e);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .25); transition: transform .12s ease, background .12s ease; }
+.fab-lb { font-size: 12.5px; font-weight: 700; white-space: nowrap; padding: 3px 9px; border-radius: 999px; background: rgba(0, 0, 0, .55); }
+.fab-act:hover .fab-ic, .fab-act.is-hot .fab-ic, .fab-act:focus-visible .fab-ic { transform: scale(1.12); background: #f05a28; color: #fff; }
+.fab-act:focus-visible { outline: none; }
+@media (prefers-reduced-motion: reduce) { .fab-act, .fab-menu, #imodeThemeFab { transition: none; } }

@@ -55,6 +55,7 @@ html[data-t="dark"] .login-motif,html[data-t="gold"] .login-motif{opacity:.1}
 .go[disabled]{opacity:.7}
 .err{background:var(--bad-bg);color:var(--bad);border-radius:12px;padding:10px 12px;font-size:14px}
 .login-foot{margin:auto 0 0;font-size:13px;color:var(--ink2);text-align:center}
+.login-foot .foot-link{border:0;background:none;padding:6px 2px;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}
 
 /* ---- top bar ---- */
 .head{background:var(--head);color:#fff;padding:calc(var(--safe-t) + 16px) var(--pad) 18px;display:flex;flex-direction:column;gap:14px;flex:none}

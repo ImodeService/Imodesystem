@@ -295,9 +295,110 @@
     });
   }
 
+  /* 2026-10-29 — the round palette button (shared/theme-pref.js <body data-theme-fab>) becomes a
+     quick-action button, like Opera's: tap it, or press and hold, and round actions fan out around
+     it over a dimmed page. Tap one, or keep holding and slide onto one and let go. Escape, the
+     button again, or the dim page closes it. On every other page the button still opens the theme. */
+  var FAB_ITEMS = [
+    { id: 'edit', label: 'จัดเรียงไอคอน', run: function () { setEditing(true); },
+      icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7M14 17.5h7"/></svg>' },
+    { id: 'theme', label: 'ตั้งค่าธีม', run: function () { window.ImodeTheme.open(); },
+      icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c.9 0 1.5-.7 1.5-1.5 0-.8-.8-1.3-.8-2.1 0-.8.7-1.4 1.5-1.4H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></svg>' }
+  ];
+  function wireFab() {
+    var old = document.getElementById('imodeThemeFab');
+    if (!old) return false;
+    var fab = old.cloneNode(true);            /* drops theme-pref's own click → theme */
+    old.parentNode.replaceChild(fab, old);
+    fab.title = 'การตั้งค่า'; fab.setAttribute('aria-label', 'การตั้งค่า');
+    fab.setAttribute('aria-haspopup', 'menu'); fab.setAttribute('aria-expanded', 'false');
+    var menu = null, hold = null, held = false, hot = null;
+
+    function place() {
+      var r = fab.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      /* a quarter circle from straight left to straight up, away from the screen corner */
+      var n = FAB_ITEMS.length, R = 96;
+      [].forEach.call(menu.querySelectorAll('.fab-act'), function (b, i) {
+        var a = Math.PI + (n === 1 ? Math.PI / 4 : (Math.PI / 2) * (0.15 + 0.7 * i / (n - 1)));
+        b.style.left = (cx + R * Math.cos(a)) + 'px';
+        b.style.top = (cy + R * Math.sin(a)) + 'px';
+      });
+    }
+    function open() {
+      if (menu) return;
+      menu = document.createElement('div');
+      menu.className = 'fab-menu';
+      menu.setAttribute('role', 'menu');
+      menu.innerHTML = FAB_ITEMS.map(function (it, i) {
+        return '<button type="button" role="menuitem" class="fab-act" data-act="' + it.id + '" style="--i:' + i + '">' +
+          '<span class="fab-ic">' + it.icon + '</span><span class="fab-lb">' + it.label + '</span></button>';
+      }).join('');
+      document.body.appendChild(menu);
+      document.body.classList.add('fab-open');
+      fab.setAttribute('aria-expanded', 'true');
+      place();
+      requestAnimationFrame(function () { if (menu) menu.classList.add('is-in'); });
+      menu.addEventListener('click', function (e) {
+        var b = e.target.closest('.fab-act');
+        if (b) { run(b.getAttribute('data-act')); return; }
+        close();
+      });
+      document.addEventListener('keydown', onKey, true);
+      window.addEventListener('resize', place);
+    }
+    function close() {
+      if (!menu) return;
+      menu.remove(); menu = null; hot = null;
+      document.body.classList.remove('fab-open');
+      fab.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('resize', place);
+    }
+    function run(id) {
+      close();
+      var it = FAB_ITEMS.filter(function (x) { return x.id === id; })[0];
+      if (it) it.run();
+    }
+    function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); fab.focus(); } }
+    function hit(x, y) {
+      var el = document.elementFromPoint(x, y), b = el && el.closest ? el.closest('.fab-act') : null;
+      if (hot && hot !== b) hot.classList.remove('is-hot');
+      hot = b; if (b) b.classList.add('is-hot');
+    }
+
+    fab.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      held = false;
+      clearTimeout(hold);
+      hold = setTimeout(function () {          /* press and hold: open, then slide onto an action */
+        held = true;
+        open();
+        try { if (navigator.vibrate) navigator.vibrate(12); } catch (x) {}
+      }, 320);
+      try { fab.setPointerCapture(e.pointerId); } catch (x) {}
+    });
+    fab.addEventListener('pointermove', function (e) { if (held && menu) hit(e.clientX, e.clientY); });
+    fab.addEventListener('pointerup', function (e) {
+      clearTimeout(hold);
+      if (held) {
+        held = false;
+        if (hot) { var id = hot.getAttribute('data-act'); run(id); }
+        fab.dataset.skipClick = '1';         /* the click that follows a hold is not a tap */
+      }
+    });
+    fab.addEventListener('pointercancel', function () { clearTimeout(hold); held = false; });
+    fab.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    fab.addEventListener('click', function () {
+      if (fab.dataset.skipClick) { delete fab.dataset.skipClick; return; }
+      if (menu) close(); else { open(); var f = menu.querySelector('.fab-act'); if (f) f.focus(); }
+    });
+    return true;
+  }
+
   var leaving = false;
   wireMenu();
   wireEdit();
+  if (!wireFab()) document.addEventListener('DOMContentLoaded', function () { if (!wireFab()) setTimeout(wireFab, 300); });
   ImodeAuth.requireUser('login.html').then(function (u) {
     storeKey = 'imode.launcher.' + u.username;
     try { st = cleanState(JSON.parse(lsGet(storeKey) || 'null')); } catch (e) {}

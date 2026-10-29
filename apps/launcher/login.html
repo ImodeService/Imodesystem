@@ -35,6 +35,8 @@
         <p class="muted">สำหรับพนักงาน I-MODE</p>
       </div>
 
+      <!-- 2026-10-29: the fields sit in one card on a phone, like the technician app's sign-in -->
+      <div class="login-card">
       <div id="loginError" class="form-error" role="alert" hidden></div>
 
       <div class="field">
@@ -57,7 +59,8 @@
       </div>
       <p id="forgotNote" class="note" hidden>ติดต่อหัวหน้าแผนกหรือผู้ดูแลระบบเพื่อตั้งรหัสผ่านใหม่</p>
 
-      <button id="submitBtn" type="submit" class="btn-primary"><span class="btn-label">เข้าสู่ระบบ</span></button>
+      <button id="submitBtn" type="submit" class="btn-primary"><span class="btn-label">เข้าสู่ระบบ</span><span class="btn-play" aria-hidden="true"></span></button>
+      </div>
       <p class="muted small">ยังไม่มีบัญชี ให้ติดต่อผู้ดูแลระบบของแผนก ระบบนี้ไม่เปิดให้สมัครเอง</p>
     </form>
   </main>

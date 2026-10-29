@@ -12,7 +12,7 @@
   'use strict';
 
   var C = window.IMODE_CONFIG || {};
-  var VERSION = '0.9';      /* bump for every release; tools/make-version.js copies it into version.json */
+  var VERSION = '0.10';      /* bump for every release; tools/make-version.js copies it into version.json */
   var NATIVE = 1;           /* the native (APK) features this bundle needs; see AppChromePlugin.NATIVE */
   var STEPS = ['กำลังเดินทาง', 'ถึงหน้างาน', 'เริ่มตรวจเช็ก', 'กำลัง PM / Maintenance', 'กำลังซ่อม Service', 'ทดสอบเครื่อง', 'รอลูกค้าตรวจรับ', 'จบงาน'];
   var HOLD = 'รออะไหล่';
@@ -146,6 +146,17 @@
     });
   }
 
+  /* one OK button, for a notice that asks nothing (ลืมรหัสผ่าน) */
+  function infoSheet(title, text) {
+    var w = document.createElement('div');
+    w.innerHTML = '<div class="scrim"><div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="ifT"><span class="grab"></span>' +
+      '<h2 id="ifT">' + esc(title) + '</h2><p>' + esc(text) + '</p><div class="sheet-actions">' +
+      '<button type="button" class="primary" data-v="1">ตกลง</button></div></div></div>';
+    var s = w.firstChild; document.body.appendChild(s);
+    s.addEventListener('click', function (e) { if (e.target.closest('[data-v]') || e.target === s) s.remove(); });
+    var ok = s.querySelector('[data-v]'); if (ok) ok.focus();
+  }
+
   /* -------------------------------------------------------------- auth ---- */
   function client() {
     if (sb) return sb;
@@ -168,10 +179,13 @@
     var p = r.data;
     if (!p) throw new Error('บัญชีนี้ยังไม่ได้ตั้งค่าในระบบ ติดต่อผู้ดูแลระบบ');
     if (p.is_active === false) throw new Error('บัญชีนี้ถูกปิดใช้งาน ติดต่อผู้ดูแลระบบ');
-    if (!p.technician_id) throw new Error('แอพนี้สำหรับบัญชีช่าง บัญชีนี้ยังไม่ได้ผูกกับรายชื่อช่าง ติดต่อผู้ดูแลระบบ');
+    /* 2026-10-29: a Dev account may sign in without being on the technician list, to test the app
+       (owner: "ยศ Dev สามารถเข้าได้ทุกอย่าง แอพด้วย"). It then sees every open job, not only its own. */
+    var dev = [p.role].concat(Array.isArray(p.extra_roles) ? p.extra_roles : []).some(function (x) { return /^dev$/i.test(String(x || '').trim()); });
+    if (!p.technician_id && !dev) throw new Error('แอพนี้สำหรับบัญชีช่าง บัญชีนี้ยังไม่ได้ผูกกับรายชื่อช่าง ติดต่อผู้ดูแลระบบ');
     themeFromAccount(authUser);
     namesFromAccount(authUser);
-    return { id: authUser.id, techId: String(p.technician_id), name: p.full_name || p.username || '', username: p.username || String(authUser.email || '').split('@')[0], team: p.team || '', role: p.role || '' };
+    return { id: authUser.id, dev: dev, techId: p.technician_id ? String(p.technician_id) : '', name: p.full_name || p.username || '', username: p.username || String(authUser.email || '').split('@')[0], team: p.team || '', role: p.role || '' };
   }
   async function signIn(username, password, remember) {
     var u = String(username || '').trim();
@@ -198,12 +212,14 @@
 
   /* -------------------------------------------------------------- data ---- */
   function crewOf(c) { return String(c.assignee || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean); }
+  /* the jobs this account works on; a Dev tester sees them all */
+  function mine(c) { return !!me && (me.dev || crewOf(c).indexOf(me.techId) >= 0); }
   async function loadJobs() {
     var r = await client().from('service_cases').select(COLS);
     if (r.error) throw new Error(friendly(r.error));
     allCases = r.data || [];
     jobs = allCases.filter(function (c) {
-      return crewOf(c).indexOf(me.techId) >= 0 && CLOSED.indexOf(String(c.status || '')) < 0;
+      return mine(c) && CLOSED.indexOf(String(c.status || '')) < 0;
     }).sort(function (a, b) {
       var x = apptDate(a), y = apptDate(b);
       if (x && y) return x - y; if (x) return -1; if (y) return 1;
@@ -224,7 +240,7 @@
   function findCase(id) { return jobs.filter(function (x) { return x.id === id; })[0] || allCases.filter(function (x) { return x.id === id; })[0]; }
   /* เสร็จแล้ว, the web's งานที่สำเร็จแล้ว (js/45) for a technician: closed cases they were on, crew included, newest first */
   function doneJobs() {
-    return allCases.filter(function (c) { return crewOf(c).indexOf(me.techId) >= 0 && CLOSED.indexOf(String(c.status || '')) >= 0; })
+    return allCases.filter(function (c) { return mine(c) && CLOSED.indexOf(String(c.status || '')) >= 0; })
       .sort(function (a, b) { return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); });
   }
   function getGps() {
@@ -279,8 +295,11 @@
       '<button type="button" id="lt" aria-label="แสดงรหัสผ่าน" aria-pressed="false">' + I.eye + '</button></div></div>' +
       '<div class="login-row"><label class="check"><input id="lr" type="checkbox"' + (remember ? ' checked' : '') + '> จำฉันไว้</label>' +
       '<button type="submit" class="go" id="lg">เข้าสู่ระบบ<i>' + I.play + '</i></button></div></form>' +
-      '<p class="login-foot">ลืมรหัสผ่าน ติดต่อหัวหน้าแผนก · เวอร์ชัน ' + VERSION + '</p></main>';
+      '<p class="login-foot"><button type="button" class="foot-link" id="lfg">ลืมรหัสผ่าน</button> · เวอร์ชัน ' + VERSION + '</p></main>';
     var f = document.getElementById('lf'), pw = document.getElementById('lp'), err = document.getElementById('le'), go = document.getElementById('lg');
+    document.getElementById('lfg').onclick = function () {
+      infoSheet('ลืมรหัสผ่าน', 'กรุณาติดต่อหัวหน้าแผนกหรือผู้ดูแลระบบ เพื่อตั้งรหัสผ่านใหม่ให้');
+    };
     document.getElementById('lt').onclick = function () {
       var show = pw.type === 'password'; pw.type = show ? 'text' : 'password';
       this.setAttribute('aria-pressed', String(show)); this.setAttribute('aria-label', show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
@@ -1179,7 +1198,7 @@
     return crewOf(c).map(function (id) { return techById[id] ? techById[id].name : ''; }).filter(Boolean).join(', ') || 'ยังไม่มอบหมาย';
   }
   function calCases() {
-    var list = cal.scope === 'team' ? allCases : allCases.filter(function (c) { return crewOf(c).indexOf(me.techId) >= 0; });
+    var list = cal.scope === 'team' ? allCases : allCases.filter(mine);
     return list.filter(function (c) { return apptDate(c); }).sort(function (a, b) { return apptDate(a) - apptDate(b); });
   }
   function startOfDay(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }

@@ -37,9 +37,29 @@
     this.setAttribute('aria-pressed', String(show));
     this.setAttribute('aria-label', show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
   });
+  /* 2026-10-29: ลืมรหัสผ่าน opens a small popup (was a line of text under the row). Nobody can
+     reset their own password here; the department head or an admin sets a new one. */
   document.getElementById('forgotBtn').addEventListener('click', function () {
-    var n = document.getElementById('forgotNote');
-    n.hidden = !n.hidden;
+    var old = document.getElementById('forgotPop');
+    if (old) old.remove();
+    var back = document.activeElement;
+    var box = document.createElement('div');
+    box.id = 'forgotPop';
+    box.className = 'forgot-pop';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'forgotPopTitle');
+    box.innerHTML = '<div class="forgot-pop-card">'
+      + '<div class="forgot-pop-ic" aria-hidden="true">🔑</div>'
+      + '<h3 id="forgotPopTitle">ลืมรหัสผ่าน</h3>'
+      + '<p>กรุณาติดต่อหัวหน้าแผนกหรือผู้ดูแลระบบ เพื่อตั้งรหัสผ่านใหม่ให้</p>'
+      + '<button type="button" class="btn-primary forgot-pop-ok">ตกลง</button></div>';
+    function close() { box.remove(); document.removeEventListener('keydown', onKey, true); if (back) try { back.focus(); } catch (e) {} }
+    function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
+    box.addEventListener('click', function (e) { if (e.target === box || e.target.closest('.forgot-pop-ok')) close(); });
+    document.body.appendChild(box);
+    document.addEventListener('keydown', onKey, true);
+    box.querySelector('.forgot-pop-ok').focus();
   });
 
   form.addEventListener('submit', async function (e) {
