@@ -251,6 +251,18 @@
       unknown, so what was typed there is read first */
    var mtext=String(($('fMachineSearch')||{}).value||'').trim();
    var r=baseCustomerSearch.call(this,false);   /* the toast is replaced by the popup below */
+   /* 2026-10-30 (owner): one letter + Enter was taken as whichever single customer contained
+      it. On leaving the field only the customer's full name (or a pick from the list, which
+      writes the full name) counts; anything else is treated as not on file. */
+   var picked=($('fCustomer')||{}).value;
+   if(text&&picked){
+    var pc=customerList().filter(function(c){return c.id===picked})[0];
+    var same=function(a,b){return String(a||'').toLowerCase().replace(/\s+/g,' ').trim()===String(b||'').toLowerCase().replace(/\s+/g,' ').trim()};
+    if(!pc||!same(pc.name,text)){
+     $('fCustomer').value='';
+     try{if(typeof refreshMachines==='function')refreshMachines()}catch(e){}
+    }
+   }
    if(text&&!($('fCustomer')||{}).value){
     setTimeout(function(){
      if(($('fCustomer')||{}).value||!$('fCustomerSearch')||$('cinAsk'))return;
@@ -268,6 +280,20 @@
    return r;
   };
  }
+
+ /* Enter in the customer / machine box checks it right away (the same as leaving the box),
+    instead of submitting the case form or silently keeping a partial match. */
+ document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter'||e.isComposing)return;
+  var t=e.target,id=t&&t.id;
+  if(id!=='fCustomerSearch'&&id!=='fMachineSearch')return;
+  if(!t.closest||!t.closest('#caseForm'))return;
+  e.preventDefault();
+  try{
+   if(id==='fCustomerSearch')window.caseCustomerSearchChanged(true);
+   else window.caseMachineSearchChanged(true);
+  }catch(x){}
+ },true);
 
  /* saveMachine(e,returnToCase) reopens the case popup 100 ms after its own save. */
  var handoff=null;   /* from the case page: {customerId, name, returnCase} */
