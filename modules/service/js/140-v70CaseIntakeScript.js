@@ -30,6 +30,7 @@
  function $(id){return document.getElementById(id)}
  function caseList(){try{return Array.isArray(cases)?cases:[]}catch(e){return[]}}
  function machineList(){try{return Array.isArray(machines)?machines:[]}catch(e){return[]}}
+ function customerList(){try{return Array.isArray(customers)?customers:[]}catch(e){return[]}}
  function who(){try{return (currentUser&&(currentUser.name||currentUser.username))||''}catch(e){return''}}
 
  /* ============================================================ 4. files ==== */
@@ -125,7 +126,7 @@
  var stash=null;
  var FIELDS=['fCustomerSearch','fContact','fPhone','fChannel','fCaseCat','fWorkType','fServiceType','fPriority','fIssue','fNote'];
  function takeStash(text){
-  var s={values:{},files:pending.slice(),machineText:text,customerId:($('fCustomer')||{}).value||'',caseId:($('fCaseId')||{}).value||''};
+  var s={at:Date.now(),values:{},files:pending.slice(),machineText:text,customerId:($('fCustomer')||{}).value||'',caseId:($('fCaseId')||{}).value||''};
   FIELDS.forEach(function(k){var e=$(k);if(e)s.values[k]=e.value});
   return s;
  }
@@ -140,10 +141,13 @@
   var cat=$('fCaseCat');if(cat)try{cat.dispatchEvent(new Event('change',{bubbles:true}))}catch(e){}
   var work=$('fWorkType');if(work&&s.values.fWorkType!=null){work.value=s.values.fWorkType;try{work.dispatchEvent(new Event('change',{bubbles:true}))}catch(e){}}
   var cs=$('fCustomerSearch');
-  if(cs&&s.values.fCustomerSearch!=null){
-   cs.value=s.values.fCustomerSearch;
+  /* 2026-10-30: a customer added from ＋ เพิ่มลูกค้า is chosen for the case straight away */
+  var nc=s.newCustomerId?customerList().filter(function(x){return x.id===s.newCustomerId})[0]:null;
+  if(cs&&(nc||s.values.fCustomerSearch!=null)){
+   cs.value=nc?String(nc.name||''):s.values.fCustomerSearch;
    try{caseCustomerSearchChanged(false)}catch(e){}
-   /* caseCustomerSearchChanged(true) would overwrite the contact the person typed */
+   /* caseCustomerSearchChanged(true) would overwrite the contact the person typed; with
+      false it only fills contact / phone that are still empty */
   }
   var m=s.newMachineId?machineList().filter(function(x){return x.id===s.newMachineId})[0]:null;
   var ms=$('fMachineSearch');
@@ -152,6 +156,7 @@
    try{caseMachineSearchChanged(false)}catch(e){}
   }
   toast(m?tl('เพิ่มเครื่องแล้ว และเลือกให้ในเคสนี้แล้ว','Machine added and chosen for this case')
+         :nc?tl('เพิ่มลูกค้าแล้ว และเลือกให้ในเคสนี้แล้ว','Customer added and chosen for this case')
          :tl('กลับมาที่เคสแล้ว ข้อมูลที่กรอกไว้ยังอยู่','Back to the case; what you typed is kept'));
  }
 
@@ -236,11 +241,44 @@
   };
  }
 
+ /* ============================================ ＋ เพิ่มลูกค้า / ＋ เพิ่มเครื่อง ==== */
+ /* 2026-10-30 (admin): "เวลาแอดมินกรอกข้อมูลไปแล้วนึกขึ้นได้ว่าลูกค้าไม่ได้มีในฐานข้อมูล ... กด
+    เพิ่มใหม่เสร็จข้อมูลที่กรอกไปตอนแรกหาย". Both buttons in รับเคสใหม่ call the forms with
+    returnToCase, and js/03 then reopened an EMPTY case popup. What was typed is kept the same way
+    the missing-machine popup above keeps it, and the new customer / machine is chosen. */
+ function caseFormOpen(){return !!$('caseForm')}
+ var baseOpenCustomer=window.openCustomerModal;
+ if(typeof baseOpenCustomer==='function'){
+  window.openCustomerModal=function(cid,returnToCase){
+   if(returnToCase&&!cid&&caseFormOpen()&&!stash)stash=takeStash(String(($('fMachineSearch')||{}).value||''));
+   return baseOpenCustomer.apply(this,arguments);
+  };
+ }
+ var baseSaveCustomer=window.saveCustomer;
+ if(typeof baseSaveCustomer==='function'){
+  window.saveCustomer=async function(){
+   var before=customerList().map(function(c){return c.id});
+   var r=await baseSaveCustomer.apply(this,arguments);
+   var fresh=customerList().filter(function(c){return before.indexOf(c.id)<0})[0];
+   if(fresh&&stash)stash.newCustomerId=fresh.id;
+   return r;
+  };
+ }
+ var baseOpenMachine=window.openMachineModal;
+ if(typeof baseOpenMachine==='function'){
+  window.openMachineModal=function(id,returnToCase){
+   if(returnToCase===true&&!id&&caseFormOpen()&&!stash)stash=takeStash(String(($('fMachineSearch')||{}).value||''));
+   return baseOpenMachine.apply(this,arguments);
+  };
+ }
+
  /* ======================================================== the case popup ==== */
  var baseOpenCase=window.openCaseModal;
  if(typeof baseOpenCase==='function'){
   window.openCaseModal=function(id){
    var keep=stash;stash=null;
+   /* a stash left by a form that was cancelled long ago is not brought back into a later case */
+   if(keep&&keep.at&&Date.now()-keep.at>30*60*1000)keep=null;
    if(!keep)pending=[];
    var r=baseOpenCase.apply(this,arguments);
    /* js/94 rebuilds section 3 at 35 ms; this runs after it */
