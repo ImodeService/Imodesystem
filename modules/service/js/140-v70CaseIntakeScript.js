@@ -154,29 +154,37 @@
   if(ms&&m){
    try{ms.value=caseMachineSearchLabel(m)}catch(e){ms.value=m.nameTh||m.name||''}
    try{caseMachineSearchChanged(false)}catch(e){}
+  }else if(ms&&nc&&s.machineText){
+   /* the pair: a brand-new customer has no machines yet, so the machine typed earlier is
+      offered as a new one for this customer */
+   ms.value=s.machineText;
+   setTimeout(function(){try{window.caseMachineSearchChanged(true)}catch(e){}},400);
   }
   toast(m?tl('เพิ่มเครื่องแล้ว และเลือกให้ในเคสนี้แล้ว','Machine added and chosen for this case')
          :nc?tl('เพิ่มลูกค้าแล้ว และเลือกให้ในเคสนี้แล้ว','Customer added and chosen for this case')
          :tl('กลับมาที่เคสแล้ว ข้อมูลที่กรอกไว้ยังอยู่','Back to the case; what you typed is kept'));
  }
 
- function askPopup(text,onAdd){
+ function askPopup(text,onAdd,kind){
+  var cust=kind==='customer';
   var old=$('cinAsk');if(old)old.remove();
   var box=document.createElement('div');
   box.id='cinAsk';box.className='cin-ask';
   box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
   box.innerHTML='<div class="cin-ask-card"><div class="cin-ask-ic">⚠</div>'
-   +'<h3>'+esc2(tl('ไม่พบเครื่องนี้ในรายการ','This machine is not in the list'))+'</h3>'
-   +'<p>"'+esc2(text)+'" '+esc2(tl('ยังไม่มีในเครื่องจักรของลูกค้ารายนี้ ต้องการเพิ่มเครื่องใหม่หรือไม่',
-      'is not one of this customer\'s machines. Add it as a new machine?'))+'</p>'
-   +'<div class="cin-ask-btns"><button type="button" data-ask="close">'+esc2(tl('ปิด','Close'))+'</button>'
-   +'<button type="button" class="is-primary" data-ask="add">＋ '+esc2(tl('เพิ่มเครื่อง','Add machine'))+'</button></div></div>';
+   +'<h3>'+esc2(cust?tl('ไม่มีข้อมูลลูกค้านี้','This customer is not on file')
+                    :tl('ไม่พบเครื่องนี้ในรายการ','This machine is not in the list'))+'</h3>'
+   +'<p>"'+esc2(text)+'" '+esc2(cust
+      ?tl('ยังไม่มีในข้อมูลลูกค้า ต้องการเพิ่มเป็นลูกค้าใหม่หรือไม่','is not in the customer list. Add it as a new customer?')
+      :tl('ยังไม่มีในเครื่องจักรของลูกค้ารายนี้ ต้องการเพิ่มเครื่องใหม่หรือไม่','is not one of this customer\'s machines. Add it as a new machine?'))+'</p>'
+   +'<div class="cin-ask-btns"><button type="button" data-ask="close">'+esc2(tl('ยกเลิก','Cancel'))+'</button>'
+   +'<button type="button" class="is-primary" data-ask="add">＋ '+esc2(cust?tl('เพิ่มลูกค้า','Add customer'):tl('เพิ่มเครื่อง','Add machine'))+'</button></div></div>';
   document.body.appendChild(box);
   box.addEventListener('click',function(e){
    var b=e.target.closest('[data-ask]');
    if(e.target===box||(b&&b.getAttribute('data-ask')==='close')){
     box.remove();
-    var ms=$('fMachineSearch');if(ms){try{ms.focus();ms.select()}catch(x){}}
+    var ms=$(cust?'fCustomerSearch':'fMachineSearch');if(ms){try{ms.focus();ms.select()}catch(x){}}
     return;
    }
    if(b&&b.getAttribute('data-ask')==='add'){box.remove();onAdd()}
@@ -216,6 +224,39 @@
       stash.before=machineList().map(function(m){return m.id});
       machineFormFor(stash.customerId,text,'case');
      });
+    },160);
+   }
+   return r;
+  };
+ }
+
+ /* 2026-10-30 (owner): "เมื่อใส่ชื่อลูกค้าหรือบริษัทที่ไม่มีจะมีแจ้งเตือนขึ้นมาว่าไม่มีข้อมูลลูกค้า
+    แล้วก็จะมีปุ่มให้เลือกว่า ยกเลิก กับ เพิ่มลูกค้า ... ต้องทำงานคู่กับเครื่องจักรด้วย". Leaving the
+    customer field with a name that matches nobody asks; เพิ่มลูกค้า opens the customer form with the
+    name filled in, and after the save the case comes back with everything typed and the new
+    customer chosen. A machine typed before that is then asked about in turn (restoreStash). */
+ var baseCustomerSearch=window.caseCustomerSearchChanged;
+ if(typeof baseCustomerSearch==='function'){
+  window.caseCustomerSearchChanged=function(force){
+   if(!force)return baseCustomerSearch.apply(this,arguments);
+   var cs=$('fCustomerSearch');
+   var text=String(cs&&cs.value||'').trim();
+   /* refreshMachines() inside the base call empties the machine field when the customer is
+      unknown, so what was typed there is read first */
+   var mtext=String(($('fMachineSearch')||{}).value||'').trim();
+   var r=baseCustomerSearch.call(this,false);   /* the toast is replaced by the popup below */
+   if(text&&!($('fCustomer')||{}).value){
+    setTimeout(function(){
+     if(($('fCustomer')||{}).value||!$('fCustomerSearch')||$('cinAsk'))return;
+     if(String($('fCustomerSearch').value||'').trim()!==text)return;
+     askPopup(text,function(){
+      stash=takeStash(mtext||String(($('fMachineSearch')||{}).value||'').trim());
+      if(typeof window.openCustomerModal==='function')window.openCustomerModal('',true);
+      setTimeout(function(){
+       var n=$('cuName');
+       if(n&&!n.value){n.value=text;try{n.dispatchEvent(new Event('input',{bubbles:true}))}catch(e){}}
+      },60);
+     },'customer');
     },160);
    }
    return r;
@@ -436,6 +477,11 @@
  +'.cin-ask-card p{margin:0 0 16px;font-size:14px;color:#3b4d6e;line-height:1.6;overflow-wrap:anywhere}'
  +'.cin-ask-btns{display:flex;gap:10px}'
  +'.cin-ask-btns button{flex:1;min-height:46px;border-radius:12px;border:1.5px solid #cfe0fb;background:#fff;color:#0c225e;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}'
- +'.cin-ask-btns button.is-primary{background:#0b63e5;border-color:#0b63e5;color:#fff}';
+ +'.cin-ask-btns button.is-primary{background:#0b63e5;border-color:#0b63e5;color:#fff}'
+ /* dark theme: the card follows css/24's greys */
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .cin-ask-card{background:var(--fx-surface,#262626)!important;border:1px solid var(--fx-line,#3a3a3a)}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .cin-ask-card h3{color:var(--fx-head,#fff)!important}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .cin-ask-card p{color:var(--fx-text,#f1f1f1)!important}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .cin-ask-btns button:not(.is-primary){background:var(--fx-surface-2,#2e2e2e)!important;border-color:var(--fx-line-strong,#4d4d4d)!important;color:var(--fx-text,#f1f1f1)!important}';
  document.head.appendChild(st);
 })();
