@@ -31,6 +31,39 @@
  function caseList(){try{return Array.isArray(cases)?cases:[]}catch(e){return[]}}
  function machineList(){try{return Array.isArray(machines)?machines:[]}catch(e){return[]}}
  function customerList(){try{return Array.isArray(customers)?customers:[]}catch(e){return[]}}
+ /* 2026-10-30: one company, several branches, each its own customer. The list and the box show
+    "name · สาขา X" so the branches can be told apart and the right one is chosen. */
+ function custLabel(c){
+  if(!c)return '';
+  var b=String(c.branch||'').trim();
+  return String(c.name||'')+(b?' · '+(/^สาขา/.test(b)?b:'สาขา '+b):'');
+ }
+ window.imodeCustomerLabel=custLabel;
+ function lowSp(v){return String(v||'').toLowerCase().replace(/\s+/g,' ').trim()}
+ var baseResolve=window.resolveCustomerSearchValue;
+ if(typeof baseResolve==='function'){
+  window.resolveCustomerSearchValue=function(v){
+   var q=lowSp(v);if(!q)return null;
+   var list=customerList();
+   var byLabel=list.filter(function(c){return lowSp(custLabel(c))===q});
+   if(byLabel.length)return byLabel[0];
+   var byName=list.filter(function(c){return lowSp(c.name)===q});
+   if(byName.length===1)return byName[0];
+   if(byName.length>1)return null;          /* same name in several branches: the branch must be chosen */
+   return baseResolve.apply(this,arguments);
+  };
+ }
+ function relabelCustomerBox(){
+  var dl=$('caseCustomerList');
+  if(dl){
+   dl.innerHTML=customerList().map(function(c){return '<option value="'+esc2(custLabel(c))+'"></option>'}).join('');
+  }
+  var cs=$('fCustomerSearch'),cid=($('fCustomer')||{}).value;
+  if(cs&&cid){
+   var c=customerList().filter(function(x){return x.id===cid})[0];
+   if(c&&lowSp(cs.value)===lowSp(c.name))cs.value=custLabel(c);
+  }
+ }
  function who(){try{return (currentUser&&(currentUser.name||currentUser.username))||''}catch(e){return''}}
 
  /* ============================================================ 4. files ==== */
@@ -144,7 +177,7 @@
   /* 2026-10-30: a customer added from ＋ เพิ่มลูกค้า is chosen for the case straight away */
   var nc=s.newCustomerId?customerList().filter(function(x){return x.id===s.newCustomerId})[0]:null;
   if(cs&&(nc||s.values.fCustomerSearch!=null)){
-   cs.value=nc?String(nc.name||''):s.values.fCustomerSearch;
+   cs.value=nc?custLabel(nc):s.values.fCustomerSearch;
    try{caseCustomerSearchChanged(false)}catch(e){}
    /* caseCustomerSearchChanged(true) would overwrite the contact the person typed; with
       false it only fills contact / phone that are still empty */
@@ -155,7 +188,7 @@
      customer, so the case takes that customer too, then the machine */
   if(m&&m.customerId&&cs&&!(($('fCustomer')||{}).value)){
    var mc=customerList().filter(function(x){return x.id===m.customerId})[0];
-   if(mc){cs.value=String(mc.name||'');try{caseCustomerSearchChanged(false)}catch(e){}}
+   if(mc){cs.value=custLabel(mc);try{caseCustomerSearchChanged(false)}catch(e){}}
   }
   if(ms&&m){
    try{ms.value=caseMachineSearchLabel(m)}catch(e){ms.value=m.nameTh||m.name||''}
@@ -292,7 +325,7 @@
    if(text&&picked){
     var pc=customerList().filter(function(c){return c.id===picked})[0];
     var same=function(a,b){return String(a||'').toLowerCase().replace(/\s+/g,' ').trim()===String(b||'').toLowerCase().replace(/\s+/g,' ').trim()};
-    if(!pc||!same(pc.name,text)){
+    if(!pc||!(same(pc.name,text)||same(custLabel(pc),text))){
      $('fCustomer').value='';
      try{if(typeof refreshMachines==='function')refreshMachines()}catch(e){}
     }
@@ -301,6 +334,14 @@
     setTimeout(function(){
      if(($('fCustomer')||{}).value||!$('fCustomerSearch')||$('cinAsk'))return;
      if(String($('fCustomerSearch').value||'').trim()!==text)return;
+     /* the company is on file in more than one branch: ask for the branch, not "not on file" */
+     var branches=customerList().filter(function(c){return lowSp(c.name)===lowSp(text)});
+     if(branches.length>1){
+      noticePopup(tl('บริษัทนี้มีหลายสาขา','This company has several branches'),
+       tl('เลือกสาขาจากรายการ ('+branches.length+' สาขา)','Choose the branch from the list ('+branches.length+')'),
+       function(){var c=$('fCustomerSearch');if(c){try{c.focus();c.dispatchEvent(new Event('input',{bubbles:true}))}catch(x){}}});
+      return;
+     }
      askPopup(text,function(){
       stash=takeStash(mtext||String(($('fMachineSearch')||{}).value||'').trim());
       if(typeof window.openCustomerModal==='function')window.openCustomerModal('',true);
@@ -453,6 +494,7 @@
    /* js/94 rebuilds section 3 at 35 ms; this runs after it */
    setTimeout(function(){
     addFilesSection(id||(keep&&keep.caseId)||'');
+    relabelCustomerBox();
     if(keep)restoreStash(keep);
    },90);
    return r;
