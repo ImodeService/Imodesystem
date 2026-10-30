@@ -215,6 +215,11 @@
  +'.t24-dwrap{position:relative;display:flex;flex:1 1 130px;min-width:0}'
  +'.t24-dwrap .t24-date{flex:1 1 auto;width:100%}'
  +'.t24-dwrap .t24-date::-webkit-datetime-edit{color:transparent}'
+ /* 2026-10-30: Chrome on Android draws the native date as its own text and ignores the
+    ::-webkit-datetime-edit rule, so the native text showed through under the overlay (two dates
+    on top of each other). The whole control's text is made transparent instead; the overlay is
+    the only date shown. Same weight as css/24's dark rule for .t24-date, and added later. */
+ +'html:is(:root,#fx) .t24 .t24-dwrap .t24-date{color:transparent!important;-webkit-text-fill-color:transparent!important;caret-color:transparent}'
  +'.t24-dtxt{position:absolute;left:2px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:13px;color:#0c225e}'
  +'.t24-dtxt.is-empty{color:#7f8ba5}'
  /* dark theme (css/24 on the app, data-theme on the case page): the overlay is plain text on the
