@@ -198,6 +198,21 @@
   box.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();box.remove()}});
   var add=box.querySelector('[data-ask="add"]');if(add)add.focus();
  }
+ /* one OK button, same look: "choose the customer first" */
+ function noticePopup(title,text,onOk){
+  var old=$('cinAsk');if(old)old.remove();
+  var box=document.createElement('div');
+  box.id='cinAsk';box.className='cin-ask';
+  box.setAttribute('role','alertdialog');box.setAttribute('aria-modal','true');
+  box.innerHTML='<div class="cin-ask-card"><div class="cin-ask-ic">⚠</div>'
+   +'<h3>'+esc2(title)+'</h3><p>'+esc2(text)+'</p>'
+   +'<div class="cin-ask-btns"><button type="button" class="is-primary" data-ask="ok">'+esc2(tl('ตกลง','OK'))+'</button></div></div>';
+  document.body.appendChild(box);
+  function done(){box.remove();if(onOk)onOk()}
+  box.addEventListener('click',function(e){if(e.target===box||e.target.closest('[data-ask]'))done()});
+  box.addEventListener('keydown',function(e){if(e.key==='Escape'||e.key==='Enter'){e.preventDefault();done()}});
+  var ok=box.querySelector('[data-ask]');if(ok)ok.focus();
+ }
  function machineFormFor(customerId,name,after){
   if(typeof window.openMachineModal!=='function')return;
   window.openMachineModal('',after==='case',customerId);
@@ -217,9 +232,28 @@
    var ms=$('fMachineSearch'),cu=$('fCustomer');
    var text=String(ms&&ms.value||'').trim();
    var r=baseMachineSearch.call(this,false);   /* the toast is replaced by the popup below */
+   /* 2026-10-30 (owner): as with the customer, a few letters that match one machine are not
+      that machine — only its full label, name, model or serial (or a pick from the list) */
    var mid=($('fMachine')||{}).value;
+   if(text&&mid){
+    var pm=machineList().filter(function(x){return x.id===mid})[0];
+    var low=function(v){return String(v||'').toLowerCase().replace(/\s+/g,' ').trim()};
+    var lab='';try{lab=caseMachineSearchLabel(pm)}catch(e){}
+    var ok=pm&&[lab,pm.nameTh,pm.name,pm.nameEn,pm.model,pm.serial].some(function(v){return v&&low(v)===low(text)});
+    if(!ok){$('fMachine').value='';mid=''}
+   }
    if(text&&!mid){
-    if(!cu||!cu.value){toast(tl('กรุณาเลือกลูกค้าก่อน แล้วจึงเลือกเครื่อง','Choose the customer first'));return r}
+    /* no customer yet: say so in a popup and go back to the customer box, rather than a toast
+       while the cursor moves on to ผู้ติดต่อ */
+    if(!cu||!cu.value){
+     setTimeout(function(){
+      if(($('fCustomer')||{}).value||!$('fMachineSearch')||$('cinAsk'))return;
+      noticePopup(tl('ยังไม่ได้เลือกลูกค้า','No customer chosen'),
+       tl('เลือกหรือเพิ่มลูกค้าก่อน แล้วจึงเลือกเครื่องจักร','Choose or add the customer first, then the machine'),
+       function(){var c=$('fCustomerSearch');if(c)try{c.focus();c.select()}catch(x){}});
+     },160);
+     return r;
+    }
     /* blur also fires when the person clicks one of the picker's own rows on some browsers;
        let that pick land first, then decide */
     setTimeout(function(){
