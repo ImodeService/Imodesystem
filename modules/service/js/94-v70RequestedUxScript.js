@@ -15,9 +15,31 @@
   var menu=document.createElement('div');menu.className='case-white-picker';menu.hidden=true;input.parentNode.appendChild(menu);
   function hide(){menu.hidden=true}
   function draw(){var q=String(input.value||'').trim().toLowerCase(),opts=[].slice.call(source.options),hits=q?opts.filter(function(o){return String(o.value||'').toLowerCase().indexOf(q)>=0}):opts;menu.innerHTML=hits.slice(0,80).map(function(o){return '<button type="button" data-value="'+e(o.value)+'">'+e(o.value)+'</button>'}).join('')||'<small>ไม่พบรายการ</small>';menu.hidden=false}
-  input.addEventListener('focus',draw);input.addEventListener('input',draw);input.addEventListener('blur',function(){setTimeout(hide,120)});
+  input.addEventListener('focus',draw);input.addEventListener('input',draw);
+  /* 2026-10-30 (owner): ↓ / ↑ move through the list, Enter takes the highlighted row, Esc closes
+     it. While a row is highlighted js/140 leaves Enter to this picker (data-pick-active). */
+  var act=-1;
+  function rows(){return [].slice.call(menu.querySelectorAll('[data-value]'))}
+  function mark(){var it=rows();it.forEach(function(b,i){b.classList.toggle('is-active',i===act)});if(act>=0&&it[act]){try{it[act].scrollIntoView({block:'nearest'})}catch(x){}input.setAttribute('data-pick-active','1')}else input.removeAttribute('data-pick-active')}
+  input.addEventListener('input',function(){act=-1;mark()});
+  input.addEventListener('blur',function(){act=-1;input.removeAttribute('data-pick-active')});
+  input.addEventListener('keydown',function(ev){
+   if(ev.key==='ArrowDown'||ev.key==='ArrowUp'){
+    ev.preventDefault();
+    if(menu.hidden){draw();act=-1}
+    var n=rows().length;if(!n)return;
+    act=ev.key==='ArrowDown'?(act+1)%n:(act<=0?n-1:act-1);mark();return;
+   }
+   if(ev.key==='Escape'&&!menu.hidden){ev.preventDefault();ev.stopPropagation();hide();act=-1;mark();return}
+   if(ev.key==='Enter'&&!menu.hidden&&act>=0){
+    var b=rows()[act];
+    if(b){ev.preventDefault();input.value=b.getAttribute('data-value');hide();act=-1;mark();onPick()}
+   }
+  });input.addEventListener('blur',function(){setTimeout(hide,120)});
   menu.addEventListener('mousedown',function(ev){var b=ev.target.closest('[data-value]');if(!b)return;ev.preventDefault();input.value=b.getAttribute('data-value');hide();onPick()});
  }
+ (function(){var st=document.createElement('style');st.id='v70WhitePickerKeys';st.textContent='.case-white-picker button.is-active{background:#dbeafe;color:#0b3f9e;outline:2px solid #93c5fd;outline-offset:-2px}'
+  +'html[data-ui="flat-dark"]:is(:root,#fx) .case-white-picker button.is-active{background:var(--fx-accent-soft,#1f3550)!important;color:#fff!important}';document.head.appendChild(st)})();
  function summary(){var box=document.getElementById('caseDraftAssignSummary');if(!box)return;var names=draft.ids.map(function(id){var t=tech(id);return t?t.name:id}).join(', ');box.textContent=names?(names+' · '+(draft.appointment||'ยังไม่ระบุวันนัด')):'ยังไม่ได้เลือกช่าง'}
  function applyDraftFields(){var lead=tech(draft.ids[0]),team=document.getElementById('fServiceTeam'),assignee=document.getElementById('fAssignee'),when=document.getElementById('fAppointment');if(team&&lead){team.value=lead.team||'Technical';if(typeof window.refreshCaseAssignee==='function')window.refreshCaseAssignee()}if(assignee)assignee.value=draft.ids[0]||'';if(when)when.value=draft.appointment||'';summary()}
  window.toggleCaseDraftAssignment=function(cb){draft.enabled=!!cb.checked;var box=document.getElementById('caseDraftAssignActions');if(box)box.classList.toggle('is-open',draft.enabled);if(!draft.enabled){draft.ids=[];draft.appointment='';applyDraftFields()}};

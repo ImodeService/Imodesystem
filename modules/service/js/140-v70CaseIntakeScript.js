@@ -322,6 +322,7 @@
   var t=e.target,id=t&&t.id;
   if(id!=='fCustomerSearch'&&id!=='fMachineSearch')return;
   if(!t.closest||!t.closest('#caseForm'))return;
+  if(t.getAttribute('data-pick-active'))return;   /* js/94: a highlighted row takes the Enter */
   e.preventDefault();
   try{
    if(id==='fCustomerSearch')window.caseCustomerSearchChanged(true);
