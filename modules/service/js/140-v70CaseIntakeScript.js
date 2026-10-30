@@ -255,7 +255,8 @@
   };
  }
  /* 2026-10-30 (owner): "ไม่มีระบบป้องกันการเพิ่มลูกค้าซ้ำ". A NEW customer whose name (ignoring
-    case, spaces and the company words) or phone number is already on file is stopped with a
+    case, spaces and the company words) or phone number is already on file IN THE SAME BRANCH
+    (สาขา — one company may have several, each its own customer record) is stopped with a
     popup: แก้ไขข้อมูล goes back to the form, ใช้ลูกค้าที่มีอยู่ picks the existing one — and, when
     the form came from รับเคสใหม่, chooses it for the case. Editing an existing customer is not
     checked. */
@@ -265,9 +266,11 @@
    .replace(/[\s,()\-]/g,'');
  }
  function phoneKey(v){return String(v||'').replace(/\D/g,'')}
- function findDupCustomer(name,phone){
-  var nk=nameKey(name),pk=phoneKey(phone);
+ function branchKey(v){return String(v||'').toLowerCase().replace(/สาขา|branch|[\s,()\-.]/g,'')}
+ function findDupCustomer(name,phone,branch){
+  var nk=nameKey(name),pk=phoneKey(phone),bk=branchKey(branch);
   return customerList().filter(function(c){
+   if(branchKey(c.branch)!==bk)return false;          /* another branch is another customer */
    if(nk&&nameKey(c.name)===nk)return true;
    return pk.length>=9&&phoneKey(c.phone)===pk;
   })[0]||null;
@@ -279,7 +282,7 @@
   box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
   box.innerHTML='<div class="cin-ask-card"><div class="cin-ask-ic">⚠</div>'
    +'<h3>'+esc2(tl('มีลูกค้ารายนี้อยู่แล้ว','This customer already exists'))+'</h3>'
-   +'<p>"'+esc2(dup.name||'')+'"'+(dup.phone?' · '+esc2(dup.phone):'')+'<br>'
+   +'<p>"'+esc2(dup.name||'')+'"'+(dup.branch?' · '+esc2(tl('สาขา ','Branch '))+esc2(dup.branch):'')+(dup.phone?' · '+esc2(dup.phone):'')+'<br>'
    +esc2(tl('อยู่ในฐานข้อมูลแล้ว จะใช้รายที่มีอยู่ หรือกลับไปแก้ข้อมูล','is already on file. Use it, or go back and change the details?'))+'</p>'
    +'<div class="cin-ask-btns"><button type="button" data-ask="close">'+esc2(tl('แก้ไขข้อมูล','Edit details'))+'</button>'
    +'<button type="button" class="is-primary" data-ask="use">'+esc2(tl('ใช้ลูกค้าที่มีอยู่','Use existing'))+'</button></div></div>';
@@ -297,7 +300,7 @@
   window.saveCustomer=async function(e,returnToCase){
    var isNew=!String(($('cuId')||{}).value||'').trim()||!customerList().some(function(c){return c.id===($('cuId')||{}).value});
    if(isNew){
-    var dup=findDupCustomer(($('cuName')||{}).value,($('cuPhone')||{}).value);
+    var dup=findDupCustomer(($('cuName')||{}).value,($('cuPhone')||{}).value,($('cuBranch')||{}).value);
     if(dup){
      if(e&&e.preventDefault)e.preventDefault();
      askDupCustomer(dup,function(){
