@@ -91,8 +91,12 @@
     one is snapshotted first and restored from that snapshot — no function has to be
     re-run and nothing needs to know which popup it came from.
 
-    A snapshot is raw markup, so a half-filled form is not preserved. That is what "back"
-    means, and the popup being returned to in practice (the record detail) is static. */
+    2026-10-30: the snapshot keeps the popup's own NODES, not a copy of its markup. A markup
+    copy lost everything typed and every listener: รับเคสใหม่ → "เลือกช่างและวันนัดหมาย" →
+    บันทึกการมอบหมาย came back to a case form with the customer, machine and contact empty
+    and no submit handler, so the case could not be saved (admin, 2026-10-30). The nodes are
+    moved into a fragment before openModal() overwrites the body, and moved back on restore;
+    while they are out of the document their ids cannot clash with the popup on top. */
  var modal=null,restoring=false,wasOpen=false,depth=0,stack=[];
 
  function isOpen(){return !!(modal&&modal.classList.contains('open'))}
@@ -101,8 +105,10 @@
  function snapshot(){
   var t=el('modalTitle'),sub=el('modalSub'),body=el('modalBody'),panel=el('modalPanel');
   if(!t||!body)return null;
+  var frag=document.createDocumentFragment();
+  while(body.firstChild)frag.appendChild(body.firstChild);
   return {title:t.textContent||'',sub:sub?sub.textContent||'':'',
-          body:body.innerHTML,panel:panel?panel.className:''};
+          frag:frag,panel:panel?panel.className:''};
  }
  function restore(snap){
   if(!snap)return false;
@@ -110,7 +116,8 @@
   if(!t||!body)return false;
   t.textContent=snap.title;
   if(sub)sub.textContent=snap.sub;
-  body.innerHTML=snap.body;
+  body.innerHTML='';
+  if(snap.frag)body.appendChild(snap.frag);
   if(panel&&snap.panel)panel.className=snap.panel;
   return true;
  }

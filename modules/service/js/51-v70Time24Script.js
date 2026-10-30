@@ -217,6 +217,11 @@
  +'.t24-dwrap .t24-date::-webkit-datetime-edit{color:transparent}'
  +'.t24-dtxt{position:absolute;left:2px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:13px;color:#0c225e}'
  +'.t24-dtxt.is-empty{color:#7f8ba5}'
+ /* dark theme (css/24 on the app, data-theme on the case page): the overlay is plain text on the
+    dark field, so it takes the theme's text colours; never underlined */
+ +'.t24-dtxt{text-decoration:none!important}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .t24-dtxt,html[data-theme="dark"] .t24-dtxt{color:var(--fx-text,#f1f1f1)!important}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .t24-dtxt.is-empty,html[data-theme="dark"] .t24-dtxt.is-empty{color:var(--fx-muted,#a9adb4)!important}'
  +'.t24-clock{font-size:13px;opacity:.55}'
  +'.t24-h,.t24-m{border:1px solid #e2ecfb;border-radius:8px;background:#f8fbff;color:#0c225e;'
  +'font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;padding:5px 4px;min-height:30px}'
