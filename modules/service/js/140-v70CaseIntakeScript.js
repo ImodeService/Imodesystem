@@ -151,6 +151,12 @@
   }
   var m=s.newMachineId?machineList().filter(function(x){return x.id===s.newMachineId})[0]:null;
   var ms=$('fMachineSearch');
+  /* ＋ เพิ่มเครื่อง pressed before any customer was chosen: the machine form asks for the
+     customer, so the case takes that customer too, then the machine */
+  if(m&&m.customerId&&cs&&!(($('fCustomer')||{}).value)){
+   var mc=customerList().filter(function(x){return x.id===m.customerId})[0];
+   if(mc){cs.value=String(mc.name||'');try{caseCustomerSearchChanged(false)}catch(e){}}
+  }
   if(ms&&m){
    try{ms.value=caseMachineSearchLabel(m)}catch(e){ms.value=m.nameTh||m.name||''}
    try{caseMachineSearchChanged(false)}catch(e){}
