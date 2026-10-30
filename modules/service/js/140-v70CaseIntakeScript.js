@@ -310,10 +310,32 @@
     customer chosen. A machine typed before that is then asked about in turn (restoreStash). */
  var baseCustomerSearch=window.caseCustomerSearchChanged;
  if(typeof baseCustomerSearch==='function'){
+  /* 2026-10-30 (owner, phone): ผู้ติดต่อ / โทรศัพท์ were filled from some customer although none was
+     chosen. js/03 fills them as soon as its loose search lands on one customer — every keystroke
+     (oninput) and on leaving the box — and they stayed when that "match" was thrown away. Now a
+     customer counts only when the box holds its full name or label; otherwise the customer is
+     not set and the contact / phone go back to what the person had. */
+  function exactCustomer(text){
+   var picked=($('fCustomer')||{}).value;if(!picked||!text)return false;
+   var pc=customerList().filter(function(c){return c.id===picked})[0];
+   return !!pc&&(lowSp(pc.name)===lowSp(text)||lowSp(custLabel(pc))===lowSp(text));
+  }
+  function keepPeople(before){
+   var c=$('fContact'),p=$('fPhone');
+   if(c)c.value=before.contact;if(p)p.value=before.phone;
+  }
   window.caseCustomerSearchChanged=function(force){
-   if(!force)return baseCustomerSearch.apply(this,arguments);
    var cs=$('fCustomerSearch');
    var text=String(cs&&cs.value||'').trim();
+   var before={contact:String(($('fContact')||{}).value||''),phone:String(($('fPhone')||{}).value||'')};
+   if(!force){
+    var r0=baseCustomerSearch.apply(this,arguments);
+    if(($('fCustomer')||{}).value&&!exactCustomer(text)){
+     $('fCustomer').value='';keepPeople(before);
+     try{if(typeof refreshMachines==='function')refreshMachines()}catch(e){}
+    }
+    return r0;
+   }
    /* refreshMachines() inside the base call empties the machine field when the customer is
       unknown, so what was typed there is read first */
    var mtext=String(($('fMachineSearch')||{}).value||'').trim();
@@ -326,7 +348,7 @@
     var pc=customerList().filter(function(c){return c.id===picked})[0];
     var same=function(a,b){return String(a||'').toLowerCase().replace(/\s+/g,' ').trim()===String(b||'').toLowerCase().replace(/\s+/g,' ').trim()};
     if(!pc||!(same(pc.name,text)||same(custLabel(pc),text))){
-     $('fCustomer').value='';
+     $('fCustomer').value='';keepPeople(before);
      try{if(typeof refreshMachines==='function')refreshMachines()}catch(e){}
     }
    }
@@ -495,6 +517,8 @@
    setTimeout(function(){
     addFilesSection(id||(keep&&keep.caseId)||'');
     relabelCustomerBox();
+    /* the phone browser's own autofill must not put a remembered name / number in */
+    ['caseForm','fContact','fPhone'].forEach(function(k){var e=$(k);if(e)e.setAttribute('autocomplete','off')});
     if(keep)restoreStash(keep);
    },90);
    return r;
