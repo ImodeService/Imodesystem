@@ -254,9 +254,61 @@
    return baseOpenCustomer.apply(this,arguments);
   };
  }
+ /* 2026-10-30 (owner): "ไม่มีระบบป้องกันการเพิ่มลูกค้าซ้ำ". A NEW customer whose name (ignoring
+    case, spaces and the company words) or phone number is already on file is stopped with a
+    popup: แก้ไขข้อมูล goes back to the form, ใช้ลูกค้าที่มีอยู่ picks the existing one — and, when
+    the form came from รับเคสใหม่, chooses it for the case. Editing an existing customer is not
+    checked. */
+ function nameKey(v){
+  return String(v||'').toLowerCase()
+   .replace(/บริษัท|จำกัด|\(มหาชน\)|มหาชน|ห้างหุ้นส่วน|หจก\.?|บจก\.?|co\.?|ltd\.?|limited|company|inc\.?|\./g,'')
+   .replace(/[\s,()\-]/g,'');
+ }
+ function phoneKey(v){return String(v||'').replace(/\D/g,'')}
+ function findDupCustomer(name,phone){
+  var nk=nameKey(name),pk=phoneKey(phone);
+  return customerList().filter(function(c){
+   if(nk&&nameKey(c.name)===nk)return true;
+   return pk.length>=9&&phoneKey(c.phone)===pk;
+  })[0]||null;
+ }
+ function askDupCustomer(dup,onUse){
+  var old=$('cinAsk');if(old)old.remove();
+  var box=document.createElement('div');
+  box.id='cinAsk';box.className='cin-ask';
+  box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
+  box.innerHTML='<div class="cin-ask-card"><div class="cin-ask-ic">⚠</div>'
+   +'<h3>'+esc2(tl('มีลูกค้ารายนี้อยู่แล้ว','This customer already exists'))+'</h3>'
+   +'<p>"'+esc2(dup.name||'')+'"'+(dup.phone?' · '+esc2(dup.phone):'')+'<br>'
+   +esc2(tl('อยู่ในฐานข้อมูลแล้ว จะใช้รายที่มีอยู่ หรือกลับไปแก้ข้อมูล','is already on file. Use it, or go back and change the details?'))+'</p>'
+   +'<div class="cin-ask-btns"><button type="button" data-ask="close">'+esc2(tl('แก้ไขข้อมูล','Edit details'))+'</button>'
+   +'<button type="button" class="is-primary" data-ask="use">'+esc2(tl('ใช้ลูกค้าที่มีอยู่','Use existing'))+'</button></div></div>';
+  document.body.appendChild(box);
+  box.addEventListener('click',function(e){
+   var b=e.target.closest('[data-ask]');
+   if(e.target===box||(b&&b.getAttribute('data-ask')==='close')){box.remove();var n=$('cuName');if(n)try{n.focus()}catch(x){}return}
+   if(b&&b.getAttribute('data-ask')==='use'){box.remove();onUse()}
+  });
+  box.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();box.remove()}});
+  var use=box.querySelector('[data-ask="use"]');if(use)use.focus();
+ }
  var baseSaveCustomer=window.saveCustomer;
  if(typeof baseSaveCustomer==='function'){
-  window.saveCustomer=async function(){
+  window.saveCustomer=async function(e,returnToCase){
+   var isNew=!String(($('cuId')||{}).value||'').trim()||!customerList().some(function(c){return c.id===($('cuId')||{}).value});
+   if(isNew){
+    var dup=findDupCustomer(($('cuName')||{}).value,($('cuPhone')||{}).value);
+    if(dup){
+     if(e&&e.preventDefault)e.preventDefault();
+     askDupCustomer(dup,function(){
+      try{closeModal()}catch(x){}
+      if(stash){stash.newCustomerId=dup.id}
+      if(returnToCase||stash)setTimeout(function(){window.openCaseModal()},100);
+      else toast(tl('ใช้ลูกค้าเดิม: ','Using existing customer: ')+(dup.name||''));
+     });
+     return;
+    }
+   }
    var before=customerList().map(function(c){return c.id});
    var r=await baseSaveCustomer.apply(this,arguments);
    var fresh=customerList().filter(function(c){return before.indexOf(c.id)<0})[0];
@@ -266,8 +318,14 @@
  }
  var baseOpenMachine=window.openMachineModal;
  if(typeof baseOpenMachine==='function'){
-  window.openMachineModal=function(id,returnToCase){
-   if(returnToCase===true&&!id&&caseFormOpen()&&!stash)stash=takeStash(String(($('fMachineSearch')||{}).value||''));
+  window.openMachineModal=function(id,returnToCase,customerPreset){
+   if(returnToCase===true&&!id&&caseFormOpen()){
+    if(!stash)stash=takeStash(String(($('fMachineSearch')||{}).value||''));
+    /* 2026-10-30: the two buttons work as a pair — the customer chosen in the case form is
+       already filled in on the new machine */
+    var cu=($('fCustomer')||{}).value||'';
+    if(cu&&!customerPreset)return baseOpenMachine.call(this,id,returnToCase,cu);
+   }
    return baseOpenMachine.apply(this,arguments);
   };
  }
