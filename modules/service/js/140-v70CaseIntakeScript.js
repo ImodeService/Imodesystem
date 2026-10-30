@@ -159,7 +159,7 @@
  var stash=null;
  var FIELDS=['fCustomerSearch','fContact','fPhone','fChannel','fCaseCat','fWorkType','fServiceType','fPriority','fIssue','fNote'];
  function takeStash(text){
-  var s={at:Date.now(),values:{},files:pending.slice(),machineText:text,customerId:($('fCustomer')||{}).value||'',caseId:($('fCaseId')||{}).value||''};
+  var s={at:Date.now(),draft:(typeof window.imodeCaseDraftGet==='function')?window.imodeCaseDraftGet():null,values:{},files:pending.slice(),machineText:text,customerId:($('fCustomer')||{}).value||'',caseId:($('fCaseId')||{}).value||''};
   FIELDS.forEach(function(k){var e=$(k);if(e)s.values[k]=e.value});
   return s;
  }
@@ -167,6 +167,8 @@
   if(!s)return;
   pending=s.files||[];
   drawFiles();
+  /* ช่าง + วันนัด staged in section 3 (js/94) come back too */
+  if(s.draft&&typeof window.imodeCaseDraftPut==='function'){try{window.imodeCaseDraftPut(s.draft)}catch(e){}}
   FIELDS.forEach(function(k){
    var e=$(k);
    if(e&&s.values[k]!=null&&k!=='fCustomerSearch')e.value=s.values[k];

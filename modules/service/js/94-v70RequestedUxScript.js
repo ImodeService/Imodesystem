@@ -42,6 +42,9 @@
   +'html[data-ui="flat-dark"]:is(:root,#fx) .case-white-picker button.is-active{background:var(--fx-accent-soft,#1f3550)!important;color:#fff!important}';document.head.appendChild(st)})();
  function summary(){var box=document.getElementById('caseDraftAssignSummary');if(!box)return;var names=draft.ids.map(function(id){var t=tech(id);return t?t.name:id}).join(', ');box.textContent=names?(names+' · '+(draft.appointment||'ยังไม่ระบุวันนัด')):'ยังไม่ได้เลือกช่าง'}
  function applyDraftFields(){var lead=tech(draft.ids[0]),team=document.getElementById('fServiceTeam'),assignee=document.getElementById('fAssignee'),when=document.getElementById('fAppointment');if(team&&lead){team.value=lead.team||'Technical';if(typeof window.refreshCaseAssignee==='function')window.refreshCaseAssignee()}if(assignee)assignee.value=draft.ids[0]||'';if(when)when.value=draft.appointment||'';summary()}
+ /* 2026-10-30: read / put back the staged ช่าง + วันนัด (js/140 keeps them while the person adds a customer or machine) */
+ window.imodeCaseDraftGet=function(){return {enabled:!!draft.enabled,ids:draft.ids.slice(),appointment:draft.appointment||''}};
+ window.imodeCaseDraftPut=function(d){if(!d||!draft.active)return;draft.enabled=!!d.enabled;draft.ids=(d.ids||[]).slice();draft.appointment=d.appointment||'';var cb=document.querySelector('.case-assign-toggle input');if(cb)cb.checked=draft.enabled;var box=document.getElementById('caseDraftAssignActions');if(box)box.classList.toggle('is-open',draft.enabled);summary();applyDraftFields()};
  window.toggleCaseDraftAssignment=function(cb){draft.enabled=!!cb.checked;var box=document.getElementById('caseDraftAssignActions');if(box)box.classList.toggle('is-open',draft.enabled);if(!draft.enabled){draft.ids=[];draft.appointment='';applyDraftFields()}};
  window.openCaseDraftAssignment=function(){
   var groups={};try{technicians.forEach(function(t){(groups[t.team||'Technical']||(groups[t.team||'Technical']=[])).push(t)})}catch(x){}
