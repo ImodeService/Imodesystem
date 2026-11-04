@@ -102,6 +102,8 @@
    '#page-home .rhome-tilebadge.is-x{background:#667085}'+
    '#page-home .rhome-tilebadge.is-add{background:#12a06a}'+
    '#page-home.rhome-editing .rhome-more-btn{display:none!important}'+
+   /* hide the notification count dots (js/115) while arranging, so they don't sit under ✕ / ＋ (user 2026-11-04) */
+   '#page-home.rhome-editing .imode-cbadge,#page-home.rhome-editing .njb-navcount{display:none!important}'+
    '#page-home .rhome-emptyquick{grid-column:1/-1;color:#5a6b8c;font-size:13px;padding:10px 0}'+
    '@media (max-width:560px){#page-home .rhome-tilebadge{right:calc(50% - 40px)}}';
   document.head.appendChild(s);
