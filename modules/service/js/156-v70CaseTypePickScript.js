@@ -75,7 +75,12 @@
  /* js/82's lists are the ones its dropdowns and readCase() use, so the new types go into them. */
  function extendCategories(){
   var m=cc();if(!m||!Array.isArray(m.CATS))return;
-  allTypes().forEach(function(t){
+  var l=allTypes();
+  /* deleted (hidden) custom types stay in js/82's lists, so old cases that used them still read correctly */
+  (Array.isArray(settings.customWorkTypes)?settings.customWorkTypes:[]).forEach(function(t){
+   if(t&&t.name&&t.hidden)l.push({name:t.name,where:t.online?['field','workshop','online']:['field','workshop']});
+  });
+  l.forEach(function(t){
    m.CATS.forEach(function(c){
     if(t.where.indexOf(c.v)>=0&&c.works.indexOf(t.name)<0)c.works.push(t.name);
    });
@@ -99,16 +104,19 @@
   var on=t.name===st.work;
   return '<button type="button" class="ctp-card'+(on?' is-on':'')+'" data-work="'+esc2(t.name)+'">'
    +(on?'<span class="ctp-tag is-b">เลือกอยู่</span>':t.isNew?'<span class="ctp-tag">ใหม่</span>':t.custom?'<span class="ctp-tag is-g">เพิ่มเอง</span>':'')
-   +'<span class="ctp-ic">'+esc2(t.icon)+'</span><b>'+esc2(t.name)+'</b><small>'+esc2(t.desc)+'</small></button>';
+   +'<span class="ctp-ic">'+esc2(t.icon)+'</span><b>'+esc2(t.name)+'</b><small>'+esc2(t.desc)+'</small></button>'
+   +(t.custom&&!on?'<button type="button" class="ctp-del" data-del="'+esc2(t.name)+'" title="ลบประเภทงานนี้" aria-label="ลบประเภทงาน '+esc2(t.name)+'">🗑</button>':'');
  }
+ function cardWrap(t){return t.custom?'<div class="ctp-cwrap">'+cardHTML(t)+'</div>':cardHTML(t)}
  function panelHTML(){
   return '<div class="ctp-panel" id="ctpPanel" data-no-i18n>'
    +'<div class="ctp-steps"><i class="on">1</i>เลือกประเภทงาน<span></span><i>2</i>กรอกรายละเอียด</div>'
    +'<label class="ctp-link"><input type="checkbox" id="ctpLink"'+(st.link?' checked':'')+'>'
-   +'<span class="ctp-box" aria-hidden="true">✓</span><span><b>ผูกเครื่องจักรกับเคสนี้</b>'
+   +'<span class="ctp-box" aria-hidden="true"><i>✓</i></span><span><b>ผูกเครื่องจักรกับเคสนี้</b>'
    +'<small>ติ๊กไว้ = ฟอร์มถัดไปมีช่องเลือกเครื่องจักร (S/N) และสถานะประกัน · ไม่ติ๊ก = กรอกแค่ลูกค้า เช่น ซื้ออะไหล่ ปรึกษา ขอเอกสาร อบรม</small></span></label>'
-   +'<div class="ctp-cards" id="ctpCards">'+allTypes().map(cardHTML).join('')
+   +'<div class="ctp-cards" id="ctpCards">'+allTypes().map(cardWrap).join('')
    +'<button type="button" class="ctp-card is-add" data-add="1"><span class="ctp-plus">＋</span><b>อื่นๆ</b><small>เพิ่มประเภทงานใหม่</small></button></div>'
+   +'<div class="ctp-delbox" id="ctpDel" hidden></div>'
    +'<div class="ctp-addform" id="ctpAdd" hidden>'
    +'<b class="ctp-addhead">เพิ่มประเภทงานใหม่</b>'
    +'<div class="field"><label>ชื่อประเภทงาน *</label><input id="ctpAddName" maxlength="40" placeholder="เช่น อบรมการใช้งาน"></div>'
@@ -119,8 +127,9 @@
    +'<label class="ctp-chk"><input type="checkbox" id="ctpAddOnline"> ทำแบบ Online ได้</label>'
    +'<div class="ctp-addbtns"><button type="button" class="soft-btn" data-addcancel="1">ยกเลิก</button>'
    +'<button type="button" class="primary-btn" data-addsave="1">บันทึกและเลือก</button></div></div>'
-   +'<div class="ctp-foot"><small>ติ๊กก่อน แล้วกดการ์ด ระบบไปหน้าถัดไปทันที</small>'
-   +'<button type="button" class="soft-btn" data-cancel="1">ยกเลิก</button></div></div>';
+   +'<div class="ctp-foot"><small>เลือกการ์ด แล้วกด ถัดไป (เลือกผิดกดการ์ดใหม่ได้เลย)</small>'
+   +'<span class="ctp-footbtns"><button type="button" class="soft-btn" data-cancel="1">ยกเลิก</button>'
+   +'<button type="button" class="primary-btn" data-next="1">ถัดไป →</button></span></div></div>';
  }
  function chipsHTML(){
   var t=typeOf(st.work);
@@ -194,7 +203,7 @@
   var b=body(),p=$('ctpPanel');if(!b)return;
   if(!p){b.insertAdjacentHTML('afterbegin',panelHTML());p=$('ctpPanel')}
   else{
-   var cards=$('ctpCards');if(cards)cards.innerHTML=allTypes().map(cardHTML).join('')+'<button type="button" class="ctp-card is-add" data-add="1"><span class="ctp-plus">＋</span><b>อื่นๆ</b><small>เพิ่มประเภทงานใหม่</small></button>';
+   var cards=$('ctpCards');if(cards)cards.innerHTML=allTypes().map(cardWrap).join('')+'<button type="button" class="ctp-card is-add" data-add="1"><span class="ctp-plus">＋</span><b>อื่นๆ</b><small>เพิ่มประเภทงานใหม่</small></button>';
    var lk=$('ctpLink');if(lk)lk.checked=st.link;
   }
   b.classList.add('ctp-picking');
@@ -217,10 +226,16 @@
   el.classList.add(dir==='back'?'ctp-back-in':'ctp-in');
  }
 
+ /* A card click only selects (user 2026-11-04: so a wrong pick can be changed quickly); ถัดไป moves on. */
  function pick(work){
+  st.work=work;
+  var ad=$('ctpAdd');if(ad)ad.hidden=true;
+  var c=$('ctpCards');if(c){var keep=c.querySelector('.is-add');c.innerHTML=allTypes().map(cardWrap).join('');if(keep)c.appendChild(keep)}
+  var nx=document.querySelector('#ctpPanel [data-next]');if(nx)try{nx.focus({preventScroll:true})}catch(e){}
+ }
+ function goNext(){
   var lk=$('ctpLink');st.link=lk?!!lk.checked:st.link;
   if(!st.edit)lsSet(LINK_KEY,st.link?'1':'0');
-  st.work=work;
   showForm();
  }
  function addType(){
@@ -228,6 +243,9 @@
   if(!name){toast('กรุณาใส่ชื่อประเภทงาน');var n=$('ctpAddName');if(n)n.focus();return}
   var exist=allTypes().filter(function(t){return t.name.toLowerCase()===name.toLowerCase()})[0];
   if(exist){toast('มีประเภทงาน "'+exist.name+'" อยู่แล้ว เลือกจากการ์ดได้เลย');pick(exist.name);return}
+  if(!Array.isArray(settings.customWorkTypes))settings.customWorkTypes=[];
+  var old=settings.customWorkTypes.filter(function(t){return t&&t.hidden&&String(t.name).toLowerCase()===name.toLowerCase()})[0];
+  if(old)settings.customWorkTypes.splice(settings.customWorkTypes.indexOf(old),1);
   var icBtn=document.querySelector('#ctpIcons button.is-on');
   var t={name:name,desc:String(($('ctpAddDesc')||{}).value||'').trim(),icon:icBtn?icBtn.getAttribute('data-ic'):'📝',
    online:!!($('ctpAddOnline')||{}).checked,at:new Date().toISOString()};
@@ -240,15 +258,39 @@
   pick(name);
  }
 
+ /* Delete = hide. The record stays in settings so cases that already use the type keep showing it. */
+ function askDelete(name){
+  var d=$('ctpDel');if(!d)return;var a=$('ctpAdd');if(a)a.hidden=true;
+  d.innerHTML='<b>ลบประเภทงาน "'+esc2(name)+'" ?</b>'
+   +'<small>เคสเก่าที่ใช้ประเภทนี้ยังอยู่ครบและยังแสดงชื่อเดิม แค่จะไม่มีการ์ดนี้ให้เลือกตอนเปิดเคสใหม่</small>'
+   +'<div class="ctp-addbtns"><button type="button" class="soft-btn" data-delno="1">ยกเลิก</button>'
+   +'<button type="button" class="danger-btn ctp-delyes" data-delyes="'+esc2(name)+'">ลบ</button></div>';
+  d.hidden=false;
+  try{d.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(x){}
+ }
+ function doDelete(name){
+  var l=Array.isArray(settings.customWorkTypes)?settings.customWorkTypes:[];
+  var n=0;l.forEach(function(t){if(t&&t.name===name&&!t.hidden){t.hidden=true;t.hiddenAt=new Date().toISOString();n++}});
+  if(!n)return;
+  saveSettingsNow();
+  var c=$('ctpCards');if(c){var keep=c.querySelector('.is-add');c.innerHTML=allTypes().map(cardWrap).join('');if(keep)c.appendChild(keep)}
+  var d=$('ctpDel');if(d){d.hidden=true;d.innerHTML=''}
+  toast('ลบประเภทงาน "'+name+'" แล้ว');
+ }
+
  /* ------------------------------------------------------------- events ---- */
  /* on #modalBody, not document: js/05 stops clicks at #modalPanel (see js/99) */
  function onClick(e){
-  var b=e.target&&e.target.closest?e.target.closest('#modalBody [data-work],#modalBody [data-add],#modalBody [data-addsave],#modalBody [data-addcancel],#modalBody [data-cancel],#modalBody [data-back],#modalBody [data-where],#modalBody #ctpIcons button'):null;
+  var b=e.target&&e.target.closest?e.target.closest('#modalBody [data-work],#modalBody [data-del],#modalBody [data-delyes],#modalBody [data-delno],#modalBody [data-add],#modalBody [data-addsave],#modalBody [data-addcancel],#modalBody [data-cancel],#modalBody [data-next],#modalBody [data-back],#modalBody [data-where],#modalBody #ctpIcons button'):null;
   if(!b)return;
   if(b.hasAttribute('data-work')){pick(b.getAttribute('data-work'));return}
-  if(b.hasAttribute('data-add')){var a=$('ctpAdd');if(a){a.hidden=false;var n=$('ctpAddName');if(n)n.focus()}return}
+  if(b.hasAttribute('data-del')){askDelete(b.getAttribute('data-del'));return}
+  if(b.hasAttribute('data-delyes')){doDelete(b.getAttribute('data-delyes'));return}
+  if(b.hasAttribute('data-delno')){var d0=$('ctpDel');if(d0)d0.hidden=true;return}
+  if(b.hasAttribute('data-add')){var dd=$('ctpDel');if(dd)dd.hidden=true;var a=$('ctpAdd');if(a){a.hidden=false;var n=$('ctpAddName');if(n)n.focus()}return}
   if(b.hasAttribute('data-addcancel')){var a2=$('ctpAdd');if(a2)a2.hidden=true;return}
   if(b.hasAttribute('data-addsave')){addType();return}
+  if(b.hasAttribute('data-next')){goNext();return}
   if(b.hasAttribute('data-cancel')){try{closeModal()}catch(x){}return}
   if(b.hasAttribute('data-back')){showPanel('back');return}
   if(b.hasAttribute('data-where')){
@@ -376,6 +418,12 @@
  +'.ctp-link .ctp-box{width:22px;height:22px;border-radius:6px;border:2px solid #98a2b3;display:grid;place-items:center;color:transparent;font-weight:700;flex:none;margin-top:1px}'
  +'.ctp-link:has(input:checked){border-color:#0b63e5;background:#f3f7ff}'
  +'.ctp-link input:checked+.ctp-box{background:#0b63e5;border-color:#0b63e5;color:#fff}'
+ +'.ctp-link .ctp-box i{font-style:normal;opacity:0;transition:opacity .12s}.ctp-link input:checked+.ctp-box i{opacity:1}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .ctp-link input:checked+.ctp-box{background:#3b82f6!important;border-color:#3b82f6!important}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .ctp-link input:not(:checked)+.ctp-box{background:transparent!important;border-color:#6b7280!important}'
+ /* same popup size on step 1 and step 2 (user 2026-11-04), so the slide between them doesn't jump */
+ +'#modalPanel:has(#ctpPanel){height:min(880px,92vh)}'
+ +'.ctp-footbtns{display:flex;gap:8px}'
  +'.ctp-link input:focus-visible+.ctp-box{outline:3px solid rgba(11,99,229,.35);outline-offset:2px}'
  +'.ctp-link b{display:block;color:#0c225e;font-size:15px}.ctp-link small{display:block;color:#667085;font-size:12.5px;line-height:1.5}'
  +'.ctp-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}'
@@ -389,6 +437,13 @@
  +'.ctp-card.is-add b{color:#0b63e5}.ctp-plus{font-size:24px;color:#0b63e5;line-height:1}'
  +'.ctp-tag{position:absolute;top:10px;right:10px;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;background:#fff3e0;color:#b54708}'
  +'.ctp-tag.is-b{background:#e8f0fe;color:#0b63e5}.ctp-tag.is-g{background:#e7f6ee;color:#067647}'
+ +'.ctp-cwrap{position:relative;display:flex}.ctp-cwrap>.ctp-card{flex:1}'
+ +'.ctp-del{position:absolute;right:8px;bottom:8px;width:30px;height:30px;border-radius:8px;border:1px solid transparent;background:transparent;font-size:15px;cursor:pointer;opacity:.55;transition:opacity .15s,background .15s,border-color .15s}'
+ +'.ctp-del:hover,.ctp-del:focus-visible{opacity:1;background:#fef3f2;border-color:#fecdca}'
+ +'.ctp-delbox{margin-top:14px;border:1.5px solid #fecdca;border-radius:14px;padding:14px;background:#fffbfa}'
+ +'.ctp-delbox b{display:block;color:#b42318;margin-bottom:4px}.ctp-delbox small{display:block;color:#667085;font-size:12.5px;line-height:1.5;margin-bottom:10px}'
+ +'.ctp-delyes{background:#d92d20!important;border-color:#d92d20!important;color:#fff!important}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .ctp-delbox{background:var(--fx-surface,#262626)!important;border-color:#7a271a!important}'
  +'.ctp-addform{margin-top:14px;border:1.5px solid #bcd3fb;border-radius:14px;padding:14px;background:#f8fbff}'
  +'.ctp-addform .field{margin-bottom:10px}.ctp-addhead{display:block;color:#0c225e;margin-bottom:8px}'
  +'.ctp-icons{display:flex;flex-wrap:wrap;gap:6px}.ctp-icons button{width:40px;height:40px;border-radius:10px;border:1.5px solid #dfe4ee;background:#fff;font-size:19px;cursor:pointer}'
