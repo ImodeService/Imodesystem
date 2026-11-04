@@ -3890,8 +3890,11 @@ function ceMachineOptions(customerId,cur){
     var hit=all.filter(function(m){return m&&m.id===cur})[0];
     if(hit)list.unshift(hit);
   }
-  if(!list.length)return '<option value="">— ลูกค้ารายนี้ยังไม่มีเครื่องในระบบ —</option>';
-  return '<option value="">— เลือกเครื่อง —</option>'+list.map(function(m){
+  /* 2026-11-03: a case may have no machine (ซื้ออะไหล่ ปรึกษา ขอเอกสาร ...) — js/156 */
+  var rawNone=false;try{rawNone=!!(caseDetailModel&&caseDetailModel.raw&&caseDetailModel.raw.id&&!caseDetailModel.raw.machineId)}catch(e){}
+  var none='<option value="__none__"'+(!cur&&rawNone?' selected':'')+'>— ไม่ผูกเครื่องจักร —</option>';
+  if(!list.length)return (rawNone?'':'<option value="">— ลูกค้ารายนี้ยังไม่มีเครื่องในระบบ —</option>')+none;
+  return '<option value="">— เลือกเครื่อง —</option>'+none+list.map(function(m){
     return '<option value="'+esc(m.id)+'"'+(m.id===cur?' selected':'')+'>'
       +esc([ceMachineName(m),m.model,m.serial?'S/N '+m.serial:''].filter(Boolean).join(' · '))+'</option>';
   }).join('');
@@ -4132,6 +4135,7 @@ function saveCaseDetails(customers){
     if(f){try{f.focus()}catch(x){}f.classList.add('is-missing');setTimeout(function(){f.classList.remove('is-missing')},1800)}
     return;
   }
+  if(mid==='__none__')mid=null;
   var cu=customers.filter(function(x){return x.id===cid})[0]||{};
   var m=(readJSON(K.machines,[])||[]).filter(function(x){return x&&x.id===mid})[0]||{};
   var online=onlineChanges(c,c.serviceType||'');
@@ -4164,7 +4168,10 @@ function saveCaseDetails(customers){
       changes.fieldStatusLog=(changes.fieldStatusLog||(c.fieldStatusLog||[]).slice()).concat([catCh.entry]);
     }
   }
-  if(mid!==c.machineId){
+  if(!mid&&c.machineId){
+    changes.machineId=null;changes.machine='';changes.machineTh='';changes.machineEn='';changes.model='';
+    changes.serial='';changes.machineSize='';changes.warranty='-';
+  }else if(mid&&mid!==c.machineId){
     changes.machineId=mid;changes.machine=ceMachineName(m);changes.model=m.model||'';
     changes.serial=m.serial||'';changes.machineSize=m.size||'';changes.warranty=m.warranty||'ไม่ทราบ';
   }

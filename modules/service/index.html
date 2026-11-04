@@ -89,7 +89,7 @@
       <button class="nav-item" data-page="petty-cash"><span>💵</span><b>เงินสดย่อย</b></button>
       <button class="nav-item" data-page="spare-parts"><span>📦</span><b>สต๊อกอะไหล่</b></button>
       <button class="nav-item" data-page="technicians"><span>👨‍🔧</span><b>ทีมงาน</b></button>
-      <button class="nav-item" data-page="onsite"><span>📍</span><b>หน้างาน</b></button>
+      <!-- 2026-11-03: หน้างาน (data-page onsite) left the sidebar; it is a card in ตั้งค่าระบบ › ค่าบริการ now -->
       <button class="nav-item" data-page="calendar"><span>📅</span><b>ปฏิทินงาน</b></button>
       <button class="nav-item" data-page="warranty"><span>🛡</span><b>ระบบประกันเครื่อง</b></button>
       <button class="nav-item" data-page="documents"><span>📁</span><b>เอกสารเครื่องจักร</b></button>
@@ -648,6 +648,7 @@
       </div>
       <div class="settings-section-head settings-section-accent"><div><b>ค่าบริการและใบเสนอราคา</b><small>ค่าที่ใช้คำนวณบริการ ค่าเดินทาง ประกัน อะไหล่ และใบเสนอราคา</small></div></div>
       <div class="settings-card-grid">
+        <button class="setting-action-card commercial setting-card-accent" onclick="goPage('onsite')"><span class="setting-icon">📍</span><div><b>หน้างาน</b><small>คำนวณค่าบริการหน้างาน · Service Level · Travel Zone</small></div><strong>›</strong></button>
         <button class="setting-action-card commercial setting-card-accent" onclick="openServiceRateSettingModal()"><span class="setting-icon">🧰</span><div><b>อัตราค่าบริการ</b><small id="setRateSummary">หน้างาน / Workshop / ตรวจวิเคราะห์ / ค่าแรง</small></div><strong>›</strong></button>
         <button class="setting-action-card commercial setting-card-accent" onclick="openOnsitePricingSettingModal()"><span class="setting-icon">S/M/L</span><div><b>ราคา Service Level หน้างาน</b><small id="setOnsitePricingSummary">S 500 · M 1,000 · L 1,500 + Travel Zone</small></div><strong>›</strong></button>
         <button class="setting-action-card commercial setting-card-accent" onclick="openTravelSettingModal()"><span class="setting-icon">🗺️</span><div><b>โซนและค่าเดินทาง</b><small id="setTravelSummary">ระยะทางและค่าเดินทาง</small></div><strong>›</strong></button>
@@ -752,7 +753,7 @@
 
 <script src="./js/09-v68UatAccountsScript.js"></script>
 
-<script src="./js/10-v68RoleHomeScript.js"></script>
+<script src="./js/10-v68RoleHomeScript.js?v=20261103"></script>
 
 <script src="./auth/auth-core.js"></script>
 <script src="./auth/auth-local.js"></script>
@@ -1159,6 +1160,12 @@
 <script src="./js/153-v70QuotePartPhotosScript.js?v=20261030"></script>
 <!-- 2026-10-31: ทำใบเสนอราคา from the case page loads the case without a needless "start new?" question (js/154) -->
 <script src="./js/154-v70QuoteFromCaseScript.js?v=20261031"></script>
+<!-- 2026-11-03: หน้าหลัก Service — drag the quick modules and choose them yourself (js/155, hooks in js/10) -->
+<script src="./js/155-v70HomeArrangeScript.js?v=20261103"></script>
+<!-- 2026-11-03 รับเคสใหม่: เลือกประเภทงานก่อน + ติ๊กผูกเครื่องจักร (แผน Service ข้อ 1) -->
+<script src="./js/156-v70CaseTypePickScript.js?v=20261103"></script>
+<!-- 2026-11-03 ใบเสนอราคา: รูปและไฟล์แนบ + หน้าเอกสารแนบ (แผน Service ข้อ 3; ต้องรัน supabase/19-quote-attachments.sql) -->
+<script src="./js/157-v70QuoteAttachScript.js?v=20261103"></script>
 
 </body>
 </html>

@@ -47,7 +47,8 @@
 
   // `hide`: module ids this module must not link to (QC & R&D hides Service: two admins, 2026-10-20).
   function sidebar(root, current, hide) {
-    var mods = (window.IMODE_MODULES || []).filter(function (m) { return (hide || []).indexOf(m.id) < 0; });
+    // 2026-11-03: modules flagged `hidden` in modules.js are left out too (the page you are on always shows).
+    var mods = (window.IMODE_MODULES || []).filter(function (m) { return (hide || []).indexOf(m.id) < 0 && (!m.hidden || m.id === current); });
     var link = function (m) {
       var label = esc(m.fullName || m.name);
       if (m.id === current) return '<a class="sh-link" aria-current="page" href="#">' + tile(m) + '<span>' + label + '</span></a>';

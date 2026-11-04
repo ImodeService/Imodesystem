@@ -254,3 +254,15 @@ body.fab-open #imodeThemeFab { z-index: 61; transform: rotate(45deg); background
 .fab-act:hover .fab-ic, .fab-act.is-hot .fab-ic, .fab-act:focus-visible .fab-ic { transform: scale(1.12); background: #f05a28; color: #fff; }
 .fab-act:focus-visible { outline: none; }
 @media (prefers-reduced-motion: reduce) { .fab-act, .fab-menu, #imodeThemeFab { transition: none; } }
+
+/* 2026-11-03: with most modules hidden (shared/modules.js `hidden`), a short row is centred
+   instead of sitting in the left columns of a 5-wide grid. launcher.js sets data-n. */
+.app-grid[data-n="1"] { grid-template-columns: 118px; }
+.app-grid[data-n="2"] { grid-template-columns: repeat(2, 118px); }
+.app-grid[data-n="3"] { grid-template-columns: repeat(3, 118px); }
+.app-grid[data-n="4"] { grid-template-columns: repeat(4, 118px); }
+@media (max-width: 560px) {
+  .app-grid[data-n="1"] { grid-template-columns: 34%; }
+  .app-grid[data-n="2"] { grid-template-columns: repeat(2, 34%); }
+  .app-grid[data-n="3"], .app-grid[data-n="4"] { grid-template-columns: repeat(3, 1fr); }
+}

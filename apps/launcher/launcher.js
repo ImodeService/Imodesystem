@@ -1,7 +1,8 @@
 (function () {
   'use strict';
   /* Module list lives in shared/modules.js; hrefs there are from the platform root. */
-  var MODULES = window.IMODE_MODULES.map(function (m) {
+  /* 2026-11-03: modules flagged `hidden` in shared/modules.js are not shown (owner's request). */
+  var MODULES = window.IMODE_MODULES.filter(function (m) { return !m.hidden; }).map(function (m) {
     return { id: m.id, name: m.name, icon: m.icon, href: m.href ? '../../' + m.href : '' };
   });
 
@@ -117,6 +118,7 @@
   }
 
   function renderGrid() {
+    document.getElementById('appGrid').setAttribute('data-n', String(Math.min(MODULES.length, 5)));
     document.getElementById('appGrid').innerHTML = MODULES.map(function (m) {
       var ready = !!m.href;
       var inner =

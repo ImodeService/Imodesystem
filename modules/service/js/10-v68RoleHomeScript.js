@@ -29,7 +29,7 @@
   /* These three had no permission key, so the Home page fell back to a "back office role"
      rule. v69RoleScopeScript gives them real keys; the rule stays only as a fallback for
      a settings object saved before that script existed. */
-  {page:'onsite',       icon:'📍', th:'หน้างาน',              en:'Worksite',            perm:'onsite.view'},
+  /* 'onsite' (หน้างาน) moved into Settings > ราคา 2026-11-03, so it is no longer a Home tile. */
   {page:'spare-parts',  icon:'📦', th:'สต๊อกอะไหล่',           en:'Spare Parts',         perm:'parts.view'},
   {page:'petty-cash',   icon:'💵', th:'เงินสดย่อย',            en:'Petty Cash',          perm:'pettycash.view'}
  ];
@@ -167,7 +167,10 @@
    return;
   }
   const mods=homeModules();
-  const quick=quickModules(mods),rest=mods.filter(m=>quick.indexOf(m)<0);
+  /* 2026-11-03: a person's own board (js/155, ลากจัดเรียง + เลือกโมดูลที่ใช้บ่อยเอง) wins when they have one. */
+  let picked=null;
+  try{picked=typeof window.imodeHomeQuickPick==='function'?window.imodeHomeQuickPick(mods):null}catch(e){picked=null}
+  const quick=picked||quickModules(mods),rest=mods.filter(m=>quick.indexOf(m)<0);
   host.innerHTML=`${brandHeader()}
    <div class="rhome-body rhome-cardhome">
     ${profileCard()}
@@ -190,7 +193,9 @@
    more.innerHTML=`${esc(L('โมดูลทั้งหมด','All modules'))} (${rest.length}) ${open?'▴':'▾'}`;
   };
   playStaffIntro(host);
+  try{if(typeof window.imodeHomeAfterRender==='function')window.imodeHomeAfterRender(host,!!picked)}catch(e){}
  }
+ window.imodeRenderRoleHome=function(){renderRoleHome()};
 
  /* ---------- quick modules ----------
     This page is the first thing staff see after signing in, so it is a shortcut board, not
