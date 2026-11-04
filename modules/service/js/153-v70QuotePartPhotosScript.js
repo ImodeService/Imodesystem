@@ -49,7 +49,7 @@
    var btn=document.createElement('label');
    btn.className='qpp-btn'+(dis?' is-disabled':'');
    btn.title='แนบรูปอะไหล่ (สูงสุด '+MAX+' รูป)';
-   btn.innerHTML='📎'+(ph.length?'<b>'+ph.length+'</b>':'')
+   btn.innerHTML='<span class="qpp-ic" aria-hidden="true">📷</span><span class="qpp-tx">รูป</span>'+(ph.length?'<b>'+ph.length+'</b>':'')
      +(dis?'':'<input type="file" accept="image/*" multiple hidden data-qpp="'+i+'">');
    var name=row.querySelector('input');
    if(name&&name.nextSibling)row.insertBefore(btn,name.nextSibling);else row.appendChild(btn);
@@ -134,8 +134,12 @@
  var st=document.createElement('style');
  st.id='v70QuotePartPhotosStyle';
  st.textContent=''
-  +'.quote-part-line.has-photo-btn{grid-template-columns:minmax(150px,1fr) 46px 110px 150px 120px 38px}'
-  +'.qpp-btn{display:inline-flex;align-items:center;justify-content:center;gap:3px;height:40px;border:1px solid var(--line,#dfe9f8);border-radius:10px;background:#fbfcff;cursor:pointer;font-size:16px}'
+  +'.quote-part-line.has-photo-btn{grid-template-columns:minmax(150px,1fr) auto 110px 150px 120px 38px}'
+  /* 2026-11-04 user: the bare paperclip was easy to miss, so it is a labelled blue button now */
+  +'.qpp-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:40px;padding:0 12px;border:1.5px solid #0b63e5;border-radius:10px;background:#f3f7ff;color:#0b63e5;cursor:pointer;font-size:14px;font-weight:700;white-space:nowrap}'
+  +'.qpp-btn:hover{background:#0b63e5;color:#fff}.qpp-btn .qpp-ic{font-size:16px}'
+  +'html[data-ui="flat-dark"]:is(:root,#fx) .qpp-btn{background:rgba(59,130,246,.16)!important;border-color:#3b82f6!important;color:#93c5fd!important}'
+  +'html[data-ui="flat-dark"]:is(:root,#fx) .qpp-btn:hover{background:#3b82f6!important;color:#fff!important}'
   +'.qpp-btn b{font-size:11px;background:#0b63e5;color:#fff;border-radius:999px;padding:1px 6px}'
   +'.qpp-btn.is-disabled{opacity:.5;cursor:not-allowed}'
   +'.qpp-strip{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}'
