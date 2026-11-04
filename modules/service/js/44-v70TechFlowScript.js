@@ -41,7 +41,8 @@
  function syncFieldNav(){
   var item=document.querySelector('.sidebar .side-nav .nav-item[data-page="field-service"]');
   if(!item)return;
-  if(!myTechId())return;                       /* admin / coordinator keeps it */
+  /* 2026-11-04 user: admins don't need it in the sidebar either; they open a job's field
+     page from the case. So the entry is hidden for every account now (technicians use งานของฉัน). */
   item.style.display='none';
   /* js/36 hides a group header whose every item is hidden; tell it the row moved. */
   try{if(window.imodeNavGroups&&window.imodeNavGroups.sync)window.imodeNavGroups.sync()}catch(e){}
