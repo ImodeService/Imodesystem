@@ -85,7 +85,8 @@
    '#page-home .rhome-arrange-btn{border:0;background:none;font:inherit;font-size:12px;color:#5a6b8c;cursor:pointer;padding:2px 6px;border-radius:8px}'+
    '#page-home .rhome-arrange-btn:hover{color:#0b5cd6;background:rgba(11,92,214,.08)}'+
    /* floating bar at the bottom, same look as the launcher's (apps/launcher .edit-bar), user 2026-11-04 */
-   '#page-home .rhome-editbar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;max-width:calc(100vw - 24px);display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;background:#fff;color:#0c225e;border:1px solid #dfe6f2;border-radius:16px;padding:10px 14px;box-shadow:0 8px 28px rgba(12,34,94,.2)}'+
+   /* centred without transform: another stylesheet sets transform:none on :hover, which made the bar jump away from the mouse */
+   '#page-home .rhome-editbar{position:fixed;left:0;right:0;margin:0 auto;width:fit-content;bottom:20px;transform:none!important;transition:none!important;z-index:60;max-width:calc(100vw - 24px);display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;background:#fff;color:#0c225e;border:1px solid #dfe6f2;border-radius:16px;padding:10px 14px;box-shadow:0 8px 28px rgba(12,34,94,.2)}'+
    '#page-home .rhome-editbar span{font-size:14px;color:#5a6b8c}'+
    '#page-home .rhome-editbar button{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid #dfe6f2;background:transparent;color:#0c225e;font:inherit;font-size:15px;cursor:pointer}'+
    '#page-home .rhome-editbar button.is-primary{background:#0b63e5;border-color:#0b63e5;color:#fff;font-weight:600}'+
