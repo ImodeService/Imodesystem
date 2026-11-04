@@ -135,7 +135,9 @@
   fl.innerHTML=docs.map(function(a){
    var b=BADGE[a.kind]||['FILE','#475467','#f2f4f7'];
    return '<div class="qat-file"><span class="qat-badge" style="color:'+b[1]+';background:'+b[2]+'">'+b[0]+'</span>'
-    +'<button type="button" class="qat-name" data-qat-open="'+esc2(a.id)+'">'+esc2(a.name)+'</button>'
+    +'<div class="qat-fmain"><button type="button" class="qat-name" data-qat-open="'+esc2(a.id)+'" title="กดเพื่อดูไฟล์">'+esc2(a.name)+'</button>'
+    +'<input data-qat-cap="'+esc2(a.id)+'" maxlength="80" placeholder="คำอธิบายไฟล์ (ถ้ามี)" value="'+esc2(a.caption||'')+'"'+(lk?' disabled':'')+'></div>'
+    +'<button type="button" class="soft-btn qat-view" data-qat-open="'+esc2(a.id)+'">👁 ดู</button>'
     +'<small>'+sizeLabel(a.size)+'</small>'
     +(lk?'':'<button type="button" class="qat-x2" data-qat-rm="'+esc2(a.id)+'" aria-label="เอาออก">✕</button>')+'</div>';
   }).join('');
@@ -143,18 +145,105 @@
   var add=$('qatAddBtn');if(add)add.classList.toggle('is-disabled',lk||list.length>=MAX);
   var inp=$('qatInput');if(inp)inp.disabled=lk||list.length>=MAX;
  }
- function openFile(id){
+ /* 2026-11-04 (tester): only the PDF could be looked at — Excel and Word just downloaded.
+    Every kind now opens in a viewer inside the page: image and PDF as they are, Excel as a
+    table per sheet (SheetJS), Word as text (mammoth). Both libraries load only the first time
+    such a file is opened. ⬇ ดาวน์โหลด keeps the original file. */
+ var LIBS={xlsx:{src:'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',ok:function(){return !!window.XLSX}},
+           docx:{src:'https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js',ok:function(){return !!window.mammoth}}};
+ function lib(k){
+  var L=LIBS[k];
+  if(L.ok())return Promise.resolve();
+  if(L.p)return L.p;
+  L.p=new Promise(function(res,rej){
+   var s=document.createElement('script');s.src=L.src;s.async=true;
+   s.onload=function(){L.ok()?res():rej(new Error('lib'))};
+   s.onerror=function(){L.p=null;rej(new Error('lib'))};
+   document.head.appendChild(s);
+  });
+  return L.p;
+ }
+ function bytesOf(a){
+  var bin=atob(String(a.data||'').split(',')[1]||''),u=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+  return u;
+ }
+ function findAtt(id){
   var all=list.slice();quotes().forEach(function(q){all=all.concat(Array.isArray(q.attachments)?q.attachments:[])});
-  var a=all.filter(function(x){return x&&x.id===id})[0];
-  if(!a||!a.data)return;
+  return all.filter(function(x){return x&&x.id===id})[0]||null;
+ }
+ function download(a){
   try{
-   var parts=a.data.split(','),bin=atob(parts[1]||''),u=new Uint8Array(bin.length);
-   for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
-   var url=URL.createObjectURL(new Blob([u],{type:a.type||'application/octet-stream'}));
-   if(a.kind==='image'||a.kind==='pdf')window.open(url,'_blank');
-   else{var l=document.createElement('a');l.href=url;l.download=a.name||'file';document.body.appendChild(l);l.click();l.remove()}
+   var url=URL.createObjectURL(new Blob([bytesOf(a)],{type:a.type||'application/octet-stream'}));
+   var l=document.createElement('a');l.href=url;l.download=a.name||'file';document.body.appendChild(l);l.click();l.remove();
    setTimeout(function(){URL.revokeObjectURL(url)},60000);
-  }catch(e){toast('เปิดไฟล์ไม่ได้')}
+  }catch(e){toast('ดาวน์โหลดไม่ได้')}
+ }
+ var viewUrl=null;
+ function closeViewer(){
+  var v=$('qatViewer');if(v)v.remove();
+  if(viewUrl){URL.revokeObjectURL(viewUrl);viewUrl=null}
+  document.removeEventListener('keydown',escKey,true);
+ }
+ function escKey(e){if(e.key==='Escape'){e.stopPropagation();closeViewer()}}
+ function openFile(id){
+  var a=findAtt(id);
+  if(!a||!a.data)return;
+  closeViewer();
+  var b=BADGE[a.kind]||['รูป','#0b63e5','#e8f0fe'];
+  document.body.insertAdjacentHTML('beforeend','<div class="qat-viewer" id="qatViewer" role="dialog" aria-modal="true" aria-label="'+esc2(a.name)+'">'
+   +'<div class="qat-vcard"><div class="qat-vhead"><span class="qat-badge" style="color:'+b[1]+';background:'+b[2]+'">'+b[0]+'</span>'
+   +'<div class="qat-vtitle"><b>'+esc2(a.name)+'</b>'+(a.caption?'<small>'+esc2(a.caption)+'</small>':'')+'</div>'
+   +'<button type="button" class="soft-btn" data-qv="dl">⬇ ดาวน์โหลด</button><button type="button" class="qat-vx" data-qv="x" aria-label="ปิด">✕</button></div>'
+   +'<div class="qat-vbody" id="qatVBody"><div class="qat-vmsg">กำลังเปิดไฟล์…</div></div></div></div>');
+  var v=$('qatViewer');
+  v.addEventListener('click',function(e){
+   var t=e.target.closest&&e.target.closest('[data-qv]');
+   if(t){if(t.getAttribute('data-qv')==='dl')download(a);else closeViewer();return}
+   if(e.target===v)closeViewer();
+   var tab=e.target.closest&&e.target.closest('[data-sheet]');
+   if(tab){[].forEach.call(v.querySelectorAll('[data-sheet]'),function(x){x.classList.toggle('is-on',x===tab)});
+    [].forEach.call(v.querySelectorAll('.qat-sheet'),function(x){x.hidden=x.getAttribute('data-i')!==tab.getAttribute('data-sheet')})}
+  });
+  document.addEventListener('keydown',escKey,true);
+  var body=$('qatVBody');
+  var fail=function(){body.innerHTML='<div class="qat-vmsg">เปิดดูไฟล์นี้ในหน้าเว็บไม่ได้ (ต้องต่ออินเทอร์เน็ต) กด ⬇ ดาวน์โหลด เพื่อเปิดในเครื่องแทน</div>'};
+  try{
+   if(a.kind==='image'){body.innerHTML='<img class="qat-vimg" src="'+esc2(a.data)+'" alt="">';return}
+   if(a.kind==='pdf'){
+    viewUrl=URL.createObjectURL(new Blob([bytesOf(a)],{type:'application/pdf'}));
+    body.innerHTML='<iframe class="qat-vpdf" src="'+viewUrl+'" title="'+esc2(a.name)+'"></iframe>';return;
+   }
+   if(a.kind==='xlsx'){
+    lib('xlsx').then(function(){
+     if(!$('qatViewer'))return;
+     var wb=window.XLSX.read(bytesOf(a),{type:'array'});
+     var names=wb.SheetNames||[];
+     body.innerHTML=(names.length>1?'<div class="qat-tabs">'+names.map(function(n,i){return '<button type="button" data-sheet="'+i+'"'+(i?'':' class="is-on"')+'>'+esc2(n)+'</button>'}).join('')+'</div>':'')
+      +names.map(function(n,i){
+       var html=window.XLSX.utils.sheet_to_html(wb.Sheets[n],{editable:false});
+       var m=/<table[\s\S]*<\/table>/i.exec(html);
+       return '<div class="qat-sheet" data-i="'+i+'"'+(i?' hidden':'')+'>'+(m?m[0]:'<div class="qat-vmsg">ชีตว่าง</div>')+'</div>';
+      }).join('');
+     /* SheetJS output is markup built from cell text; scripts in it never run via innerHTML,
+        but strip on* attributes anyway */
+     [].forEach.call(body.querySelectorAll('*'),function(el){[].slice.call(el.attributes).forEach(function(at){if(/^on/i.test(at.name))el.removeAttribute(at.name)})});
+    }).catch(fail);
+    return;
+   }
+   if(a.kind==='docx'){
+    lib('docx').then(function(){
+     return window.mammoth.convertToHtml({arrayBuffer:bytesOf(a).buffer});
+    }).then(function(r){
+     if(!$('qatViewer'))return;
+     body.innerHTML='<div class="qat-doc">'+(r&&r.value||'<div class="qat-vmsg">เอกสารว่าง</div>')+'</div>';
+     [].forEach.call(body.querySelectorAll('script,iframe,object,embed'),function(el){el.remove()});
+     [].forEach.call(body.querySelectorAll('*'),function(el){[].slice.call(el.attributes).forEach(function(at){if(/^on/i.test(at.name)||(/^(href|src)$/i.test(at.name)&&/^\s*javascript:/i.test(at.value)))el.removeAttribute(at.name)})});
+    }).catch(fail);
+    return;
+   }
+   fail();
+  }catch(e){fail()}
  }
 
  /* --------------------------------------------- carry it with the quotation ---- */
@@ -225,7 +314,7 @@
       +'<figcaption style="font-size:11px;margin-top:4px;color:#33415c">'+(i+1)+'. '+esc2(x.caption||x.name||'')+'</figcaption></figure>';
     }).join('')+'</div>':'')
    +(docs.length?'<div style="margin-top:14px;font-size:12px;color:#1d232f"><b>ไฟล์ประกอบ / Attached files</b><ul style="margin:6px 0 0 18px;padding:0">'
-     +docs.map(function(x){return '<li>'+esc2(x.name)+' ('+(BADGE[x.kind]||['FILE'])[0]+', '+sizeLabel(x.size)+')</li>'}).join('')
+     +docs.map(function(x){return '<li>'+esc2(x.name)+' ('+(BADGE[x.kind]||['FILE'])[0]+', '+sizeLabel(x.size)+')'+(x.caption?' — '+esc2(x.caption):'')+'</li>'}).join('')
      +'</ul><div style="font-size:10.5px;color:#667085;margin-top:4px">ไฟล์เหล่านี้แนบมาพร้อมใบเสนอราคาในระบบ ขอรับไฟล์ได้จากเจ้าหน้าที่</div></div>':'')
    +'</div>';
  }
@@ -268,6 +357,26 @@
   +'.qat-name{flex:1;min-width:0;text-align:left;border:0;background:none;font:inherit;color:inherit;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
   +'.qat-file small{color:#667085;flex:none}'
   +'.qat-x2{border:0;background:none;color:#b42318;font-size:15px;cursor:pointer;flex:none}'
+  +'.qat-fmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}'
+  +'.qat-fmain input{font-size:12.5px;padding:5px 7px;border:1px solid var(--line,#dfe4ee);border-radius:8px;width:100%}'
+  +'.qat-view{flex:none;padding:6px 10px!important;min-height:0!important;font-size:13px}'
+  +'.qat-viewer{position:fixed;inset:0;z-index:13000;background:rgba(9,22,52,.55);display:flex;align-items:center;justify-content:center;padding:16px}'
+  +'.qat-vcard{background:#fff;border-radius:16px;width:min(1000px,100%);height:min(88vh,900px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(9,22,52,.35)}'
+  +'.qat-vhead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #e3e8f2}'
+  +'.qat-vtitle{flex:1;min-width:0}.qat-vtitle b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#0c225e}.qat-vtitle small{color:#667085}'
+  +'.qat-vx{width:36px;height:36px;border-radius:10px;border:1px solid #dfe4ee;background:#fff;font-size:16px;cursor:pointer;flex:none}'
+  +'.qat-vbody{flex:1;overflow:auto;background:#f5f7fb}'
+  +'.qat-vimg{display:block;max-width:100%;max-height:100%;margin:auto;object-fit:contain}'
+  +'.qat-vpdf{width:100%;height:100%;border:0;display:block;background:#fff}'
+  +'.qat-vmsg{padding:30px;text-align:center;color:#475467}'
+  +'.qat-tabs{display:flex;gap:6px;padding:10px 12px;position:sticky;top:0;background:#f5f7fb;flex-wrap:wrap}'
+  +'.qat-tabs button{border:1px solid #cfd6e3;background:#fff;border-radius:999px;padding:4px 12px;cursor:pointer;font:inherit;font-size:13px}'
+  +'.qat-tabs button.is-on{background:#0b63e5;border-color:#0b63e5;color:#fff}'
+  +'.qat-sheet{padding:10px 12px}.qat-sheet table{border-collapse:collapse;background:#fff;font-size:13px}'
+  +'.qat-sheet td,.qat-sheet th{border:1px solid #d0d7e4;padding:4px 8px;white-space:nowrap}'
+  +'.qat-doc{background:#fff;max-width:800px;margin:16px auto;padding:28px 34px;line-height:1.7;color:#1d232f;box-shadow:0 2px 10px rgba(0,0,0,.06)}'
+  +'.qat-doc table{border-collapse:collapse}.qat-doc td,.qat-doc th{border:1px solid #d0d7e4;padding:4px 8px}.qat-doc img{max-width:100%}'
+  +'@media (max-width:640px){.qat-file{flex-wrap:wrap}.qat-vcard{height:92vh}}'
   +'.qat-empty{color:#98a2b3;font-size:13px;padding:6px 0}'
   +'.qat-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}'
   +'.qat-add{cursor:pointer}.qat-add.is-disabled{opacity:.5;pointer-events:none}'
