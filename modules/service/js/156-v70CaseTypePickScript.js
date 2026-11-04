@@ -105,8 +105,9 @@
   return '<button type="button" class="ctp-card'+(on?' is-on':'')+'" data-work="'+esc2(t.name)+'">'
    +(on?'<span class="ctp-tag is-b">เลือกอยู่</span>':t.isNew?'<span class="ctp-tag">ใหม่</span>':t.custom?'<span class="ctp-tag is-g">เพิ่มเอง</span>':'')
    +'<span class="ctp-ic">'+esc2(t.icon)+'</span><b>'+esc2(t.name)+'</b><small>'+esc2(t.desc)+'</small></button>'
-   +(t.custom&&!on?'<button type="button" class="ctp-del" data-del="'+esc2(t.name)+'" title="ลบประเภทงานนี้" aria-label="ลบประเภทงาน '+esc2(t.name)+'">🗑</button>':'');
+   +(t.custom&&!on?'<button type="button" class="ctp-del" data-del="'+esc2(t.name)+'" title="ลบประเภทงานนี้" aria-label="ลบประเภทงาน '+esc2(t.name)+'">'+TRASH+'<span>ลบ</span></button>':'');
  }
+ var TRASH='<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
  function cardWrap(t){return t.custom?'<div class="ctp-cwrap">'+cardHTML(t)+'</div>':cardHTML(t)}
  function panelHTML(){
   return '<div class="ctp-panel" id="ctpPanel" data-no-i18n>'
@@ -438,8 +439,12 @@
  +'.ctp-tag{position:absolute;top:10px;right:10px;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;background:#fff3e0;color:#b54708}'
  +'.ctp-tag.is-b{background:#e8f0fe;color:#0b63e5}.ctp-tag.is-g{background:#e7f6ee;color:#067647}'
  +'.ctp-cwrap{position:relative;display:flex}.ctp-cwrap>.ctp-card{flex:1}'
- +'.ctp-del{position:absolute;right:8px;bottom:8px;width:30px;height:30px;border-radius:8px;border:1px solid transparent;background:transparent;font-size:15px;cursor:pointer;opacity:.55;transition:opacity .15s,background .15s,border-color .15s}'
- +'.ctp-del:hover,.ctp-del:focus-visible{opacity:1;background:#fef3f2;border-color:#fecdca}'
+ +'.ctp-del{position:absolute;right:8px;bottom:8px;display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 9px;border-radius:8px;border:1px solid #fda29b;background:#fef3f2;color:#d92d20;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s,color .15s,border-color .15s}'
+ +'.ctp-del svg{flex:none;display:block}'
+ +'.ctp-cwrap .ctp-card small{padding-right:62px}'
+ +'.ctp-del:hover,.ctp-del:focus-visible{background:#d92d20;border-color:#d92d20;color:#fff}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .ctp-del{background:rgba(240,68,56,.14)!important;border-color:#f97066!important;color:#ff8a80!important}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) .ctp-del:hover,html[data-ui="flat-dark"]:is(:root,#fx) .ctp-del:focus-visible{background:#d92d20!important;border-color:#d92d20!important;color:#fff!important}'
  +'.ctp-delbox{margin-top:14px;border:1.5px solid #fecdca;border-radius:14px;padding:14px;background:#fffbfa}'
  +'.ctp-delbox b{display:block;color:#b42318;margin-bottom:4px}.ctp-delbox small{display:block;color:#667085;font-size:12.5px;line-height:1.5;margin-bottom:10px}'
  +'.ctp-delyes{background:#d92d20!important;border-color:#d92d20!important;color:#fff!important}'
