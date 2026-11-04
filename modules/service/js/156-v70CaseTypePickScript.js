@@ -120,7 +120,8 @@
    +'<div class="ctp-delbox" id="ctpDel" hidden></div>'
    +'<div class="ctp-addform" id="ctpAdd" hidden>'
    +'<b class="ctp-addhead">เพิ่มประเภทงานใหม่</b>'
-   +'<div class="field"><label>ชื่อประเภทงาน *</label><input id="ctpAddName" maxlength="40" placeholder="เช่น อบรมการใช้งาน"></div>'
+   +'<div class="field"><label>ชื่อประเภทงาน *</label><input id="ctpAddName" maxlength="40" placeholder="เช่น อบรมการใช้งาน" autocomplete="off">'
+   +'<small class="ctp-dupmsg" id="ctpDupMsg" role="alert" hidden></small></div>'
    +'<div class="field"><label>คำอธิบายสั้นๆ</label><input id="ctpAddDesc" maxlength="80" placeholder="เช่น สอนลูกค้าใช้เครื่อง"></div>'
    +'<div class="field"><label>ไอคอน</label><div class="ctp-icons" id="ctpIcons">'+ICONS.map(function(ic,i){
      return '<button type="button" data-ic="'+ic+'"'+(i===0?' class="is-on"':'')+'>'+ic+'</button>';
@@ -239,11 +240,30 @@
   if(!st.edit)lsSet(LINK_KEY,st.link?'1':'0');
   showForm();
  }
+ /* Duplicate names (user 2026-11-04): warned in red under the box while typing, and ✓ บันทึก is
+    blocked, instead of a toast that was easy to miss. Spaces and upper/lower case are ignored,
+    so "service", " Service " and "Service" are the same name. A DELETED type does not count:
+    adding its name again brings it back (see below). */
+ function normName(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase()}
+ function dupOf(name){
+  var n=normName(name);if(!n)return null;
+  return allTypes().filter(function(t){return normName(t.name)===n})[0]||null;
+ }
+ function checkDup(){
+  var inp=$('ctpAddName'),msg=$('ctpDupMsg'),save=document.querySelector('#ctpAdd [data-addsave]');
+  if(!inp)return null;
+  var d=dupOf(inp.value);
+  inp.classList.toggle('is-dup',!!d);
+  inp.setAttribute('aria-invalid',d?'true':'false');
+  if(msg){msg.hidden=!d;msg.textContent=d?('⚠ มีประเภทงาน "'+d.name+'" อยู่แล้ว ตั้งชื่ออื่น หรือกดเลือกการ์ดเดิมด้านบน'):''}
+  if(save){save.disabled=!!d;save.classList.toggle('is-blocked',!!d)}
+  return d;
+ }
  function addType(){
-  var name=String(($('ctpAddName')||{}).value||'').trim();
+  var name=String(($('ctpAddName')||{}).value||'').trim().replace(/\s+/g,' ');
   if(!name){toast('กรุณาใส่ชื่อประเภทงาน');var n=$('ctpAddName');if(n)n.focus();return}
-  var exist=allTypes().filter(function(t){return t.name.toLowerCase()===name.toLowerCase()})[0];
-  if(exist){toast('มีประเภทงาน "'+exist.name+'" อยู่แล้ว เลือกจากการ์ดได้เลย');pick(exist.name);return}
+  var exist=checkDup();
+  if(exist){var n2=$('ctpAddName');if(n2)n2.focus();return}
   if(!Array.isArray(settings.customWorkTypes))settings.customWorkTypes=[];
   var old=settings.customWorkTypes.filter(function(t){return t&&t.hidden&&String(t.name).toLowerCase()===name.toLowerCase()})[0];
   if(old)settings.customWorkTypes.splice(settings.customWorkTypes.indexOf(old),1);
@@ -303,7 +323,8 @@
    [].forEach.call(b.parentNode.children,function(x){x.classList.toggle('is-on',x===b)});
   }
  }
- function hook(){var mb=$('modalBody');if(mb&&!mb.__ctpOn){mb.__ctpOn=true;mb.addEventListener('click',onClick)}}
+ function hook(){var mb=$('modalBody');if(mb&&!mb.__ctpOn){mb.__ctpOn=true;mb.addEventListener('click',onClick);
+  mb.addEventListener('input',function(e){if(e.target&&e.target.id==='ctpAddName')checkDup()})}}
  hook();
  /* Enter in the add-type box saves it instead of submitting the case form underneath. */
  document.addEventListener('keydown',function(e){
@@ -450,6 +471,11 @@
  +'.ctp-delyes{background:#d92d20!important;border-color:#d92d20!important;color:#fff!important}'
  +'html[data-ui="flat-dark"]:is(:root,#fx) .ctp-delbox{background:var(--fx-surface,#262626)!important;border-color:#7a271a!important}'
  +'.ctp-addform{margin-top:14px;border:1.5px solid #bcd3fb;border-radius:14px;padding:14px;background:#f8fbff}'
+ +'#modalBody #ctpAddName.is-dup,html:is(:root,#fx) #modalBody #ctpAddName.is-dup{border-color:#d92d20!important;box-shadow:0 0 0 3px rgba(217,45,32,.18)!important}'
+ +'.ctp-dupmsg{display:block;margin-top:6px;color:#b42318;font-size:13px;font-weight:600}.ctp-dupmsg[hidden]{display:none}'
+ +'#ctpAdd [data-addsave].is-blocked{opacity:.45;cursor:not-allowed}'
+ +'#modalBody #ctpDupMsg{color:#b42318!important}html[data-ui="flat-dark"]:is(:root,#fx) #modalBody #ctpDupMsg,html[data-theme="dark"] #modalBody #ctpDupMsg{color:#ff8a80!important}'
+ +'html[data-ui="flat-dark"]:is(:root,#fx) #modalBody #ctpAddName.is-dup{border-color:#f97066!important}'
  +'.ctp-addform .field{margin-bottom:10px}.ctp-addhead{display:block;color:#0c225e;margin-bottom:8px}'
  +'.ctp-icons{display:flex;flex-wrap:wrap;gap:6px}.ctp-icons button{width:40px;height:40px;border-radius:10px;border:1.5px solid #dfe4ee;background:#fff;font-size:19px;cursor:pointer}'
  +'.ctp-icons button{position:relative;transition:transform .12s,box-shadow .12s}'
