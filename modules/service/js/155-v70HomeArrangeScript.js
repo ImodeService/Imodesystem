@@ -84,10 +84,16 @@
    '#page-home .rhome-quickhead{position:relative}'+
    '#page-home .rhome-arrange-btn{border:0;background:none;font:inherit;font-size:12px;color:#5a6b8c;cursor:pointer;padding:2px 6px;border-radius:8px}'+
    '#page-home .rhome-arrange-btn:hover{color:#0b5cd6;background:rgba(11,92,214,.08)}'+
-   '#page-home .rhome-editbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;max-width:760px;margin:22px auto 0;padding:9px 12px;border-radius:12px;background:#eef3ff;color:#0c225e;font-size:13px}'+
-   '#page-home .rhome-editbar span{flex:1;min-width:180px}'+
-   '#page-home .rhome-editbar button{font:inherit;font-size:13px;font-weight:600;border-radius:9px;padding:6px 12px;cursor:pointer;border:1px solid #d6e0f0;background:#fff;color:#344054}'+
-   '#page-home .rhome-editbar button.is-primary{background:#0b63e5;border-color:#0b63e5;color:#fff}'+
+   /* floating bar at the bottom, same look as the launcher's (apps/launcher .edit-bar), user 2026-11-04 */
+   '#page-home .rhome-editbar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;max-width:calc(100vw - 24px);display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;background:#fff;color:#0c225e;border:1px solid #dfe6f2;border-radius:16px;padding:10px 14px;box-shadow:0 8px 28px rgba(12,34,94,.2)}'+
+   '#page-home .rhome-editbar span{font-size:14px;color:#5a6b8c}'+
+   '#page-home .rhome-editbar button{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid #dfe6f2;background:transparent;color:#0c225e;font:inherit;font-size:15px;cursor:pointer}'+
+   '#page-home .rhome-editbar button.is-primary{background:#0b63e5;border-color:#0b63e5;color:#fff;font-weight:600}'+
+   '#page-home.rhome-editing{padding-bottom:96px}'+
+   'html[data-ui="flat-dark"]:is(:root,#fx) #page-home .rhome-editbar{background:#262626!important;border-color:#3a3a3a!important;color:#f1f1f1!important;box-shadow:0 8px 28px rgba(0,0,0,.5)}'+
+   'html[data-ui="flat-dark"]:is(:root,#fx) #page-home .rhome-editbar span{color:#b5b5b5!important}'+
+   'html[data-ui="flat-dark"]:is(:root,#fx) #page-home .rhome-editbar button:not(.is-primary){border-color:#3a3a3a!important;color:#f1f1f1!important;background:transparent!important}'+
+   '@media (max-width:760px){#page-home .rhome-editbar{bottom:calc(12px + env(safe-area-inset-bottom,0px));width:calc(100vw - 24px)}#page-home .rhome-editbar span{width:100%;text-align:center}#page-home.rhome-editing{padding-bottom:150px}}'+
    '#page-home .rhome-modcard{position:relative}'+
    '#page-home.rhome-editing .rhome-modcard{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}'+
    '#page-home.rhome-editing .rhome-modgrid:not(.rhome-modgrid-rest) .rhome-modcard-icon{outline:2px dashed #0b63e5;outline-offset:3px;animation:rhomeWiggle .28s ease-in-out infinite alternate}'+
@@ -146,8 +152,8 @@
    var head=host.querySelector('.rhome-quickhead');
    if(head)head.insertAdjacentHTML('beforebegin','<div class="rhome-editbar" role="region" aria-label="'+tl('จัดเรียงโมดูล','Arrange modules')+'">'
     +'<span>'+tl('ลากเพื่อย้าย · ✕ เอาออกจากที่ใช้บ่อย · ＋ เพิ่มเข้าที่ใช้บ่อย','Drag to move · ✕ remove · ＋ add')+'</span>'
-    +'<button type="button" data-arr="reset">'+tl('คืนค่าเดิม','Reset')+'</button>'
-    +'<button type="button" class="is-primary" data-arr="done">'+tl('เสร็จ','Done')+'</button></div>');
+    +'<button type="button" data-arr="reset">'+tl('คืนค่าเริ่มต้น','Reset')+'</button>'
+    +'<button type="button" class="is-primary" data-arr="done">'+tl('เสร็จสิ้น','Done')+'</button></div>');
   }else if(!editing&&bar)bar.remove();
   var r=restGrid(host);
   if(r&&editing)r.hidden=false;
