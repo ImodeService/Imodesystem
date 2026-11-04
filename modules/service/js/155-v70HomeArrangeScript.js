@@ -19,6 +19,8 @@
  'use strict';
  var KEY='imode.svcHome.',META='imode_service_home';
  var editing=false,pulled={},drag=null,press=null,swallow=false;
+ /* the board as it stands while arranging, so a re-render puts a removed tile back under its own heading */
+ var draft=null;
 
  function tl(th,en){try{return (settings.language==='en')?en:th}catch(e){return th}}
  function me(){try{return (typeof currentUser!=='undefined'&&currentUser)?currentUser:null}catch(e){return null}}
@@ -66,6 +68,7 @@
  /* ---------------------------------------------------------------- the board ---- */
  window.imodeHomeQuickPick=function(mods){
   var st=load();
+  if(editing&&draft&&draft.length)st={quick:draft};
   if(!st.quick)return null;
   var by={};mods.forEach(function(m){by[m.page]=m});
   var list=st.quick.map(function(p){return by[p]}).filter(Boolean);
@@ -151,13 +154,13 @@
  }
  function finish(host){
   save(currentQuick(host));
-  editing=false;
+  editing=false;draft=null;
   rerender();
   toast(tl('บันทึกการจัดเรียงแล้ว','Saved'));
  }
  function reset(){
   var st={quick:null,at:Date.now(),user:uname()};store(st);push(st);
-  editing=false;rerender();
+  editing=false;draft=null;rerender();
   toast(tl('คืนค่าเริ่มต้นแล้ว','Back to the default board'));
  }
 
@@ -201,15 +204,21 @@
    if(swallow){swallow=false;e.stopPropagation();e.preventDefault();return}
    var act=e.target.closest&&e.target.closest('[data-arr]');
    if(act){e.preventDefault();if(act.getAttribute('data-arr')==='done')finish(host);else reset();return}
-   if(e.target.closest&&e.target.closest('.rhome-arrange-btn')){e.preventDefault();setEditing(host,true);return}
+   if(e.target.closest&&e.target.closest('.rhome-arrange-btn')){e.preventDefault();draft=null;setEditing(host,true);return}
    if(!editing)return;
    var card=e.target.closest&&e.target.closest('.rhome-modcard');
    if(!card)return;
    e.stopPropagation();e.preventDefault();
    var q=quickGrid(host),r=restGrid(host),inQuick=card.parentNode===q;
    var onBadge=!!(e.target.closest&&e.target.closest('.rhome-tilebadge'));
-   if(inQuick&&onBadge&&r){r.insertBefore(card,r.firstChild);badge(card,'add');emptyHint(host)}
-   else if(!inQuick&&q){var h=q.querySelector('.rhome-emptyquick');if(h)h.remove();q.appendChild(card);badge(card,'x')}
+   if(inQuick&&onBadge&&r){
+    var left=currentQuick(host).filter(function(p){return p!==card.getAttribute('data-page')});
+    /* re-draw so the tile goes back to its own group in โมดูลทั้งหมด; the last tile stays a DOM move
+       because js/10 has no empty board to draw */
+    if(left.length){draft=left;rerender();return}
+    r.insertBefore(card,r.firstChild);badge(card,'add');emptyHint(host);
+   }
+   else if(!inQuick&&q){var h=q.querySelector('.rhome-emptyquick');if(h)h.remove();q.appendChild(card);badge(card,'x');draft=currentQuick(host);rerender()}
   },true);
 
   host.addEventListener('pointerdown',function(e){
