@@ -336,6 +336,36 @@
  /* -------------------------------------------------- wrap the case popup ---- */
  function caseById(id){try{return (Array.isArray(cases)?cases:[]).filter(function(c){return c&&c.id===id})[0]||null}catch(e){return null}}
 
+ /* Case table, column ประเภทงาน (user 2026-11-04): js/03 prints service_type there, so a case of a
+    new type (Modify, or one added with ＋ อื่นๆ) showed "เข้าบริการหน้างาน" instead of its own name.
+    For those the cell now shows the type name, with the place underneath. The four original
+    types keep the original text. */
+ var OLD_WORKS=['Service','Maintenance','PM','ติดตั้งเครื่อง'];
+ function fixTypeColumn(){
+  var tb=document.getElementById('caseTable'),m=cc();if(!tb||!m||typeof m.read!=='function')return;
+  [].forEach.call(tb.querySelectorAll('tr[data-case-id]'),function(tr){
+   var td=tr.children[3];if(!td||td.getAttribute('data-ctp-col')==='1')return;
+   var id=tr.getAttribute('data-case-id'),c=null;
+   try{c=(Array.isArray(cases)?cases:[]).filter(function(x){return x&&x.id===id})[0]}catch(e){}
+   if(!c)return;
+   var w=String((m.read(c)||{}).workType||'');
+   if(!w||OLD_WORKS.indexOf(w)>=0)return;
+   var t=typeOf(w);
+   td.innerHTML='<b class="ctp-colname">'+esc3((t.icon?t.icon+' ':'')+w)+'</b><span class="subtext">'+esc3(c.serviceType||'')+'</span>';
+   td.setAttribute('data-ctp-col','1');
+  });
+ }
+ function esc3(v){return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]})}
+ var baseRenderCases=window.renderCases;
+ if(typeof baseRenderCases==='function'){
+  window.renderCases=function(){
+   var r=baseRenderCases.apply(this,arguments);
+   try{fixTypeColumn()}catch(e){}
+   return r;
+  };
+ }
+ setTimeout(function(){try{fixTypeColumn()}catch(e){}},0);
+
  var baseOpen=window.openCaseModal;
  if(typeof baseOpen==='function'){
   window.openCaseModal=function(id){
@@ -485,6 +515,7 @@
  +'.ctp-icons button.is-on::after{content:"✓";position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;background:#0b63e5;color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center;box-shadow:0 0 0 2px #fff}'
  +'html[data-ui="flat-dark"]:is(:root,#fx) .ctp-icons button.is-on{border:2px solid #3b82f6!important;background:rgba(59,130,246,.22)!important;box-shadow:0 0 0 3px rgba(59,130,246,.35)!important}'
  +'html[data-ui="flat-dark"]:is(:root,#fx) .ctp-icons button.is-on::after{background:#3b82f6!important;color:#fff!important;box-shadow:0 0 0 2px #262626!important}'
+ +'.ctp-colname{font-weight:600}'
  +'.ctp-chk{display:flex;align-items:center;gap:8px;font-size:13.5px;margin:4px 0 10px}'
  +'.ctp-addbtns{display:flex;gap:8px;justify-content:flex-end}'
  +'.ctp-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px}.ctp-foot small{color:#667085}'
