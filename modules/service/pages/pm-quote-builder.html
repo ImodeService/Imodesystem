@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>I-MODE | แผนเสนอราคา PM แยกขอบเขต</title>
+<style>
+:root{font-family:"Segoe UI",Tahoma,sans-serif;color:#213247;background:#f3f6fa}
+*{box-sizing:border-box}body{margin:0}header{background:#153451;color:#fff;padding:20px max(22px,calc((100vw - 1500px)/2));border-bottom:4px solid #ef8735}
+a{color:inherit}header a{font-size:13px;opacity:.9}h1{font-size:24px;margin:7px 0 6px}h2{font-size:17px;margin:0 0 10px}p{margin:6px 0;line-height:1.55}
+main{max-width:1500px;margin:auto;padding:22px}section{background:#fff;border:1px solid #dce3ed;border-radius:13px;padding:18px 20px;margin:0 0 16px;box-shadow:0 2px 10px #12334a08}
+.note{color:#52657b;font-size:13px}.warning{background:#fff7ed;border-left:4px solid #e98a35;padding:11px 14px;border-radius:5px;font-size:13px;line-height:1.6}
+.badges{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.tag{background:#edf3fa;color:#254568;padding:5px 10px;border-radius:20px;font-size:12px}
+.toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:space-between}.controls{display:flex;gap:8px;flex-wrap:wrap}
+button{cursor:pointer;border-radius:8px;padding:10px 12px;font:inherit;font-size:13px;border:1px solid #c8d5e6;background:#fff;color:#12344f}
+button:hover{background:#edf4fc}button.primary{background:#154477;border-color:#154477;color:#fff}button.orange{background:#ed8735;border-color:#ed8735;color:#fff}
+button.danger{color:#ac3344}.form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}input,select,textarea{background:#fff;border:1px solid #ccd7e3;border-radius:7px;padding:8px 9px;font:inherit;color:#23364b;max-width:100%;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid #9dccf8}
+input[type=number]{font-variant-numeric:tabular-nums}textarea{resize:vertical;min-height:73px}
+.tablewrap{overflow:auto;border:1px solid #dde5ee;border-radius:9px}table{border-collapse:collapse;width:100%;min-width:1380px;font-size:12.5px}
+th{background:#173a5a;color:#fff;white-space:nowrap;font-weight:600;padding:12px 8px;text-align:left;position:sticky;top:0}
+td{border-bottom:1px solid #e8ecf2;padding:10px 7px;vertical-align:top}tr:nth-child(even){background:#f8fafd}
+td input,td select{min-width:85px;font-size:12.5px;padding:7px}td .small-input{min-width:68px;width:76px}
+td .wide-input{min-width:205px;width:230px}td .medium-input{min-width:145px;width:155px}
+.muted{color:#6e7d8b}.number{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:700}
+.statrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.stat{border:1px solid #e0e8f0;border-radius:10px;padding:12px 14px;background:#f9fbff}
+.stat strong{display:block;font-size:20px;margin-top:6px;color:#173e64}.stat small{color:#657789}.subline{margin-top:10px;color:#516477;font-size:13px}
+.pill{font-size:11px;display:inline-block;padding:4px 7px;border-radius:7px;white-space:nowrap}
+.pill.ok{background:#e5f6ee;color:#20603c}.pill.wait{background:#fff2e3;color:#944a16}
+@media(max-width:900px){main{padding:12px}section{padding:14px}.form-grid{grid-template-columns:1fr}.statrow{grid-template-columns:1fr 1fr}h1{font-size:20px}}
+@media print{header,button,#pasteWrap,.warning{display:none!important}main{padding:0}section{break-inside:avoid;box-shadow:none;border:1px solid #aaa}input,select,textarea{border:none;padding:0;appearance:none}table{min-width:0;font-size:9px}th{color:#000;background:#e5ebf3}.tablewrap{overflow:visible}}
+</style>
+</head>
+<body>
+<header>
+<a href="../index.html">← กลับระบบ Service & Maintenance</a>
+<h1>จัดทำขอบเขตและข้อเสนอราคา PM แยก 4 ส่วน</h1>
+<p>เครื่องมือเตรียมแผนเสนอราคา | Standard PM / Specialized PM | I-MODE PLUS</p>
+</header>
+<main>
+<section>
+<h2>หลักเกณฑ์บริการและจุดตัดสินใจ</h2>
+<div class="badges"><span class="tag">Standard PM — ขอบเขตกำหนดได้</span><span class="tag">Limited PM — ตรวจเฉพาะส่วนที่อนุญาต</span><span class="tag">Specialized PM — รอคู่มือ/สิทธิ์ระบบ</span></div>
+<div class="warning">
+<strong>สำคัญ:</strong> อัตราที่กรอกในส่วน "ค่าเข้าหน้างาน" สำหรับเครื่อง Specialized เป็นเพียงค่าตรวจสภาพ/วิเคราะห์ขั้นต้นตามขอบเขตที่ได้รับอนุญาต ไม่ใช่ค่าบำรุงรักษาเชิงลึกหรือค่าซ่อมสำเร็จ<br>
+ค่า Specialist จะรวมในยอด PM รายปีได้ต่อเมื่อเลือกสถานะ "ยืนยันรวมในแผน" เท่านั้น ส่วนค่าซ่อมและอะไหล่ต้องออกใบเสนอราคา/ขออนุมัติเป็นรายกรณีเสมอ
+</div>
+<p class="note">การเข้าถึงระบบควบคุมอาจต้องใช้ Service Account, Diagnostic Software, PLC/HMI Permission, เอกสารผู้ผลิต หรือสิทธิ์เครือข่าย ไม่ใช่เพียงอุปกรณ์ Access Point และห้ามข้ามระบบความปลอดภัยหรือแก้ซอฟต์แวร์โดยไม่มีสิทธิ์</p>
+</section>
+<section>
+<h2>ข้อมูลเอกสาร</h2>
+<div class="form-grid">
+<div><label for="project">ชื่อโครงการ/ลูกค้า</label><input id="project" placeholder="กรอกชื่อโครงการ (ข้อมูลอยู่เฉพาะในเบราว์เซอร์นี้)"></div>
+<div><label for="site">สถานที่ / ไลน์งาน</label><input id="site" placeholder="โรงงานและพื้นที่ปฏิบัติงาน"></div>
+<div><label for="ref">เลขที่ร่าง / ผู้จัดทำ</label><input id="ref" placeholder="หมายเลขอ้างอิง"></div>
+</div>
+</section>
+<section>
+<div class="toolbar"><div><h2>รายการเครื่องจักรและโครงสร้างค่าบริการ</h2><p class="note">ไม่กำหนดราคาเริ่มต้นอัตโนมัติ เพื่อป้องกันการนำอัตรา PM เดิมมาใช้เป็นค่าตรวจเบื้องต้นผิดประเภท</p></div>
+<div class="controls"><button class="primary" id="add" type="button">＋ เพิ่มรายการ</button><button id="togglePaste" type="button">วางรายการจาก Excel</button><button id="save" type="button">บันทึกแบบร่าง</button><button id="load" type="button">โหลดแบบร่าง</button><button id="reset" class="danger" type="button">ล้างรายการ</button></div></div>
+<div id="pasteWrap" hidden style="margin:12px 0;padding:12px;background:#f4f8fe;border-radius:8px">
+<label for="pasted">วางข้อมูลจาก Excel: 1 บรรทัดต่อรายการ — ชื่อเครื่อง [Tab] ไลน์ [Tab] จำนวน [Tab] PM ครั้ง/ปี [Tab] ประเภท</label>
+<textarea id="pasted" placeholder="ชื่อเครื่องจักร	ไลน์	1	4	SPECIALIZED"></textarea>
+<p class="note">ประเภทที่ใช้ได้: STANDARD, LIMITED, SPECIALIZED. ระบบไม่อ่านไฟล์โดยอัตโนมัติและจะไม่นำเข้าราคาจากภายนอก</p>
+<button id="import" class="primary" type="button">นำเข้ารายการ</button>
+</div>
+<div class="tablewrap"><table><thead><tr><th>ลำดับ / เครื่องจักร</th><th>ไลน์ / พื้นที่</th><th>จำนวน</th><th>PM<br>ครั้ง/ปี</th><th>กลุ่มบริการ</th><th>สิทธิ์เข้าระบบ</th><th>คู่มือ/ขอบเขต</th><th>① ค่าเข้าหน้างาน<br>บาท/หน่วย/ครั้ง</th><th>② Specialist<br>บาท/รอบ (ทั้งกลุ่ม)</th><th>อนุมัติ Specialist</th><th>③ ค่าซ่อม/เคส<br>ประมาณการ</th><th>④ อะไหล่/เคส<br>ประมาณการ</th><th>มูลค่าบริการ PM/ปี</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+<p class="note">ช่องซ่อม/อะไหล่เป็นข้อมูลแยกเพื่อจัดทำใบเสนอราคาเพิ่มเติม ไม่ถูกรวมในยอดรายปี ตัวเลข "ว่าง" หมายถึงยังไม่ได้กำหนดราคา ไม่ใช่บริการฟรี</p>
+</section>
+<section>
+<h2>สรุปราคาและความพร้อมก่อนเสนอ</h2>
+<div class="statrow">
+<div class="stat"><small>ค่าเข้าหน้างาน/PM ที่มีราคาแล้ว</small><strong id="sumSite">—</strong></div>
+<div class="stat"><small>ค่า Specialist ที่ยืนยันรวมแล้ว</small><strong id="sumSpec">—</strong></div>
+<div class="stat"><small>รวมค่าบริการตามรอบที่มีราคา (บาท/ปี)</small><strong id="sumTotal">—</strong></div>
+<div class="stat"><small>รายการยังไม่มีราคาเข้าหน้างาน</small><strong id="sumMissing">0</strong></div>
+</div>
+<div class="subline" id="readiness">เพิ่มรายการเพื่อเริ่มจัดทำ</div>
+<div class="controls" style="margin-top:14px"><button class="orange" id="csv" type="button">ส่งออก CSV</button><button id="print" type="button">พิมพ์ / บันทึก PDF</button></div>
+<p class="note">แบบร่างนี้ใช้วางแผน ไม่ใช่ใบเสนอราคาที่ได้รับอนุมัติ ไม่ได้เขียนข้อมูลลงฐานข้อมูล Supabase หรือโมดูลใบเสนอราคาหลัก ข้อมูลจะอยู่ในหน่วยความจำของหน้าเว็บจนกด "บันทึกแบบร่าง" (เก็บในเบราว์เซอร์เครื่องนี้เท่านั้น)</p>
+</section>
+</main>
+<script>
+(function(){
+"use strict";
+var KEY="imode.pm.proposal.draft.v1";
+var data=[],next=1;
+var $=function(id){return document.getElementById(id);};
+var fmt=function(n){return Number(n||0).toLocaleString("th-TH",{minimumFractionDigits:0,maximumFractionDigits:2});};
+var esc=function(x){return String(x==null?"":x).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
+var num=function(x){return x===""||x==null?null:(isFinite(Number(x))?Math.max(0,Number(x)):null);};
+var nonneg=function(x,fallback){var n=num(x);return n===null?fallback:n;};
+var statusText={pending:"รอยืนยัน",granted:"ได้รับอนุญาต",na:"ไม่จำเป็น"};
+var scopeText={pending:"รอคู่มือ/ขอบเขต",limited:"ยืนยันเฉพาะงานทั่วไป",approved:"ยืนยันขอบเขตแล้ว"};
+function make(name,line,qty,visits,tier){
+ return {id:next++,name:name||"",line:line||"",qty:qty||1,visits:visits||2,tier:tier||"SPECIALIZED",access:"pending",scope:"pending",onsite:"",specialist:"",specialistStatus:"pending",repair:"",parts:""};
+}
+function opt(list,current){return list.map(function(p){return '<option value="'+esc(p[0])+'"'+(p[0]===current?' selected':'')+'>'+esc(p[1])+'</option>';}).join("");}
+function input(r,key,cls,type){var v=r[key]==null?"":r[key];return '<input data-id="'+r.id+'" data-key="'+key+'" class="'+(cls||"")+'" type="'+(type||"text")+'" '+(type==="number"?'min="0" step="any" ':'')+'value="'+esc(v)+'">';}
+function sel(r,key,items){return '<select data-id="'+r.id+'" data-key="'+key+'">'+opt(items,r[key])+'</select>';}
+function money(x){return x===null?"—":fmt(x);}
+function onsiteAnnual(r){var p=num(r.onsite);return p===null?null:p*nonneg(r.qty,0)*nonneg(r.visits,0);}
+function specAnnual(r){return r.specialistStatus==="approved" && num(r.specialist)!==null?num(r.specialist)*nonneg(r.visits,0):null;}
+function annual(r){var a=onsiteAnnual(r),b=specAnnual(r);return a===null&&b===null?null:(a||0)+(b||0);}
+function render(){
+ $("rows").innerHTML=data.map(function(r,i){
+  return '<tr><td><span class="muted">'+(i+1)+'.</span> '+input(r,"name","wide-input")+'</td><td>'+input(r,"line","medium-input")+'</td>'
+   +'<td>'+input(r,"qty","small-input","number")+'</td><td>'+input(r,"visits","small-input","number")+'</td>'
+   +'<td>'+sel(r,"tier",[["STANDARD","Standard"],["LIMITED","Limited"],["SPECIALIZED","Specialized"]])+'</td>'
+   +'<td>'+sel(r,"access",[["pending","รอสิทธิ์"],["granted","อนุญาตแล้ว"],["na","ไม่จำเป็น"]])+'</td>'
+   +'<td>'+sel(r,"scope",[["pending","รอคู่มือ"],["limited","ยืนยันงานทั่วไป"],["approved","ยืนยันขอบเขต"]])+'</td>'
+   +'<td>'+input(r,"onsite","small-input","number")+'</td>'
+   +'<td>'+input(r,"specialist","small-input","number")+'</td>'
+   +'<td>'+sel(r,"specialistStatus",[["pending","ยังไม่ยืนยัน"],["approved","ยืนยันรวมในแผน"]])+'</td>'
+   +'<td>'+input(r,"repair","small-input","number")+'</td><td>'+input(r,"parts","small-input","number")+'</td>'
+   +'<td class="number" data-sum="'+r.id+'">'+money(annual(r))+'</td>'
+   +'<td><button type="button" class="danger" data-remove="'+r.id+'" aria-label="ลบรายการ '+(i+1)+'">ลบ</button></td></tr>';
+ }).join("");
+ calc();
+}
+function calc(){
+ var site=0,spec=0,missing=0,pending=0,priced=0;
+ data.forEach(function(r){
+  var a=onsiteAnnual(r),b=specAnnual(r);
+  if(a===null)missing++;else{site+=a;priced++;}
+  if(b!==null)spec+=b;
+  if(r.tier!=="STANDARD"&&(r.access==="pending"||r.scope==="pending"))pending++;
+  var el=document.querySelector('[data-sum="'+r.id+'"]');if(el)el.textContent=money(annual(r));
+ });
+ $("sumSite").textContent=priced?fmt(site):"ยังไม่มีราคา";
+ $("sumSpec").textContent=spec?fmt(spec):"ยังไม่รวม";
+ $("sumTotal").textContent=priced||spec?fmt(site+spec):"ยังไม่มีราคา";
+ $("sumMissing").textContent=String(missing);
+ $("readiness").textContent=data.length?
+  ("รายการทั้งหมด "+data.length+" | มีราคาเข้าหน้างาน "+priced+" | ยังไม่มีราคา "+missing+
+  " | กลุ่ม Limited/Specialized ที่ต้องยืนยันคู่มือหรือสิทธิ์ "+pending+
+  " | ยอดที่แสดงไม่ใช่ราคารวมทุกเครื่องหากยังมีรายการไม่มีราคา และไม่รวมค่าซ่อม/อะไหล่"):
+  "เพิ่มรายการเพื่อเริ่มจัดทำ";
+}
+$("rows").addEventListener("input",function(e){var el=e.target,k=el.dataset.key,id=Number(el.dataset.id);
+ if(!k)return;var r=data.find(function(x){return x.id===id;});if(!r)return;
+ r[k]=el.value;
+ if(k==="qty"||k==="visits")r[k]=nonneg(el.value,0);
+ calc();
+});
+$("rows").addEventListener("change",function(e){var el=e.target,k=el.dataset.key,id=Number(el.dataset.id);
+ if(!k)return;var r=data.find(function(x){return x.id===id;});if(!r)return;r[k]=el.value;calc();
+});
+$("rows").addEventListener("click",function(e){var b=e.target.closest("[data-remove]");if(!b)return;
+ data=data.filter(function(x){return x.id!==Number(b.dataset.remove);});render();
+});
+$("add").onclick=function(){data.push(make("","",1,2,"SPECIALIZED"));render();};
+$("togglePaste").onclick=function(){$("pasteWrap").hidden=!$("pasteWrap").hidden;};
+$("import").onclick=function(){
+ var lines=$("pasted").value.replace(/\r/g,"").split("\n").filter(function(x){return x.trim();});
+ var count=0;
+ lines.forEach(function(l){
+  var v=l.split("\t");if(v.length<2)return;
+  var tier=String(v[4]||"SPECIALIZED").toUpperCase().trim();
+  if(["STANDARD","LIMITED","SPECIALIZED"].indexOf(tier)<0)tier="SPECIALIZED";
+  data.push(make(v[0].trim(),v[1].trim(),nonneg(v[2],1),nonneg(v[3],2),tier));count++;
+ });
+ if(!count){alert("ไม่พบรายการแบบ Tab ที่นำเข้าได้");return;}
+ $("pasted").value="";$("pasteWrap").hidden=true;render();
+};
+$("save").onclick=function(){try{localStorage.setItem(KEY,JSON.stringify({version:1,project:$("project").value,site:$("site").value,ref:$("ref").value,rows:data}));alert("บันทึกแบบร่างในเบราว์เซอร์นี้แล้ว (ไม่ส่งข้อมูลขึ้นคลาวด์)");}catch(e){alert("ไม่สามารถบันทึกในเบราว์เซอร์นี้ได้");}};
+$("load").onclick=function(){try{var d=JSON.parse(localStorage.getItem(KEY)||"null");if(!d||!Array.isArray(d.rows))throw Error("none");
+ data=d.rows.filter(function(x){return x&&typeof x==="object";}).map(function(x){var r=make(String(x.name||""),String(x.line||""),nonneg(x.qty,1),nonneg(x.visits,2),x.tier);["access","scope","onsite","specialist","specialistStatus","repair","parts"].forEach(function(k){if(x[k]!=null)r[k]=String(x[k]);});return r;});
+ $("project").value=d.project||"";$("site").value=d.site||"";$("ref").value=d.ref||"";render();
+ }catch(e){alert("ยังไม่มีแบบร่างที่บันทึกไว้ หรือข้อมูลไม่ถูกต้อง");}};
+$("reset").onclick=function(){if(confirm("ล้างรายการในหน้านี้? (แบบร่างที่เคยบันทึกไว้จะยังอยู่)")){data=[];render();}};
+function csvSafe(x){var s=String(x==null?"":x);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
+$("csv").onclick=function(){
+ var out=[["โครงการ","พื้นที่","เลขอ้างอิง","ลำดับ","เครื่องจักร","ไลน์","จำนวน","ครั้งต่อปี","ประเภท PM","สิทธิ์เข้าระบบ","สถานะคู่มือ","ค่าเข้าหน้างาน/หน่วย/ครั้ง","ค่าเข้าหน้างาน/ปี","Specialist/รอบ","สถานะ Specialist","Specialist/ปีที่ยืนยันรวม","ซ่อม/เคส (ไม่รวม)","อะไหล่/เคส (ไม่รวม)","รวมบริการตามรอบ/ปี"]];
+ data.forEach(function(r,i){out.push([$("project").value,$("site").value,$("ref").value,i+1,r.name,r.line,r.qty,r.visits,r.tier,statusText[r.access]||r.access,scopeText[r.scope]||r.scope,r.onsite,onsiteAnnual(r),r.specialist,r.specialistStatus,specAnnual(r),r.repair,r.parts,annual(r)]);});
+ var blob=new Blob(["\ufeff"+out.map(function(a){return a.map(csvSafe).join(",");}).join("\r\n")],{type:"text/csv;charset=utf-8"});
+ var url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="IMODE_PM_Quote_4_Parts_Draft.csv";a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
+};
+$("print").onclick=function(){window.print();};
+render();
+})();
+</script>
+</body>
+</html>
