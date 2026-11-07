@@ -591,10 +591,10 @@
   var d=document.createElement('div');
   d.id='qcChatDlg';d.className='qc-dlg';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-labelledby','qcChatTitle');
   d.innerHTML='<div class="qc-dlg-card"><h3 id="qcChatTitle">แจ้งในแชทเคส '+esc(rec.caseTicket||rec.caseId)+'</h3>'
-   +'<p class="qc-help">ข้อความนี้จะโพสต์ในแชทของเคส เลือกคนที่ต้องการแท็กให้เห็นแจ้งเตือน</p>'
+   +'<p class="qc-help">ข้อความนี้จะโพสต์ในแชทของเคส แท็กทีละคน หรือกด @ทุกคน = ทุกคนที่เกี่ยวกับเคสนี้</p>'
    +'<div class="qc-chat-msg" id="qcChatMsg"></div>'
    +'<div class="qc-inline"><select id="qcChatPerson"><option value="">กำลังโหลดรายชื่อ…</option></select>'
-   +'<button type="button" class="qc-btn" id="qcChatAdd">＋ เพิ่ม</button><button type="button" class="qc-btn" id="qcChatAll">เพิ่มทั้งหมด</button></div>'
+   +'<button type="button" class="qc-btn" id="qcChatAdd">＋ เพิ่ม</button><button type="button" class="qc-btn" id="qcChatAll" title="ทุกคนที่เคยคุยในแชทเคสนี้ + ช่างที่ได้รับมอบหมาย">👥 @ทุกคน</button></div>'
    +'<div class="qc-chips" id="qcChatChips"></div>'
    +'<div class="qc-dlg-acts"><button type="button" class="qc-btn" id="qcChatSkip">ไม่ส่ง</button>'
    +'<button type="button" class="qc-btn is-primary" id="qcChatSend">ส่งเข้าแชทเคส</button></div></div>';
@@ -610,7 +610,9 @@
   staff().then(function(l){list=l;draw()});
   draw();
   $('qcChatAdd').onclick=function(){var v=$('qcChatPerson').value;if(v&&picked.indexOf(v)<0){picked.push(v);draw()}};
-  $('qcChatAll').onclick=function(){list.forEach(function(p){if(picked.indexOf(p.name)<0)picked.push(p.name)});draw()};
+  /* 2026-11-07 (owner, choice A): "all" = @ทุกคน, which js/138 resolves to the people involved in
+     the case (posted in its chat or assigned) — not every staff account */
+  $('qcChatAll').onclick=function(){if(picked.indexOf('ทุกคน')<0)picked.unshift('ทุกคน');draw()};
   $('qcChatChips').onclick=function(e){var b=e.target.closest('button[data-i]');if(!b)return;picked.splice(Number(b.getAttribute('data-i')),1);draw()};
   $('qcChatSkip').onclick=function(){d.remove()};
   $('qcChatSend').onclick=function(){

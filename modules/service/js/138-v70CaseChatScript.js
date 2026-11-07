@@ -29,7 +29,11 @@
  var TABLE='case_messages',VIEW='case_message_last';
  var CLOSED=['เสร็จสิ้น','ปิดเคส','ยกเลิก'];
  var DAY=86400000;
- var AUTO=/^(🔄|↩️|👷|🔧|🏭|📎|✏️)/;   /* lines posted by imodeCaseChatNotify */
+ var AUTO=/^(🔄|↩️|👷|🔧|🏭|📎|✏️)/;
+ /* 2026-11-07 (owner, choice A): "@ทุกคน" tags everyone INVOLVED in the case — whoever has posted
+    in its chat, plus the technicians assigned to it. Nobody else is notified. Like a name tag it is
+    only text in the message; the bell works it out per person. */
+ var ALL_TAG='@ทุกคน';   /* lines posted by imodeCaseChatNotify */
  var MAX_PHOTOS=4,MAX_SIDE=1280,JPEG_Q=0.72;
 
  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){
@@ -79,10 +83,25 @@
     if(!name)return;
     var since=new Date(Date.now()-14*DAY).toISOString();
     var pat='%@'+name.replace(/[\\%_]/g,'\\$&')+'%';
-    return c.from(TABLE).select('id,case_id,body,author_id,author_name,created_at').ilike('body',pat)
-     .gt('created_at',since).neq('author_id',meId).order('created_at',{ascending:false}).limit(50).then(function(r){
-      if(!r||r.error)return;mentions=r.data||[];repaint();
+    var cols='id,case_id,body,author_id,author_name,created_at';
+    return Promise.all([
+     c.from(TABLE).select(cols).ilike('body',pat).gt('created_at',since).neq('author_id',meId).order('created_at',{ascending:false}).limit(50),
+     c.from(TABLE).select(cols).ilike('body','%'+ALL_TAG+'%').gt('created_at',since).neq('author_id',meId).order('created_at',{ascending:false}).limit(50)
+    ]).then(function(rs){
+     var r=rs[0],a=rs[1];
+     if(!r||r.error)return;
+     var list=(r.data||[]).slice(),seen={};list.forEach(function(m){seen[m.id]=1});
+     var alls=(a&&!a.error&&a.data||[]).filter(function(m){return !seen[m.id]});
+     if(!alls.length){mentions=list;repaint();return}
+     /* @ทุกคน counts only on a case I am involved in: assigned to me, or I have posted there */
+     var ids=alls.map(function(m){return m.case_id}).filter(function(v,i,x){return x.indexOf(v)===i});
+     return c.from(TABLE).select('case_id').eq('author_id',meId).in('case_id',ids).limit(1000).then(function(p){
+      var posted={};(p&&!p.error&&p.data||[]).forEach(function(x){posted[x.case_id]=1});
+      alls.forEach(function(m){if(posted[m.case_id]||assignedToMe(m.case_id)){m.toAll=true;list.push(m)}});
+      list.sort(function(x,y){return Date.parse(y.created_at)-Date.parse(x.created_at)});
+      mentions=list;repaint();
      });
+    });
    }).catch(function(){});
   }
 
@@ -105,6 +124,15 @@
    try{if(typeof window.imodeIsAssignedTo==='function')return !!window.imodeIsAssignedTo(c,t)}catch(e){}
    return String(c.assignee||'').split(',').map(function(x){return x.trim()}).indexOf(t)>=0;
   }
+  function assignedToMe(caseId){
+   var u=user(),t=u&&u.technicianId;if(!t)return false;
+   var list=[];try{list=Array.isArray(cases)?cases:[]}catch(e){}
+   for(var i=0;i<list.length;i++)if(list[i]&&list[i].id===caseId){
+    try{if(typeof window.imodeIsAssignedTo==='function')return !!window.imodeIsAssignedTo(list[i],t)}catch(e){}
+    return String(list[i].assignee||'').split(',').map(function(x){return x.trim()}).indexOf(String(t))>=0;
+   }
+   return false;
+  }
   function reads(){
    var u=user(),k=u&&(u.username||u.id);if(!k)return {};
    var o=readJ('imode_v70_notice_reads',{})||{};return o[k]||{};
@@ -116,7 +144,7 @@
     var key='chat_mention_'+m.id,c=null;
     for(var i=0;i<list.length;i++)if(list[i]&&list[i].id===m.case_id){c=list[i];break}
     var body=String(m.body||'').replace(/\s+/g,' ').trim();
-    out.push({key:key,icon:'💬',title:'มีคนแท็กคุณในแชทเคส',
+    out.push({key:key,icon:'💬',title:m.toAll?'มีคนแท็ก @ทุกคน ในแชทเคสของคุณ':'มีคนแท็กคุณในแชทเคส',
      message:((c&&c.ticket)||m.case_id)+' · '+(m.author_name||'พนักงาน')+': '+(body.length>120?body.slice(0,120)+'…':body||'(รูปภาพ)'),
      createdAt:m.created_at,caseId:m.case_id,read:!!rd[key]});
    });
@@ -566,16 +594,28 @@
     if(state==='ok')render();
    },function(){});
   }
-  function tagsMe(body){return !!me.name&&String(body||'').indexOf('@'+me.name)>=0}
+  var ALL_P={id:'*all',name:'ทุกคน',user:'',role:'ทุกคนที่เกี่ยวกับเคสนี้ (เคยคุยในแชท + ช่างที่ได้รับมอบหมาย)'};
+  /* involved = has posted in this chat, or is one of the technicians assigned to this case */
+  function involved(){
+   if(me.id&&msgs.some(function(m){return m.author_id===me.id}))return true;
+   var t=appUser&&appUser.technicianId;if(!t||!kase)return false;
+   var l=Array.isArray(kase.assignees)&&kase.assignees.length?kase.assignees:String(kase.assignee||'').split(',');
+   return l.map(function(x){return String(x||'').trim()}).indexOf(String(t))>=0;
+  }
+  function tagsMe(body){
+   body=String(body||'');
+   return (!!me.name&&body.indexOf('@'+me.name)>=0)||(body.indexOf(ALL_TAG)>=0&&involved());
+  }
   function tagged(body){
    var s=String(body||''),out='',i=0;
    while(i<s.length){
     var at=s.indexOf('@',i);if(at<0){out+=esc(s.slice(i));break}
     out+=esc(s.slice(i,at));
-    var hit=null;
-    for(var k=0;k<people.length;k++){if(s.substr(at+1,people[k].name.length)===people[k].name){hit=people[k];break}}
+    var hit=null,list=[ALL_P].concat(people);
+    for(var k=0;k<list.length;k++){if(s.substr(at+1,list[k].name.length)===list[k].name){hit=list[k];break}}
     if(!hit){out+='@';i=at+1;continue}
-    out+='<span class="cc-at'+(hit.id===me.id?' is-me':'')+'" title="'+esc(hit.role)+'">@'+esc(hit.name)+'</span>';
+    var meHit=hit.id===me.id||(hit===ALL_P&&involved());
+    out+='<span class="cc-at'+(meHit?' is-me':'')+'" title="'+esc(hit.role)+'">@'+esc(hit.name)+'</span>';
     i=at+1+hit.name.length;
    }
    return out;
@@ -740,7 +780,7 @@
   function drawPick(){
    pick.innerHTML=pickList.length?pickList.map(function(p,i){
     return '<button type="button" role="option" id="ccPick'+i+'" data-pick="'+i+'" aria-selected="'+(i===pickIdx)+'">'
-     +'<span class="cc-av" style="background:'+color(p.name)+'" aria-hidden="true">'+esc(initials(p.name))+'</span>'
+     +'<span class="cc-av" style="background:'+(p===ALL_P?'#f27a1a':color(p.name))+'" aria-hidden="true">'+(p===ALL_P?'👥':esc(initials(p.name)))+'</span>'
      +'<span><b>'+esc(p.name)+(p.id===me.id?' (คุณ)':'')+'</b><small>'+esc(p.role||p.user)+'</small></span></button>'}).join('')
     :'<div class="cc-pick-none">'+(people.length?'ไม่พบชื่อนี้':'กำลังโหลดรายชื่อ...')+'</div>';
    pick.hidden=false;
@@ -751,6 +791,7 @@
    var q=t.q.toLowerCase().trim();
    pickList=people.filter(function(p){return !q||p.name.toLowerCase().indexOf(q)>=0||p.user.toLowerCase().indexOf(q)>=0})
     .sort(function(a,b){return a.name.localeCompare(b.name,'th')}).slice(0,8);
+   if(!q||ALL_P.name.indexOf(q)===0)pickList.unshift(ALL_P);
    if(pickFrom!==t.at)pickIdx=0;
    pickFrom=t.at;pickIdx=Math.min(pickIdx,Math.max(0,pickList.length-1));
    drawPick();
