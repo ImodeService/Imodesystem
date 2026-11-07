@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>ใบเสนอราคา Service · I-MODE Plus Service &amp; Maintenance · Version 1.0</title>
+<script src="../../shared/config.js"></script>
+<script src="./js/00-platform.js"></script>
+<script src="../../shared/theme-pref.js?v=20261029"></script>
+<style id="scdGateStyle">html.scd-gate body{visibility:hidden}</style>
+<script>document.documentElement.classList.add('scd-gate')</script>
+<link rel="icon" href="./assets/Iconservice.png">
+<link rel="stylesheet" href="./css/quote-pages.css?v=20261107">
+<!--
+  ใบเสนอราคา Service (QS) — 2026-11-07. One of three pages (quote-service / quote-parts /
+  quote-warranty); shared code in js/quote-common.js. Machines with a price that can be edited
+  (suggested from ตั้งค่าใบเสนอราคา by size and service type), travel from the distance zones
+  (editable), extra labour, spare parts with the per-row Stock switch, other expenses, discount,
+  VAT switch, and the two signer names picked from the staff list.
+  ?id=QS… opens a saved quotation; ?caseId= / ?customerId= prefill.
+-->
+</head>
+<body>
+<header class="qc-top">
+  <a href="./index.html" aria-label="กลับระบบหลัก"><img src="../../assets/brand/imode-logo-white.png" alt="I-MODE"></a>
+  <h1>ใบเสนอราคา</h1>
+  <a href="./index.html?page=quotation" class="qc-hide-sm">รายการใบเสนอราคา</a>
+  <a href="./index.html">กลับระบบหลัก</a>
+</header>
+
+<main class="qc-wrap">
+  <nav id="qcTypes" class="qc-types" aria-label="ประเภทใบเสนอราคา"></nav>
+
+  <div class="qc-head">
+    <h2>🛠 ใบเสนอราคา Service</h2>
+    <span id="qcNo" class="qc-status">ใบใหม่ · ยังไม่มีเลขที่</span>
+  </div>
+
+  <div class="qc-layout">
+    <div>
+      <section class="qc-card" aria-labelledby="hCustomer">
+        <header><div><h3 id="hCustomer">ลูกค้าและเคส</h3><p>เลือกเคสเพื่อดึงลูกค้าและเครื่องให้อัตโนมัติ</p></div></header>
+        <div class="qc-body" id="qcPicker"></div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hService">
+        <header><div><h3 id="hService">บริการและการเดินทาง</h3></div></header>
+        <div class="qc-body">
+          <div class="qc-grid">
+            <div class="qc-field"><label for="qsType">ประเภทบริการ</label>
+              <select id="qsType"><option value="OS">Onsite Service (ไปหน้างาน)</option><option value="WS">Workshop Service (ซ่อมที่ศูนย์)</option><option value="DG">Diagnosis Only (ตรวจวินิจฉัย)</option></select></div>
+            <div class="qc-field"><label for="qsDistance">ระยะทางเที่ยวเดียว (km)</label>
+              <input id="qsDistance" type="number" min="0" step="0.1" inputmode="decimal" value="0">
+              <small class="qc-help">ดูระยะทางได้จากปุ่ม Google Maps ด้านบน</small></div>
+            <div class="qc-field"><label for="qsTravel">ค่าเดินทาง (บาท)</label>
+              <input id="qsTravel" type="number" min="0" step="0.01" inputmode="decimal" value="0">
+              <small class="qc-help" id="qsTravelHelp"></small></div>
+            <div class="qc-field"><label for="qsLabor">ค่าแรงเพิ่มเติม (บาท)</label>
+              <input id="qsLabor" type="number" min="0" step="0.01" inputmode="decimal" value="0"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hMach">
+        <header><div><h3 id="hMach">เครื่องจักรและค่าบริการ</h3><p>ราคาตั้งต้นตามขนาดเครื่องและประเภทบริการ แก้ไขราคาได้ทุกแถว</p></div></header>
+        <div class="qc-body">
+          <div id="qsMach" class="qc-lines"></div>
+          <button type="button" class="qc-btn is-add qc-addrow" id="qsAddMach">＋ เพิ่มเครื่อง</button>
+        </div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hParts">
+        <header><div><h3 id="hParts">อะไหล่</h3><p>เปิด Stock = คิดจากต้นทุน +<span id="qpMk">22.5</span>% · ปิด = พิมพ์ราคาขายเอง</p></div></header>
+        <div class="qc-body">
+          <div id="qpParts" class="qc-lines"></div>
+          <button type="button" class="qc-btn is-add qc-addrow" id="qpAddPart">＋ เพิ่มอะไหล่</button>
+        </div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hExp">
+        <header><div><h3 id="hExp">ค่าใช้จ่ายอื่น</h3><p>เช่น ค่าทางด่วน ค่าที่พัก — ชื่อที่พิมพ์ใหม่จะถูกจำไว้ให้ทุกคนเลือกครั้งหน้า</p></div></header>
+        <div class="qc-body">
+          <div id="qpExp" class="qc-lines"></div>
+          <button type="button" class="qc-btn is-add qc-addrow" id="qpAddExp">＋ เพิ่มค่าใช้จ่าย</button>
+        </div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hDisc">
+        <header><div><h3 id="hDisc">ส่วนลด</h3></div></header>
+        <div class="qc-body"><div class="qc-grid">
+          <div class="qc-field"><label for="qcDiscount">ส่วนลด (บาท)</label><input id="qcDiscount" type="number" min="0" step="0.01" inputmode="decimal" value="0"></div>
+        </div></div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hNote">
+        <header><div><h3 id="hNote">หมายเหตุและผู้ลงนาม</h3><p>เลือกชื่อจากรายชื่อพนักงาน</p></div></header>
+        <div class="qc-body"><div class="qc-grid">
+          <div class="qc-field qc-span2"><label for="qcNote">หมายเหตุเพิ่มเติม</label><textarea id="qcNote" rows="3"></textarea></div>
+          <div class="qc-field"><label for="qcPrepared">ผู้จัดทำ</label><select id="qcPrepared"></select></div>
+          <div class="qc-field"><label for="qcAuthorized">ผู้อนุมัติ</label><select id="qcAuthorized"></select></div>
+        </div></div>
+      </section>
+    </div>
+
+    <aside class="qc-card qc-sum" aria-labelledby="hSum">
+      <header><div><h3 id="hSum">สรุปใบเสนอราคา</h3></div></header>
+      <div class="qc-body">
+        <div class="qc-row"><span>ค่าบริการเครื่อง</span><b id="sMach">0.00</b></div>
+        <div class="qc-row"><span>ค่าเดินทาง</span><b id="sTravel">0.00</b></div>
+        <div class="qc-row"><span>ค่าแรงเพิ่มเติม</span><b id="sLabor">0.00</b></div>
+        <div class="qc-row"><span>ค่าอะไหล่</span><b id="sParts">0.00</b></div>
+        <div class="qc-row"><span>ค่าใช้จ่ายอื่น</span><b id="sExp">0.00</b></div>
+        <div class="qc-row is-neg"><span>ส่วนลด</span><b id="sDisc">-0.00</b></div>
+        <div class="qc-row"><span>รวมก่อน VAT</span><b id="sSub">0.00</b></div>
+        <div class="qc-vatrow">
+          <label class="qc-switch"><input type="checkbox" id="qcVatOn" checked><span class="trk" aria-hidden="true"></span>VAT</label>
+          <span><input type="number" id="qcVatPct" min="0" max="30" step="0.01" aria-label="อัตรา VAT (%)"> %</span>
+          <b id="sVat">0.00</b>
+        </div>
+        <div class="qc-row is-total"><span>รวมทั้งสิ้น</span><b id="sGrand">0.00</b></div>
+        <div class="qc-grand" id="sGrandBig">฿0.00</div>
+        <div class="qc-acts">
+          <button type="button" class="qc-btn is-primary" id="qcSave">💾 บันทึกใบเสนอราคา</button>
+          <button type="button" class="qc-btn" id="qcPrint">🖨 พิมพ์ / PDF</button>
+          <button type="button" class="qc-btn" id="qcChat" hidden>💬 แจ้งในแชทเคส</button>
+          <button type="button" class="qc-btn" id="qcNew">＋ ใบใหม่</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <div class="qc-mbar"><span>รวมทั้งสิ้น<b id="sGrandBar">฿0.00</b></span><button type="button" class="qc-btn is-primary" data-proxy="qcSave">💾 บันทึก</button></div>
+  <p class="qc-foot">ต้องการหน้าแบบเดิม? <a href="./index.html?page=quotation">เปิดหน้าใบเสนอราคาเดิม</a></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./js/143-v70CaseDetailGateScript.js"></script>
+<script src="./js/35-v70ComboBoxScript.js"></script>
+<script src="./js/quote-common.js?v=20261107"></script>
+<script>
+(function(){
+'use strict';
+var QC=window.QuoteCommon,num=QC.num,money=QC.money;
+var NOTE='ราคาในใบเสนอราคานี้ไม่รวมอะไหล่ที่ไม่ได้ระบุในรายการ\nรับประกันหลังงานซ่อม 30 วัน';
+var mach,parts,exps,M=null,travelEdited=false;
+function $(id){return document.getElementById(id)}
+function size(mc){var s=String(mc&&(mc.size||mc.machineSize)||'').trim().toUpperCase();return s==='S'||s==='L'?s:''}
+/* the same table js/03 machineRate() reads (ตั้งค่าใบเสนอราคา); M size or none → 0, type it */
+function rate(mc,i){
+  var c=QC.cfg(),s=size(mc),t=M?M.service:'OS';
+  if(!s)return 0;
+  if(t==='OS')return num(i>0?(s==='L'?c.nextL:c.nextS):(s==='L'?c.onsiteL:c.onsiteS));
+  if(t==='WS')return num(s==='L'?c.workshopL:c.workshopS);
+  return num(s==='L'?c.diagnosisL:c.diagnosisS);
+}
+function autoTravel(){
+  if(travelEdited)return;
+  M.travel=M.service==='OS'?QC.travelFee(M.distance):0;
+  $('qsTravel').value=M.travel;
+}
+function travelHelp(){
+  $('qsTravelHelp').textContent=M.service!=='OS'?'Workshop / Diagnosis ไม่คิดค่าเดินทางตั้งต้น (พิมพ์เองได้)'
+    :travelEdited?'แก้ไขเอง · ตามโซนระยะทาง = '+money(QC.travelFee(M.distance)):'คิดตามโซนระยะทางอัตโนมัติ';
+}
+function serviceFromCase(c){
+  var s=String(c&&c.serviceType||'').toLowerCase();
+  return s.indexOf('workshop')>=0||s.indexOf('ส่งเครื่อง')>=0?'WS':s.indexOf('diagnosis')>=0?'DG':'OS';
+}
+var page=QC.page({
+  type:'service',
+  blank:function(m,c){
+    m.note=NOTE;
+    if(c){
+      m.service=serviceFromCase(c);
+      if(c.machineId){var mc=QC.machine(c.machineId);M=m;m.machines.push({id:c.machineId,label:QC.machineLabel(mc)||c.machine||'',price:rate(mc,0)})}
+    }
+  },
+  init:function(m,api){
+    M=m;
+    travelEdited=!!m.id&&num(m.travel)!==(m.service==='OS'?QC.travelFee(m.distance):0);
+    mach=QC.machinesEditor($('qsMach'),$('qsAddMach'),m,rate,function(){api.touch()});
+    parts=QC.partsEditor($('qpParts'),$('qpAddPart'),m,function(){api.touch()});
+    exps=QC.expensesEditor($('qpExp'),$('qpAddExp'),m,function(){api.touch()});
+    $('qsType').addEventListener('change',function(){
+      m.service=this.value;
+      if(m.machines.length&&confirm('คำนวณราคาเครื่องใหม่ตามประเภทบริการนี้หรือไม่?\n(ราคาที่แก้ไขเองจะถูกแทนที่)'))mach.reprice();
+      autoTravel();travelHelp();api.touch();
+    });
+    $('qsDistance').addEventListener('input',function(){m.distance=Math.max(0,num(this.value));m.distanceSource='manual';autoTravel();travelHelp();api.touch()});
+    $('qsTravel').addEventListener('input',function(){m.travel=Math.max(0,num(this.value));travelEdited=true;travelHelp();api.touch()});
+    $('qsLabor').addEventListener('input',function(){m.labor=Math.max(0,num(this.value));api.touch()});
+  },
+  fill:function(m){
+    $('qsType').value=m.service==='WS'||m.service==='DG'?m.service:'OS';m.service=$('qsType').value;
+    $('qsDistance').value=m.distance||0;$('qsLabor').value=m.labor||0;
+    if(!m.id)autoTravel();
+    $('qsTravel').value=m.travel||0;
+    $('qpMk').textContent=num(QC.cfg().markupStock);
+    travelHelp();mach.render();parts.render();exps.render();
+  },
+  onPick:function(what,c,m,api){
+    if(what==='case'&&c){
+      m.service=serviceFromCase(c);$('qsType').value=m.service;
+      if(c.machineId&&!m.machines.some(function(x){return String(x.id)===String(c.machineId)})){
+        var mc=QC.machine(c.machineId);
+        m.machines.push({id:c.machineId,label:QC.machineLabel(mc)||c.machine||'',price:rate(mc,m.machines.length)});
+      }
+      autoTravel();travelHelp();
+    }
+    if(what==='customer'){
+      /* machines of another customer do not belong on this quotation */
+      m.machines=m.machines.filter(function(x){var mc=QC.machine(x.id);return !mc||!m.customerId||String(mc.customerId)===String(m.customerId)});
+    }
+    mach.render();api.sums();
+  },
+  onRefresh:function(){mach.render()},
+  onSettings:function(m){$('qpMk').textContent=num(QC.cfg().markupStock);parts.render();exps.options();autoTravel();travelHelp()},
+  onOptions:function(){exps.options()}
+});
+})();
+</script>
+</body>
+</html>

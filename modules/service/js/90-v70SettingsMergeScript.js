@@ -78,7 +78,10 @@
                /* 2026-09-25: km per customer (js/118). Cleared entries are stored as 0, never deleted. */
                'customerDistances',
                /* 2026-09-25: when the customer first opened a quotation (js/120). */
-               'quoteViews'];
+               'quoteViews',
+               /* 2026-11-07: company-wide names for ค่าใช้จ่ายอื่น on the quote pages
+                  (js/quote-common.js) — {name: {name, at}}, only ever added to. */
+               'quoteExpenseOptions'];
  /* Whole-value keys decided by settings.permStamp instead of a union — see adopt(). */
  var PERM_KEYS=['roles','userPermissions','rolePresetOptOut','systemBehavior'];
 

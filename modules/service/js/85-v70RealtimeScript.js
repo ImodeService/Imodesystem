@@ -311,6 +311,8 @@
                       database. Measured — see js/90's header. quoteDocs joins it so the paper
                       another device re-bakes is picked up too. */
                    'quoteStaffSigns','quoteDocs',
+                   /* 2026-11-07: expense names saved from the quote pages (js/quote-common.js) */
+                   'quoteExpenseOptions',
                    /* 2026-09-24 — roles and permissions, so an open tab learns about a role
                       change at once instead of pushing its stale copy back over it. Taken only
                       when the incoming permStamp is not older than ours (see js/90). */
@@ -322,7 +324,7 @@
     quoteDocs is taken but NOT unioned: it is a cache js/80 re-bakes on a fingerprint change
     and caps at 25, so keeping entries another device just trimmed would only grow the row. */
  var ADDITIVE={quoteApprovals:1,quoteAccepts:1,quoteRequestLink:1,caseStatusLog:1,
-               caseFeedback:1,quoteStaffSigns:1};
+               caseFeedback:1,quoteStaffSigns:1,quoteExpenseOptions:1};
  function unionById(local,incoming){
   if(!incoming||typeof incoming!=='object'||Array.isArray(incoming))return local;
   if(!local||typeof local!=='object'||Array.isArray(local))return incoming;

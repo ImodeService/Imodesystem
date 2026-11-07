@@ -133,6 +133,7 @@ html[data-theme="dark"] .qc-status.is-saved{background:#163526;border-color:#255
   .qc-mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;align-items:center;justify-content:space-between;gap:10px;
     padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(18,58,128,.08)}
   .qc-mbar span{font-size:12px;color:var(--muted)}
+  #qcToast{bottom:86px}
   .qc-mbar b{display:block;font-size:18px;color:var(--imode-navy);font-variant-numeric:tabular-nums}
 }
 @media (max-width:640px){
@@ -149,7 +150,8 @@ html[data-theme="dark"] .qc-status.is-saved{background:#163526;border-color:#255
   .qc-part .qc-f-name{padding-right:44px}
   .qc-part .qc-x{position:absolute;top:8px;right:8px}
   .qc-exp{grid-template-columns:1fr 110px 36px}
-  .qc-mach{grid-template-columns:1fr 110px 36px}
+  .qc-mach{grid-template-columns:1fr 36px}
+  .qc-mach .qc-field:first-child{grid-column:1 / -1}
   .qc-top h1{font-size:14.5px}
   .qc-top .qc-hide-sm{display:none}
 }

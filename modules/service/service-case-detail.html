@@ -2225,7 +2225,8 @@ function quoteSectionHTML(){
   head+='<span>'+esc(q.id)+' · '+esc(Number(q.grand||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}))+' บาท</span></div>';
   if(f.state===0){
     return head+'<p class="sd-wait">ใบเสนอราคายังเป็นร่าง — ยังไม่ได้ส่งให้ลูกค้า</p>'
-      +'<div class="sd-acts"><button type="button" class="sd-go" data-action="open-quotation">เปิดใบเสนอราคาในระบบหลัก ›</button></div></div>';
+      +'<div class="sd-acts"><button type="button" class="sd-go" data-action="open-quotation">✏ เปิดใบเสนอราคา '+esc(q.id)+' ›</button>'
+        +'<button type="button" class="sd-go" data-action="new-quotation">＋ ทำใบเสนอราคาใหม่</button></div></div>';
   }
   var when=[q.updatedAt||q.createdAt,a&&a.at,a&&a.sentAt,f.state===4?(q.updatedAt||''):''];
   /* A step is done once the state has passed it; the step the quotation is waiting at is `now`. */
@@ -2244,7 +2245,8 @@ function quoteSectionHTML(){
     :f.state===2?'<p class="sd-wait">✍ ลูกค้าเซ็นแล้ว'+(a.name?' ('+esc(a.name)+')':'')+via+' — รอลูกค้ากดส่งกลับมา</p>'
     :f.state===3?'<p class="sd-wait">📥 '+(a&&a.by==='staff-other-channel'?'ลูกค้าอนุมัติผ่านช่องทางอื่น ('+esc(a.channel||'ไม่ระบุ')+')':'ลูกค้าส่งใบเสนอราคาที่เซ็นแล้วกลับมา')+' — ตรวจสอบแล้วกดยืนยัน</p>'
     :'<p class="sd-ok">✔ ใบเสนอราคาเสร็จสิ้น — ไปขั้นตอนนัดหมายได้เลย</p>';
-  var acts='<button type="button" class="sd-go" data-action="open-quote-doc">ดูใบเสนอราคาเต็ม ›</button>';
+  var acts='<button type="button" class="sd-go" data-action="open-quote-doc">ดูใบเสนอราคาเต็ม ›</button>'
+    +'<button type="button" class="sd-go" data-action="open-quotation">✏ เปิดใบเสนอราคา '+esc(q.id)+'</button>';
   if(f.state===1||f.state===2)acts+='<button type="button" class="sd-go" data-action="open-line-message">📋 ส่งลิงก์ให้ลูกค้าเซ็นทาง LINE</button>';
   if(can('quotation.create')&&f.state<4){
     acts+='<button type="button" class="sd-go" data-action="approve-other-channel">✓ อนุมัติผ่านช่องทางอื่น</button>'
@@ -2491,7 +2493,7 @@ function openQuoteDoc(){
   var f=quoteFacts(q);
   if(!f.doc||!f.doc.html){
     panel('ใบเสนอราคา '+q.id,'<p class="scd-empty">ยังไม่มีสำเนาใบเสนอราคาฉบับเต็มในเครื่องนี้ — ระบบหลักจะสร้างให้เมื่อเปิดแอปครั้งถัดไป'
-      +' หรือเปิดดูในระบบหลักได้เลย</p><div class="sd-acts"><button type="button" class="sd-go" data-action="open-quotation">เปิดในระบบหลัก ›</button></div>');
+      +' หรือเปิดดูในระบบหลักได้เลย</p><div class="sd-acts"><button type="button" class="sd-go" data-action="open-quotation">เปิดใบเสนอราคา ›</button></div>');
     return;
   }
   var signs=qsSigns(q.id,q),mayEdit=can('quotation.create');
@@ -3169,7 +3171,23 @@ function doAssign(){
 /* scheduleService() is gone: มอบหมาย and นัดหมาย are one panel on this page now, so there is
    nothing left to hand back to the application. It used to leave the page, reload the whole
    app and open a popup over the case TABLE with a เลือกเคส dropdown. */
-function openQuotation(){goApp('quotation','&caseId='+encodeURIComponent(caseDetailModel.case.id))}
+/* 2026-11-07: the quotation has its own pages (quote-service / quote-parts / quote-warranty.html).
+   This case's newest quotation opens in the page for its type; with none, a new one starts on the
+   Service page with this case filled in (the type buttons there switch to parts / warranty).
+   localStorage imode_v70_quote_old_page='1' goes back to the old page in the application. */
+var QUOTE_PAGES={SP:'quote-parts.html',WP:'quote-warranty.html'};
+function quotePageFor(q){
+  if(!q)return '';
+  var p=QUOTE_PAGES[String(q.service||'')]||(q.warrantyMode==='extend'?'quote-warranty.html':'quote-service.html');
+  return './'+p+'?id='+encodeURIComponent(q.id);
+}
+function openQuotation(){
+  var old=false;try{old=localStorage.getItem('imode_v70_quote_old_page')==='1'}catch(e){}
+  if(old){goApp('quotation','&caseId='+encodeURIComponent(caseDetailModel.case.id));return}
+  var q=caseQuote();
+  window.location.href=q?quotePageFor(q):'./quote-service.html?caseId='+encodeURIComponent(caseDetailModel.case.id);
+}
+function newQuotation(){window.location.href='./quote-service.html?caseId='+encodeURIComponent(caseDetailModel.case.id)}
 /* 2026-09-17, reported item 2: "กดดูหน้างาน เคส A จะโชว์แค่เคส A เลย". หน้างาน shows ONE job,
    so the case travels with the hand-off and js/28 turns intent=field into
    imodeOpenFieldJob(caseId) — which is also what records the job, so coming back to the
@@ -4872,6 +4890,7 @@ var HANDLERS={
   'schedule-service':assignTechnician,
   'contact-customer':openContactPicker,
   'open-quotation':openQuotation,
+  'new-quotation':newQuotation,
   'open-quote-doc':openQuoteDoc,
   'close-online':closeOnline,
   'reset-online':resetOnlineCase,

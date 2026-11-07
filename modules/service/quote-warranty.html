@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>ใบเสนอราคาประกัน · I-MODE Plus Service &amp; Maintenance · Version 1.0</title>
+<script src="../../shared/config.js"></script>
+<script src="./js/00-platform.js"></script>
+<script src="../../shared/theme-pref.js?v=20261029"></script>
+<style id="scdGateStyle">html.scd-gate body{visibility:hidden}</style>
+<script>document.documentElement.classList.add('scd-gate')</script>
+<link rel="icon" href="./assets/Iconservice.png">
+<link rel="stylesheet" href="./css/quote-pages.css?v=20261107">
+<!--
+  ใบเสนอราคาประกัน (QW) — 2026-11-07. One of three pages (quote-service / quote-parts /
+  quote-warranty); shared code in js/quote-common.js. Package length (6/12/24 months) and type,
+  one row per machine with a price that can be edited (suggested from the package prices in
+  ตั้งค่า Warranty), discount, VAT switch, signer names from the staff list.
+  Saved as service 'WP' + warranty_mode 'extend', the marker js/43 / js/62 already read.
+-->
+</head>
+<body>
+<header class="qc-top">
+  <a href="./index.html" aria-label="กลับระบบหลัก"><img src="../../assets/brand/imode-logo-white.png" alt="I-MODE"></a>
+  <h1>ใบเสนอราคา</h1>
+  <a href="./index.html?page=quotation" class="qc-hide-sm">รายการใบเสนอราคา</a>
+  <a href="./index.html">กลับระบบหลัก</a>
+</header>
+
+<main class="qc-wrap">
+  <nav id="qcTypes" class="qc-types" aria-label="ประเภทใบเสนอราคา"></nav>
+
+  <div class="qc-head">
+    <h2>🛡 ใบเสนอราคาประกัน</h2>
+    <span id="qcNo" class="qc-status">ใบใหม่ · ยังไม่มีเลขที่</span>
+  </div>
+
+  <div class="qc-layout">
+    <div>
+      <section class="qc-card" aria-labelledby="hCustomer">
+        <header><div><h3 id="hCustomer">ลูกค้าและเคส</h3><p>เลือกลูกค้า (จำเป็น) และอ้างอิงเคสได้ถ้ามี</p></div></header>
+        <div class="qc-body" id="qcPicker"></div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hPkg">
+        <header><div><h3 id="hPkg">แพ็กเกจประกัน</h3></div></header>
+        <div class="qc-body"><div class="qc-grid">
+          <div class="qc-field"><label for="qwMonths">ระยะเวลา</label>
+            <select id="qwMonths"><option value="6">6 เดือน</option><option value="12">12 เดือน</option><option value="24">24 เดือน</option></select></div>
+          <div class="qc-field"><label for="qwType">ประเภทประกัน</label>
+            <select id="qwType"><option value="standard">ประกันมาตรฐาน (อะไหล่ + ค่าแรง)</option><option value="extended">ต่ออายุ / ขยายเวลาประกัน</option><option value="parts">ประกันเฉพาะอะไหล่</option><option value="pm">ประกัน + แผน PM</option></select></div>
+        </div></div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hMach">
+        <header><div><h3 id="hMach">เครื่องที่ทำประกัน</h3><p>ราคาตั้งต้นตามราคาแพ็กเกจในตั้งค่า แก้ไขราคาได้ทุกแถว</p></div></header>
+        <div class="qc-body">
+          <div id="qsMach" class="qc-lines"></div>
+          <button type="button" class="qc-btn is-add qc-addrow" id="qsAddMach">＋ เพิ่มเครื่อง</button>
+        </div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hDisc">
+        <header><div><h3 id="hDisc">ส่วนลด</h3></div></header>
+        <div class="qc-body"><div class="qc-grid">
+          <div class="qc-field"><label for="qcDiscount">ส่วนลด (บาท)</label><input id="qcDiscount" type="number" min="0" step="0.01" inputmode="decimal" value="0"></div>
+        </div></div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hNote">
+        <header><div><h3 id="hNote">หมายเหตุและผู้ลงนาม</h3><p>เลือกชื่อจากรายชื่อพนักงาน</p></div></header>
+        <div class="qc-body"><div class="qc-grid">
+          <div class="qc-field qc-span2"><label for="qcNote">รายละเอียดประกัน / หมายเหตุ</label><textarea id="qcNote" rows="3"></textarea></div>
+          <div class="qc-field"><label for="qcPrepared">ผู้จัดทำ</label><select id="qcPrepared"></select></div>
+          <div class="qc-field"><label for="qcAuthorized">ผู้อนุมัติ</label><select id="qcAuthorized"></select></div>
+        </div></div>
+      </section>
+    </div>
+
+    <aside class="qc-card qc-sum" aria-labelledby="hSum">
+      <header><div><h3 id="hSum">สรุปใบเสนอราคา</h3></div></header>
+      <div class="qc-body">
+        <div class="qc-row"><span>ค่าแพ็กเกจประกัน</span><b id="sMach">0.00</b></div>
+        <div class="qc-row is-neg"><span>ส่วนลด</span><b id="sDisc">-0.00</b></div>
+        <div class="qc-row"><span>รวมก่อน VAT</span><b id="sSub">0.00</b></div>
+        <div class="qc-vatrow">
+          <label class="qc-switch"><input type="checkbox" id="qcVatOn" checked><span class="trk" aria-hidden="true"></span>VAT</label>
+          <span><input type="number" id="qcVatPct" min="0" max="30" step="0.01" aria-label="อัตรา VAT (%)"> %</span>
+          <b id="sVat">0.00</b>
+        </div>
+        <div class="qc-row is-total"><span>รวมทั้งสิ้น</span><b id="sGrand">0.00</b></div>
+        <div class="qc-grand" id="sGrandBig">฿0.00</div>
+        <div class="qc-acts">
+          <button type="button" class="qc-btn is-primary" id="qcSave">💾 บันทึกใบเสนอราคา</button>
+          <button type="button" class="qc-btn" id="qcPrint">🖨 พิมพ์ / PDF</button>
+          <button type="button" class="qc-btn" id="qcChat" hidden>💬 แจ้งในแชทเคส</button>
+          <button type="button" class="qc-btn" id="qcNew">＋ ใบใหม่</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <div class="qc-mbar"><span>รวมทั้งสิ้น<b id="sGrandBar">฿0.00</b></span><button type="button" class="qc-btn is-primary" data-proxy="qcSave">💾 บันทึก</button></div>
+  <p class="qc-foot">ต้องการหน้าแบบเดิม? <a href="./index.html?page=quotation">เปิดหน้าใบเสนอราคาเดิม</a></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./js/143-v70CaseDetailGateScript.js"></script>
+<script src="./js/35-v70ComboBoxScript.js"></script>
+<script src="./js/quote-common.js?v=20261107"></script>
+<script>
+(function(){
+'use strict';
+var QC=window.QuoteCommon,num=QC.num;
+var NOTE='ความคุ้มครองตามประเภทประกันที่เลือก นับจากวันที่ลูกค้ายืนยันใบเสนอราคา\nไม่ครอบคลุมความเสียหายจากการใช้งานผิดวิธีหรืออุบัติเหตุ';
+var mach,M=null;
+function $(id){return document.getElementById(id)}
+/* the package price per machine (ตั้งค่า Warranty, settings.warrantyConfig.packagePrices) */
+function rate(){var p=(QC.settings().warrantyConfig||{}).packagePrices||{};return num(p[M?M.warrantyMonths:12])}
+QC.page({
+  type:'warranty',
+  blank:function(m,c){
+    m.note=NOTE;M=m;
+    if(c&&c.machineId)m.machines.push({id:c.machineId,label:QC.machineLabel(QC.machine(c.machineId))||c.machine||'',price:rate()});
+  },
+  validate:function(m){
+    if(!m.machines.some(function(x){return x.id}))return 'กรุณาเลือกเครื่องที่ทำประกันอย่างน้อย 1 เครื่อง';
+    return '';
+  },
+  init:function(m,api){
+    M=m;
+    mach=QC.machinesEditor($('qsMach'),$('qsAddMach'),m,rate,function(){api.touch()});
+    $('qwMonths').addEventListener('change',function(){
+      m.warrantyMonths=num(this.value)||12;
+      if(m.machines.length&&confirm('ใช้ราคาแพ็กเกจ '+m.warrantyMonths+' เดือนกับทุกเครื่องหรือไม่?\n(ราคาที่แก้ไขเองจะถูกแทนที่)'))mach.reprice();
+      api.touch();
+    });
+    $('qwType').addEventListener('change',function(){m.warrantyType=this.value;api.touch(true)});
+  },
+  fill:function(m){
+    $('qwMonths').value=String(m.warrantyMonths||12);if(!$('qwMonths').value){$('qwMonths').value='12';m.warrantyMonths=12}
+    $('qwType').value=m.warrantyType||'standard';
+    mach.render();
+  },
+  onPick:function(what,c,m,api){
+    if(what==='case'&&c&&c.machineId&&!m.machines.some(function(x){return String(x.id)===String(c.machineId)}))
+      m.machines.push({id:c.machineId,label:QC.machineLabel(QC.machine(c.machineId))||c.machine||'',price:rate()});
+    if(what==='customer')m.machines=m.machines.filter(function(x){var mc=QC.machine(x.id);return !mc||!m.customerId||String(mc.customerId)===String(m.customerId)});
+    mach.render();api.sums();
+  },
+  onRefresh:function(){mach.render()}
+});
+})();
+</script>
+</body>
+</html>
