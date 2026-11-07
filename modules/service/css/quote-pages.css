@@ -15,7 +15,7 @@ html[data-theme="dark"]{
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{font-family:'Anuphan',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+body{font-family:"Anuphan","Noto Sans Thai","Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
 button,input,select,textarea{font:inherit;color:inherit}
 [hidden]{display:none!important}
 
