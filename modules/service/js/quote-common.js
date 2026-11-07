@@ -1,7 +1,7 @@
 /* js/quote-common.js — 2026-11-07: shared code for the three quotation pages
-     quote-service.html   ใบเสนอราคา Service   number QS + YYMM + ###
-     quote-parts.html     ใบเสนอราคาอะไหล่     number QP + YYMM + ###
-     quote-warranty.html  ใบเสนอราคาประกัน     number QW + YYMM + ###
+     quote-service.html   ใบเสนอราคา Service   number IM-QS + YYMM + ###
+     quote-parts.html     ใบเสนอราคาอะไหล่     number IM-QP + YYMM + ###
+     quote-warranty.html  ใบเสนอราคาประกัน     number IM-QW + YYMM + ###
 
    Outside the js/NN numbering on purpose: it is a LIBRARY. Loading it does nothing to the page;
    each page calls what it needs. index.html also loads it (before js/159) so the old screens,
@@ -167,9 +167,11 @@
  }
 
  /* ----------------------------------------------------------------- numbers ---- */
+ /* 2026-11-07 owner: the number must show it is I-MODE's → IM-QP2611001 (choice A) */
+ var BRAND='IM-';
  function ym(){var d=new Date(Date.now()+7*3600000);return String(d.getUTCFullYear()).slice(2)+pad(d.getUTCMonth()+1)}
  function localNumber(code,extra){
-  var p=code+ym(),n=0,s=settings();
+  var p=BRAND+code+ym(),n=0,s=settings();
   var ids=quotes().map(function(q){return q&&q.id}).concat(extra||[]);
   ['quoteApprovals','quoteStaffSigns','quoteAccepts','quoteDocs'].forEach(function(k){
    var m=s[k];if(m&&typeof m==='object')ids=ids.concat(Object.keys(m));
@@ -186,7 +188,7 @@
   return withTimeout(c.rpc('next_quote_no',{p_type:code}),10000).then(function(r){
    if(r&&!r.error&&typeof r.data==='string'&&r.data)return {id:r.data,server:true};
    /* function not installed yet (or refused): compute from what the cloud and this device hold */
-   return withTimeout(c.from('quotations').select('id').like('id',code+ym()+'%')).then(function(x){
+   return withTimeout(c.from('quotations').select('id').like('id',BRAND+code+ym()+'%')).then(function(x){
     var ids=(x&&!x.error&&x.data||[]).map(function(o){return o.id});
     return {id:localNumber(code,ids),server:false};
    },function(){return {id:localNumber(code),server:false}});

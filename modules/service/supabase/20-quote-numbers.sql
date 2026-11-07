@@ -2,9 +2,10 @@
 -- 20-quote-numbers.sql — quotation numbers issued by the server (run once in the Supabase SQL Editor)
 --
 -- WHY (2026-11-07, quote pages split into quote-service / quote-parts / quote-warranty.html)
--- Each quotation type gets its own running number:  QS = Service, QP = Parts, QW = Warranty,
--- then YYMM (Thailand time) and a 3-digit counter that restarts every month:
---     QP2611001, QP2611002 … QS2611001 …
+-- Each quotation type gets its own running number, marked as I-MODE's (owner, 2026-11-07):
+--   IM- then QS = Service, QP = Parts, QW = Warranty, then YYMM (Thailand time) and a 3-digit
+--   counter that restarts every month:
+--     IM-QP2611001, IM-QP2611002 … IM-QS2611001 …
 -- Two staff saving at the same moment must never get the same number, so the number is taken
 -- from a counter row inside the database (one UPDATE, row-locked) instead of being computed in
 -- each browser.
@@ -26,7 +27,7 @@ begin
 end $$;
 
 create table if not exists public.quote_counters (
-  prefix     text primary key,              -- e.g. QP2611
+  prefix     text primary key,              -- e.g. IM-QP2611
   last_no    integer not null default 0,
   updated_at timestamptz not null default now()
 );
@@ -54,7 +55,7 @@ begin
     raise exception 'unknown quotation type %', p_type using errcode = '22023';
   end if;
 
-  v_prefix := v_type || to_char(now() at time zone 'Asia/Bangkok', 'YYMM');
+  v_prefix := 'IM-' || v_type || to_char(now() at time zone 'Asia/Bangkok', 'YYMM');
 
   -- highest number already used for this prefix (also covers numbers issued by the browser fallback)
   select coalesce(max((substring(id from length(v_prefix) + 1))::integer), 0)
@@ -77,6 +78,6 @@ grant execute on function public.next_quote_no(text) to authenticated;
 
 commit;
 
--- check (should return a number like QP2611001 when run as a signed-in staff user;
+-- check (should return a number like IM-QP2611001 when run as a signed-in staff user;
 -- in the SQL editor, which runs as postgres without a staff session, it raises "not allowed")
 -- select public.next_quote_no('QP');
