@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>ใบเสนอราคาอะไหล่ · I-MODE Plus Service &amp; Maintenance · Version 1.0</title>
+<script src="../../shared/config.js"></script>
+<script src="./js/00-platform.js"></script>
+<script src="../../shared/theme-pref.js?v=20261029"></script>
+<style id="scdGateStyle">html.scd-gate body{visibility:hidden}</style>
+<script>document.documentElement.classList.add('scd-gate')</script>
+<link rel="icon" href="./assets/Iconservice.png">
+<link rel="stylesheet" href="./css/quote-pages.css?v=20261107">
+<!--
+  ใบเสนอราคาอะไหล่ (QP) — 2026-11-07, mockup parts-quote-after.png approved by the owner.
+  One of three pages (quote-service / quote-parts / quote-warranty); the shared code is
+  js/quote-common.js. No section numbers, no delivery/VAT section, no machine. A Stock switch per
+  row: on = cost + markupStock (22.5 %), off = type the sale price. Other expenses are a list with
+  company-wide saved names; discount is its own box; VAT is a switch in the summary (default 7 %).
+  Saving needs a customer only. ?id=QP… opens a saved quotation; ?caseId= / ?customerId= prefill.
+-->
+</head>
+<body>
+<header class="qc-top">
+  <a href="./index.html" aria-label="กลับระบบหลัก"><img src="../../assets/brand/imode-logo-white.png" alt="I-MODE"></a>
+  <h1>ใบเสนอราคา</h1>
+  <a href="./index.html?page=quotation" class="qc-hide-sm">รายการใบเสนอราคา</a>
+  <a href="./index.html">กลับระบบหลัก</a>
+</header>
+
+<main class="qc-wrap">
+  <nav id="qcTypes" class="qc-types" aria-label="ประเภทใบเสนอราคา"></nav>
+
+  <div class="qc-head">
+    <h2>📦 ใบเสนอราคาอะไหล่</h2>
+    <span id="qcNo" class="qc-status">ใบใหม่ · ยังไม่มีเลขที่</span>
+  </div>
+
+  <div class="qc-layout">
+    <div>
+      <section class="qc-card" aria-labelledby="hCustomer">
+        <header><div><h3 id="hCustomer">ลูกค้าและเคส</h3><p>เลือกลูกค้า (จำเป็น) และอ้างอิงเคสได้ถ้ามี</p></div></header>
+        <div class="qc-body" id="qcPicker"></div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hParts">
+        <header><div><h3 id="hParts">รายการอะไหล่</h3><p>เปิด Stock = คิดจากต้นทุน +<span id="qpMk">22.5</span>% · ปิด = พิมพ์ราคาขายเอง</p></div></header>
+        <div class="qc-body">
+          <div id="qpParts" class="qc-lines"></div>
+          <button type="button" class="qc-btn is-add qc-addrow" id="qpAddPart">＋ เพิ่มอะไหล่</button>
+        </div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hExp">
+        <header><div><h3 id="hExp">ค่าใช้จ่ายอื่น</h3><p>เช่น ค่าจัดส่ง ค่าทางด่วน — ชื่อที่พิมพ์ใหม่จะถูกจำไว้ให้ทุกคนเลือกครั้งหน้า</p></div></header>
+        <div class="qc-body">
+          <div id="qpExp" class="qc-lines"></div>
+          <button type="button" class="qc-btn is-add qc-addrow" id="qpAddExp">＋ เพิ่มค่าใช้จ่าย</button>
+                  </div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hDisc">
+        <header><div><h3 id="hDisc">ส่วนลด</h3></div></header>
+        <div class="qc-body">
+          <div class="qc-grid">
+            <div class="qc-field"><label for="qcDiscount">ส่วนลด (บาท)</label><input id="qcDiscount" type="number" min="0" step="0.01" inputmode="decimal" value="0"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="qc-card" aria-labelledby="hNote">
+        <header><div><h3 id="hNote">หมายเหตุและผู้จัดทำ</h3></div></header>
+        <div class="qc-body">
+          <div class="qc-grid">
+            <div class="qc-field qc-span2"><label for="qcNote">หมายเหตุเพิ่มเติม</label><textarea id="qcNote" rows="3"></textarea></div>
+            <div class="qc-field"><label for="qcPrepared">ผู้จัดทำ</label><select id="qcPrepared"></select></div>
+            <div class="qc-field"><label for="qcAuthorized">ผู้อนุมัติ</label><select id="qcAuthorized"></select></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="qc-card qc-sum" aria-labelledby="hSum">
+      <header><div><h3 id="hSum">สรุปใบเสนอราคา</h3></div></header>
+      <div class="qc-body">
+        <div class="qc-row"><span>ค่าอะไหล่</span><b id="sParts">0.00</b></div>
+        <div class="qc-row"><span>ค่าใช้จ่ายอื่น</span><b id="sExp">0.00</b></div>
+        <div class="qc-row is-neg"><span>ส่วนลด</span><b id="sDisc">-0.00</b></div>
+        <div class="qc-row"><span>รวมก่อน VAT</span><b id="sSub">0.00</b></div>
+        <div class="qc-vatrow">
+          <label class="qc-switch"><input type="checkbox" id="qcVatOn" checked><span class="trk" aria-hidden="true"></span>VAT</label>
+          <span><input type="number" id="qcVatPct" min="0" max="30" step="0.01" aria-label="อัตรา VAT (%)"> %</span>
+          <b id="sVat">0.00</b>
+        </div>
+        <div class="qc-row is-total"><span>รวมทั้งสิ้น</span><b id="sGrand">0.00</b></div>
+        <div class="qc-grand" id="sGrandBig">฿0.00</div>
+        <div class="qc-acts">
+          <button type="button" class="qc-btn is-primary" id="qcSave">💾 บันทึกใบเสนอราคา</button>
+          <button type="button" class="qc-btn" id="qcPrint">🖨 พิมพ์ / PDF</button>
+          <button type="button" class="qc-btn" id="qcChat" hidden>💬 แจ้งในแชทเคส</button>
+          <button type="button" class="qc-btn" id="qcNew">＋ ใบใหม่</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <div class="qc-mbar"><span>รวมทั้งสิ้น<b id="sGrandBar">฿0.00</b></span><button type="button" class="qc-btn is-primary" data-proxy="qcSave">💾 บันทึก</button></div>
+  <p class="qc-foot">ต้องการหน้าแบบเดิม? <a href="./index.html?page=quotation">เปิดหน้าใบเสนอราคาเดิม</a></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./js/143-v70CaseDetailGateScript.js"></script>
+<script src="./js/35-v70ComboBoxScript.js"></script>
+<script src="./js/quote-common.js?v=20261107"></script>
+<script>
+(function(){
+'use strict';
+var QC=window.QuoteCommon;
+var PARTS_NOTE='ราคารวมค่าอะไหล่ตามรายการ ไม่รวมค่าแรงติดตั้ง\nกรุณาตรวจสอบรุ่นเครื่องให้ตรงกับอะไหล่ก่อนยืนยัน';
+var parts,exps;
+function $(id){return document.getElementById(id)}
+QC.page({
+  type:'parts',
+  blank:function(m){m.note=PARTS_NOTE;m.parts.push({name:'',qty:1,stock:true,cost:0,price:0,photos:[]})},
+  init:function(m,api){
+    parts=QC.partsEditor($('qpParts'),$('qpAddPart'),m,function(){api.touch()});
+    exps=QC.expensesEditor($('qpExp'),$('qpAddExp'),m,function(){api.touch()});
+  },
+  fill:function(){$('qpMk').textContent=QC.num(QC.cfg().markupStock);parts.render();exps.render()},
+  onSettings:function(){$('qpMk').textContent=QC.num(QC.cfg().markupStock);parts.render();exps.options()},
+  onOptions:function(){exps.options()}
+});
+})();
+</script>
+</body>
+</html>

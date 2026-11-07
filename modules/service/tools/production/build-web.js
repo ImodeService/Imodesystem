@@ -83,13 +83,14 @@ function html(text, file) {
   text = text.replace(/(<meta charset[^>]*>)/i, '$1\n' + ENV_TAG);
   return text;
 }
-const DOCS = ['index.html', 'service-case-detail.html'];
+const DOCS = ['index.html', 'service-case-detail.html', 'quote-service.html', 'quote-parts.html', 'quote-warranty.html'];
 DOCS.forEach(f => copy(path.join(SRC, f), path.join(OUT, f), html));
 
 // ---------- 1. the allow-list ----------
 const files = [
   'sw.js',
   'pages/pages.js', 'pages/customer-home.html',
+  'js/quote-common.js', 'css/quote-pages.css',
   ...list('css', /^\d+-.*\.css$/),
   ...list('js', /^\d+-.*\.js$/).filter(f => f !== 'js/02-demo-data.js'),
   ...list('auth', /\.js$/),
