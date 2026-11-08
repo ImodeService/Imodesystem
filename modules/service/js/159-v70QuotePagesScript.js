@@ -101,8 +101,12 @@
     (Service first; the type buttons at its top switch to อะไหล่ / ประกัน). The old page stays one
     link away (its footer link, and ?page=quotation, which this does not touch). */
  document.addEventListener('click',function(e){
-  var it=e.target&&e.target.closest&&e.target.closest('#sidebar .nav-item[data-page="quotation"]');
+  /* every way in that a person clicks: the sidebar, the Home board's card (quick and โมดูลทั้งหมด),
+     the phone's bottom bar, the เมนูเพิ่มเติม sheet. Calls made by code (a request or a case being
+     turned into a quotation, which then fill the old form) are not clicks and keep the old page. */
+  var it=e.target&&e.target.closest&&e.target.closest('[data-page="quotation"]:not(.page),[onclick*="goPage(\'quotation\')"]');
   if(!it||QC.useOldPage())return;
+  if(it.closest('.rhome-editing'))return;     /* the Home board is being rearranged (js/155) */
   e.preventDefault();e.stopImmediatePropagation();
   location.href=QC.TYPES.service.page;
  },true);
