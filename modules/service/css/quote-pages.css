@@ -205,3 +205,13 @@ html[data-theme="dark"] .qc-status.is-saved{background:#163526;border-color:#255
 .qc-light{position:fixed;inset:0;z-index:300;background:rgba(9,22,52,.75);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
 .qc-light img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
 @media (max-width:640px){.qc-att-ph{width:calc(50% - 5px)}.qc-att-ph img{width:100%}.qc-att-file{flex-wrap:wrap}}
+
+/* 2026-11-08 (owner: "แถวไม่ตรงกัน"): every column of a part row has its label on the same line and
+   every control the same 38 px height on one line; the helper text under the price hangs below
+   without pushing the other columns down. */
+.qc-part{align-items:start}
+.qc-part .qc-field>label:first-child{height:18px;line-height:18px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qc-part .qc-switch.is-box{min-height:38px;height:38px;padding-top:0;padding-bottom:0}
+.qc-part>.qc-x{margin-top:20px;height:38px;min-height:38px}
+.qc-part .qc-amount{height:38px}
+@media (max-width:640px){.qc-part>.qc-x{margin-top:0}}

@@ -789,7 +789,7 @@
    return '<div class="qc-line qc-part">'
     +'<div class="qc-field qc-f-name"><label for="pn'+i+'">ชื่ออะไหล่ / รหัส</label><input id="pn'+i+'" data-k="name" data-i="'+i+'" value="'+esc(p.name)+'" placeholder="เช่น สายพาน, หัวพ่น" autocomplete="off"></div>'
     +'<div class="qc-field"><label for="pq'+i+'">จำนวน</label><input id="pq'+i+'" data-k="qty" data-i="'+i+'" type="number" min="1" step="1" inputmode="numeric" value="'+esc(p.qty||1)+'"></div>'
-    +'<div class="qc-field"><label aria-hidden="true">&nbsp;</label><label class="qc-switch is-box" title="Stock = ต้นทุน + '+mk+'%"><input type="checkbox" data-k="stock" data-i="'+i+'"'+(p.stock?' checked':'')+'><span class="trk" aria-hidden="true"></span>Stock '+mk+'%</label></div>'
+    +'<div class="qc-field"><label>ประเภทราคา</label><label class="qc-switch is-box" title="Stock = ต้นทุน + '+mk+'%"><input type="checkbox" data-k="stock" data-i="'+i+'"'+(p.stock?' checked':'')+'><span class="trk" aria-hidden="true"></span>Stock '+mk+'%</label></div>'
     +price
     +'<div class="qc-field"><label>รวม</label><div class="qc-amount" data-line="'+i+'">'+money(line)+'</div></div>'
     +'<button type="button" class="qc-x" data-del="'+i+'" aria-label="ลบอะไหล่แถว '+(i+1)+'">×</button>'
