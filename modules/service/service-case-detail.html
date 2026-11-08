@@ -561,6 +561,18 @@ body.scd-modal-open{overflow:hidden}
 
 /* ---------- detail panel ---------- */
 .scd-panel{margin-top:14px}
+/* 2026-11-08 ลิงก์ให้ลูกค้าติดตามเคส */
+.scd-tl{margin-top:18px;background:var(--card);border:1px solid var(--line-2);border-radius:14px;padding:14px 16px}
+.scd-tl h3{margin:0 0 8px;font-size:15px;color:var(--imode-navy)}
+.scd-tl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.scd-tl-url{flex:1 1 260px;min-width:0;height:40px;border:1px solid var(--line-2);border-radius:10px;padding:0 10px;font:inherit;font-size:13px;background:var(--bg);color:var(--ink)}
+.scd-tl-btn{display:inline-flex;align-items:center;height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--card);color:var(--imode-navy);font-weight:700;font-size:13px;cursor:pointer;text-decoration:none}
+.scd-tl-btn:hover{border-color:#b9d2f4}
+.scd-tl-btn:disabled{opacity:.6;cursor:default}
+.scd-tl-btn.is-main{background:var(--imode-orange);border-color:var(--imode-orange);color:#fff}
+.scd-tl-btn.is-line{background:#06c755;border-color:#06c755;color:#fff}
+.scd-tl-btn.is-off{color:var(--danger)}
+.scd-tl-note{margin:6px 0 0;color:var(--muted);font-size:12.5px}
 /* งาน Workshop */
 .ws-radio{display:flex;flex-direction:column;gap:6px;font-weight:400;font-size:13px}
 .ws-radio label{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line-2);border-radius:10px;background:#fff;cursor:pointer}
@@ -1514,6 +1526,8 @@ var CaseWrite=(function(){
     return send();
   }
   return {
+    /* 2026-11-08: the customer tracking link (renderTrackLink) calls its RPC through this client */
+    client:function(){return db()},
     setStatus:function(id,status,why){return patch(id,{status:status},why)},
     setDetails:function(id,changes){return patch(id,changes||{})},
     /* The case's attachments as the server holds them. js/72 trims the device's copy to stubs
@@ -2932,6 +2946,64 @@ function renderSecondaryActions(){
   }).join('')+'</div><div class="scd-panel" id="scdPanel"></div>';
 }
 
+/* =======================================================================
+   ลิงก์ให้ลูกค้าติดตามเคส — 2026-11-08, the owner's option A
+   A private link to track.html for ONE case, for customers whose case has no machine (and so no
+   QR). The link is made, renewed and switched off on the server (case_track_link in
+   supabase/23-case-track-link.sql); this box only shows it. The token is kept here per case for
+   the page view, because load() re-renders the whole page every few seconds.
+   ======================================================================= */
+var trackLinks={};   /* caseId -> {state:'loading'|'ok'|'nosql'|'error'|'offline', data:{token,enabled}|null, busy} */
+function trackUrl(t){return new URL('./track.html#'+t,location.href).href}
+function trackCall(action){
+  var id=caseDetailModel&&caseDetailModel.case&&caseDetailModel.case.id;if(!id)return;
+  var sb=CaseWrite.client(),st=trackLinks[id]||(trackLinks[id]={state:'loading',data:null});
+  if(!sb){st.state='offline';renderPage(caseDetailModel);return}
+  st.busy=action!=='get';
+  if(st.busy)renderPage(caseDetailModel);
+  Promise.resolve(sb.rpc('case_track_link',{p_case_id:id,p_action:action})).then(function(r){
+    st.busy=false;
+    if(r&&r.error){
+      var m=String(r.error.message||'')+' '+String(r.error.code||'');
+      st.state=/case_track_link|PGRST202|42883/.test(m)?'nosql':/case not found|P0002/.test(m)?'notcloud':'error';
+    }else{st.state='ok';st.data=r?r.data:null}
+    if(caseDetailModel&&caseDetailModel.case.id===id)renderPage(caseDetailModel);
+    if(st.state==='ok'&&action==='renew')toast('สร้างลิงก์ใหม่แล้ว ลิงก์เดิมใช้ไม่ได้อีก');
+    if(st.state==='ok'&&action==='disable')toast('ปิดลิงก์แล้ว ลูกค้าเปิดดูไม่ได้');
+    if(st.state==='ok'&&action==='issue')toast('สร้างลิงก์แล้ว');
+  },function(){st.busy=false;st.state='error';if(caseDetailModel&&caseDetailModel.case.id===id)renderPage(caseDetailModel)});
+}
+function renderTrackLink(m){
+  if(!m||m.isMock||!m.case||!m.case.id)return '';
+  var st=trackLinks[m.case.id];
+  if(!st){trackLinks[m.case.id]={state:'loading',data:null};setTimeout(function(){trackCall('get')},0);st=trackLinks[m.case.id]}
+  var d=st.data,on=!!(d&&d.token&&d.enabled),body='';
+  if(st.state==='loading')body='<p class="scd-tl-note">กำลังโหลด...</p>';
+  else if(st.state==='nosql')body='<p class="scd-tl-note">ยังใช้ไม่ได้ ต้องรันไฟล์ SQL 23-case-track-link.sql ก่อน</p>';
+  else if(st.state==='offline')body='<p class="scd-tl-note">ยังไม่ได้เชื่อมต่อฐานข้อมูล</p>';
+  else if(st.state==='notcloud')body='<p class="scd-tl-note">เคสนี้ยังไม่ขึ้นระบบ Cloud รอซิงก์สักครู่แล้วเปิดหน้านี้ใหม่</p>';
+  else if(st.state==='error')body='<p class="scd-tl-note">เชื่อมต่อไม่ได้ <button type="button" class="scd-tl-btn" data-action="track-retry">ลองใหม่</button></p>';
+  else if(on){
+    var url=trackUrl(d.token);
+    body='<div class="scd-tl-row"><input class="scd-tl-url" id="scdTrackUrl" readonly value="'+esc(url)+'" aria-label="ลิงก์ติดตามเคส" onfocus="this.select()">'
+      +'<button type="button" class="scd-tl-btn is-main" data-action="track-copy">📋 คัดลอก</button>'
+      +'<a class="scd-tl-btn is-line" href="https://line.me/R/share?text='+encodeURIComponent('ติดตามสถานะงานบริการ เคส '+(m.case.caseNo||m.case.id)+' ได้ที่ลิงก์นี้\n'+url)+'" target="_blank" rel="noopener">ส่งทาง LINE</a></div>'
+      +'<p class="scd-tl-note">ลูกค้าเห็นเฉพาะสถานะ ความคืบหน้า วันนัด และใบเสนอราคาที่ส่งแล้วของเคสนี้ ไม่เห็นโน้ตภายใน ต้นทุน หรือแชททีม</p>'
+      +'<div class="scd-tl-row"><button type="button" class="scd-tl-btn" data-action="track-renew"'+(st.busy?' disabled':'')+'>🔄 สร้างลิงก์ใหม่ (ลิงก์เดิมใช้ไม่ได้)</button>'
+      +'<button type="button" class="scd-tl-btn is-off" data-action="track-disable"'+(st.busy?' disabled':'')+'>⛔ ปิดลิงก์</button></div>';
+  }else{
+    body='<p class="scd-tl-note">'+(d&&d.token?'ลิงก์ของเคสนี้ถูกปิดอยู่ ลูกค้าเปิดดูไม่ได้':'ส่งลิงก์ให้ลูกค้าเปิดดูสถานะเคสนี้ได้เอง ไม่ต้องล็อกอิน ใช้ได้แม้เคสไม่ได้ผูกเครื่อง')+'</p>'
+      +'<div class="scd-tl-row"><button type="button" class="scd-tl-btn is-main" data-action="track-issue"'+(st.busy?' disabled':'')+'>🔗 '+(d&&d.token?'เปิดลิงก์อีกครั้ง':'สร้างลิงก์ให้ลูกค้า')+'</button></div>';
+  }
+  return '<section class="scd-tl" aria-labelledby="scdTlHead"><h3 id="scdTlHead">🔗 ลิงก์ให้ลูกค้าติดตามเคส</h3>'+body+'</section>';
+}
+function trackCopy(){
+  var i=el('scdTrackUrl');if(!i)return;
+  var done=function(){toast('คัดลอกลิงก์แล้ว')};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(i.value).then(done,function(){i.select();try{document.execCommand('copy');done()}catch(e){}});
+  else{i.select();try{document.execCommand('copy');done()}catch(e){}}
+}
+
 function renderTopbar(m){
   var u=CaseDetailData.currentUser();
   el('scdUserName').textContent=u&&u.name||'ยังไม่ได้เข้าสู่ระบบ';
@@ -2950,6 +3022,7 @@ function renderPage(m){
     +renderActionBar()
     +'<div class="scd-grid">'+renderProblem(m)+renderMachine(m)+'</div>'
     +renderSecondaryActions()
+    +renderTrackLink(m)
     +'<div class="scd-foot">'
       +'<a class="scd-back" href="'+APP+'?page=cases">← กลับไปหน้ารายการ</a>'
       +((!m.isMock&&m.case.id&&can('case.edit'))
@@ -4891,6 +4964,11 @@ var HANDLERS={
   'contact-customer':openContactPicker,
   'open-quotation':openQuotation,
   'new-quotation':newQuotation,
+  'track-issue':function(){trackCall('issue')},
+  'track-retry':function(){trackCall('get')},
+  'track-copy':trackCopy,
+  'track-renew':function(){if(confirm('สร้างลิงก์ใหม่?\nลิงก์เดิมที่ส่งให้ลูกค้าไปแล้วจะใช้ไม่ได้อีก'))trackCall('renew')},
+  'track-disable':function(){if(confirm('ปิดลิงก์ติดตามเคสนี้?\nลูกค้าที่มีลิงก์จะเปิดดูไม่ได้ จนกว่าจะเปิดลิงก์อีกครั้ง'))trackCall('disable')},
   'open-quote-doc':openQuoteDoc,
   'close-online':closeOnline,
   'reset-online':resetOnlineCase,

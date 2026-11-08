@@ -104,6 +104,8 @@
   var items=[];
   (q.parts||[]).forEach(function(p){
    var sale=0;try{sale=(Number(p.cost)||0)*(1+quoteMarkup(p.type))}catch(e){}
+   /* 2026-11-08: a row from the new quote pages (v:2) carries its own selling price, incl. typed ones */
+   if(p&&p.v===2)sale=Number(p.price)||0;
    if(!sale||!Array.isArray(p.photos)||!p.photos.length)return;
    p.photos.forEach(function(src){items.push({src:src,name:p.name||'อะไหล่'})});
   });

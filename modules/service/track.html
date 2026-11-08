@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>ติดตามงานบริการ · I-MODE Plus Service</title>
+<script src="../../shared/config.js"></script>
+<script src="./js/00-platform.js"></script>
+<link rel="icon" href="./assets/Iconservice.png">
+<!--
+  ติดตามงานบริการ — the customer's read-only view of ONE case (2026-11-08, owner's option A).
+  Staff copy the link from the case page (service-case-detail.html → "ลิงก์ให้ลูกค้าติดตามเคส")
+  and send it on LINE. The token travels after # so it never reaches a server log; the page asks
+  the database through case_track_open(token) (supabase/23-case-track-link.sql), which returns
+  only the safe fields. No sign-in, no writes, nothing stored on the phone.
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&display=swap');
+:root{--navy:#0c225e;--blue:#0b63e5;--orange:#f27a1a;--ok:#079455;--ink:#12224a;--muted:#5f7196;--line:#dfe8f6;--bg:#f4f8ff;--card:#fff;--soft:#f6f9ff}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Anuphan","Noto Sans Thai","Segoe UI",sans-serif;font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+.top{background:var(--navy);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.top img{height:30px;width:auto}
+.top b{font-size:16px}
+.top small{display:block;opacity:.8;font-size:12px}
+main{max-width:720px;margin:0 auto;padding:16px 16px 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(18,58,128,.06)}
+.card h2{margin:0 0 10px;font-size:15px;color:var(--navy)}
+.head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.head h1{margin:0;font-size:20px;color:var(--navy)}
+.head p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.pill{display:inline-block;border-radius:999px;padding:5px 14px;font-weight:700;font-size:14px;background:#fff3e8;color:#b45309;border:1px solid #fbd5b0}
+.pill.is-done{background:#e8f7ef;color:var(--ok);border-color:#b7e4cb}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+.grid div small{display:block;color:var(--muted);font-size:12px}
+.grid div b{font-weight:600;word-break:break-word}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{position:relative;padding:0 0 14px 26px}
+.tl li::before{content:'';position:absolute;left:6px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--blue)}
+.tl li::after{content:'';position:absolute;left:10px;top:18px;bottom:0;width:2px;background:var(--line)}
+.tl li:last-child::after{display:none}
+.tl li:last-child::before{background:var(--orange);box-shadow:0 0 0 4px #fde7d3}
+.tl b{display:block}
+.tl small{color:var(--muted);font-size:12.5px}
+.q{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}
+.q-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.q-head b{color:var(--navy)}
+.q-head span{color:var(--muted);font-size:13px}
+.q table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+.q td{padding:5px 0;border-bottom:1px dashed var(--line);vertical-align:top}
+.q td.n{text-align:right;white-space:nowrap;padding-left:10px;font-variant-numeric:tabular-nums}
+.q .sum td{border:0;padding-top:3px}
+.q .grand td{font-weight:700;color:var(--navy);font-size:15px}
+.muted{color:var(--muted)}
+.state{text-align:center;padding:40px 16px}
+.state b{display:block;font-size:17px;color:var(--navy);margin-bottom:6px}
+.foot{text-align:center;color:var(--muted);font-size:12.5px;margin-top:18px}
+.foot a{color:var(--blue)}
+button.reload{margin-top:14px;height:44px;padding:0 18px;border-radius:12px;border:0;background:var(--orange);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+@media (max-width:480px){.grid{grid-template-columns:1fr}.head h1{font-size:18px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <img src="../../assets/brand/imode-logo-white.png" alt="I-MODE">
+  <div><b>ติดตามงานบริการ</b><small>I-MODE Plus Service &amp; Maintenance</small></div>
+</header>
+<main id="tk" aria-live="polite"><div class="state"><b>กำลังโหลด...</b></div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+'use strict';
+var box=document.getElementById('tk');
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function money(n){return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function when(v){
+  if(!v)return '';
+  var d=new Date(v);if(isNaN(d))return String(v);
+  var hasTime=/T\d|\d:\d/.test(String(v));
+  return d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})+(hasTime?' · '+d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})+' น.':'');
+}
+function token(){var t=String(location.hash||'').replace(/^#/,'').trim().toLowerCase();return /^[0-9a-f]{64}$/.test(t)?t:''}
+function state(title,text,retry){
+  box.innerHTML='<div class="card state"><b>'+esc(title)+'</b><span class="muted">'+esc(text)+'</span>'
+    +(retry?'<br><button type="button" class="reload" id="tkRetry">ลองอีกครั้ง</button>':'')+'</div>'+foot();
+  var b=document.getElementById('tkRetry');if(b)b.onclick=load;
+}
+function foot(){return '<p class="foot">มีคำถามเกี่ยวกับงานนี้ ติดต่อ I-MODE Service ทาง LINE <a href="https://line.me/R/ti/p/%40imodeservice" rel="noopener">@imodeservice</a></p>'}
+var DONE=/เสร็จสิ้น|ปิดเคส/;
+function render(d){
+  var log=Array.isArray(d.status_log)?d.status_log:[];
+  var qs=Array.isArray(d.quotations)?d.quotations:[];
+  var h='<section class="card"><div class="head"><div><h1>เคส '+esc(d.ticket)+'</h1>'
+    +'<p>'+esc(d.customer||'')+(d.created_at?' · เปิดเคส '+esc(when(d.created_at)):'')+'</p></div>'
+    +'<span class="pill'+(DONE.test(String(d.status||''))?' is-done':'')+'">'+esc(d.status||'-')+'</span></div></section>';
+  var facts=[];
+  if(d.appointment)facts.push(['วันนัดหมาย',when(d.appointment)]);
+  if(d.field_status)facts.push(['สถานะช่างหน้างาน',d.field_status]);
+  if(d.service_type)facts.push(['ประเภทงาน',d.service_type]);
+  if(d.machine||d.model)facts.push(['เครื่อง',[d.machine,d.model].filter(Boolean).join(' · ')]);
+  if(d.serial)facts.push(['Serial',d.serial]);
+  if(facts.length)h+='<section class="card"><h2>รายละเอียดงาน</h2><div class="grid">'
+    +facts.map(function(f){return '<div><small>'+esc(f[0])+'</small><b>'+esc(f[1])+'</b></div>'}).join('')+'</div></section>';
+  h+='<section class="card"><h2>ความคืบหน้า</h2>'
+    +(log.length?'<ol class="tl">'+log.map(function(e){return '<li><b>'+esc(e.to)+'</b><small>'+esc(when(e.at))+'</small></li>'}).join('')+'</ol>'
+               :'<p class="muted">สถานะปัจจุบัน: '+esc(d.status||'-')+'</p>')
+    +'</section>';
+  if(qs.length){
+    h+='<section class="card"><h2>ใบเสนอราคา</h2>'+qs.map(function(q){
+      var items=Array.isArray(q.items)?q.items:[];
+      return '<div class="q"><div class="q-head"><b>'+esc(q.id)+'</b><span>'+esc(when(q.created_at))+' · '+esc(q.status||'')+'</span></div>'
+        +'<table><tbody>'
+        +items.map(function(it){
+          var qty=Number(it.qty)||1,has=it.price!=null;
+          return '<tr><td>'+esc(it.name)+(qty>1?' × '+qty:'')+'</td><td class="n">'+(has?money(Number(it.price)*qty):'')+'</td></tr>';
+        }).join('')
+        +(q.vat?'<tr class="sum"><td>ยอดก่อน VAT</td><td class="n">'+money(q.subtotal)+'</td></tr><tr class="sum"><td>VAT</td><td class="n">'+money(q.vat)+'</td></tr>':'')
+        +'<tr class="sum grand"><td>ยอดรวมทั้งสิ้น (บาท)</td><td class="n">'+money(q.grand)+'</td></tr>'
+        +'</tbody></table></div>';
+    }).join('')+'</section>';
+  }
+  box.innerHTML=h+foot();
+  document.title='เคส '+(d.ticket||'')+' · ติดตามงานบริการ I-MODE';
+}
+var client=null;
+function api(){
+  if(client)return client;
+  var E=window.IMODE_ENV,c=E&&E.cloud;
+  if(!c||!c.url||!c.key||!window.supabase||!window.supabase.createClient)return null;
+  client=window.supabase.createClient(c.url,c.key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  return client;
+}
+function load(){
+  var t=token();
+  if(!t){state('ลิงก์ไม่ถูกต้อง','กรุณาเปิดลิงก์ที่ได้รับจากเจ้าหน้าที่อีกครั้ง หรือขอลิงก์ใหม่ทาง LINE',false);return}
+  var c=api();
+  if(!c){state('เชื่อมต่อไม่ได้','กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่',true);return}
+  Promise.resolve(c.rpc('case_track_open',{p_token:t})).then(function(r){
+    if(r&&r.error){state('เชื่อมต่อไม่ได้','กรุณาลองใหม่อีกครั้งในภายหลัง',true);return}
+    if(!r||!r.data){state('ลิงก์นี้ใช้ไม่ได้แล้ว','ลิงก์อาจถูกปิดหรือเปลี่ยนใหม่ กรุณาขอลิงก์ใหม่จากเจ้าหน้าที่ทาง LINE',false);return}
+    render(r.data);
+  },function(){state('เชื่อมต่อไม่ได้','กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่',true)});
+}
+window.addEventListener('hashchange',load);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&token()&&box.querySelector('.card:not(.state)'))load()});
+load();
+})();
+</script>
+</body>
+</html>

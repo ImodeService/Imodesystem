@@ -103,7 +103,8 @@
  function fromCustomerDb(c){return{id:c.id,name:c.name,branch:c.branch||'',contact:c.contact||'',phone:c.phone||'',email:c.email||'',location:c.location||'',address:c.address||'',mapUrl:c.map_url||'',latitude:c.latitude==null?'':c.latitude,longitude:c.longitude==null?'':c.longitude}}
  function fromCaseDb(c){return{id:c.id,ticket:c.ticket,customerId:c.customer_id,customer:c.customer,contact:c.contact,phone:c.phone,location:c.location,branch:c.branch,machineId:c.machine_id,machine:c.machine,model:c.model,serial:c.serial,serviceType:c.service_type,priority:c.priority,warranty:c.warranty,status:c.status,createdAt:c.created_at,updatedAt:c.updated_at}}
  function fromQuotationDb(q){
-  return {id:q.id,caseId:q.case_id||'',caseTicket:q.case_ticket||'',customerId:q.customer_id||'',customer:q.customer||'',contact:q.contact||'',location:q.location||'',service:q.service||'OS',warrantyMode:q.warranty_mode||(q.warranty?'repair':'none'),warrantyMonths:q.warranty_months||12,distance:q.distance||0,distanceSource:q.distance_source||'manual',routeDurationMinutes:q.route_duration_minutes||0,pickupMode:q.pickup_mode||0,urgency:q.urgency||'normal',warranty:!!q.warranty,vatOn:q.vat_on!==false,delivery:q.delivery||'',note:q.delivery||'',payment:q.payment||'',purchaserName:q.purchaser_name||'',purchaserDate:q.purchaser_date||'',preparedBy:q.prepared_by||'',preparedDate:q.prepared_date||'',authorizedBy:q.authorized_by||'',authorizedDate:q.authorized_date||'',machineIds:q.machine_ids||[],parts:q.parts||[],extraHours:q.extra_hours||0,extraTechs:q.extra_techs||0,diagnosis:q.diagnosis||0,toll:q.toll||0,otherExpense:q.other_expense||0,discountPct:q.discount_pct||0,subtotal:q.subtotal||0,vat:q.vat||0,grand:q.grand||0,status:q.status||'ร่าง',createdAt:q.created_at,updatedAt:q.updated_at};
+  return {id:q.id,caseId:q.case_id||'',caseTicket:q.case_ticket||'',customerId:q.customer_id||'',customer:q.customer||'',contact:q.contact||'',location:q.location||'',service:q.service||'OS',warrantyMode:q.warranty_mode||(q.warranty?'repair':'none'),warrantyMonths:q.warranty_months||12,distance:q.distance||0,distanceSource:q.distance_source||'manual',routeDurationMinutes:q.route_duration_minutes||0,pickupMode:q.pickup_mode||0,urgency:q.urgency||'normal',warranty:!!q.warranty,vatOn:q.vat_on!==false,delivery:q.delivery||'',note:q.delivery||'',payment:q.payment||'',purchaserName:q.purchaser_name||'',purchaserDate:q.purchaser_date||'',preparedBy:q.prepared_by||'',preparedDate:q.prepared_date||'',authorizedBy:q.authorized_by||'',authorizedDate:q.authorized_date||'',machineIds:q.machine_ids||[],parts:q.parts||[],extraHours:q.extra_hours||0,extraTechs:q.extra_techs||0,diagnosis:q.diagnosis||0,toll:q.toll||0,otherExpense:q.other_expense||0,discountPct:q.discount_pct||0,subtotal:q.subtotal||0,vat:q.vat||0,grand:q.grand||0,status:q.status||'ร่าง',createdAt:q.created_at,updatedAt:q.updated_at,
+   attachments:Array.isArray(q.attachments)?q.attachments:undefined};
  }
  function toQuotationDb(q){
   return {id:q.id,case_id:q.caseId||null,case_ticket:q.caseTicket||'',customer_id:q.customerId||null,customer:q.customer||'',contact:q.contact||'',location:q.location||'',service:q.service,warranty_mode:q.warrantyMode||'none',warranty_months:q.warrantyMonths||12,distance:q.distance||0,distance_source:q.distanceSource||'manual',route_duration_minutes:q.routeDurationMinutes||0,pickup_mode:q.pickupMode||0,urgency:q.urgency||'normal',warranty:!!q.warranty,vat_on:!!q.vatOn,delivery:q.delivery||'',payment:q.payment||'',purchaser_name:q.purchaserName||'',purchaser_date:q.purchaserDate||null,prepared_by:q.preparedBy||'',prepared_date:q.preparedDate||null,authorized_by:q.authorizedBy||'',authorized_date:q.authorizedDate||null,machine_ids:q.machineIds||[],parts:q.parts||[],extra_hours:q.extraHours||0,extra_techs:q.extraTechs||0,diagnosis:q.diagnosis||0,toll:q.toll||0,other_expense:q.otherExpense||0,discount_pct:q.discountPct||0,subtotal:q.subtotal||0,vat:q.vat||0,grand:q.grand||0,status:q.status||'ร่าง',created_at:q.createdAt,updated_at:q.updatedAt};
@@ -227,7 +228,7 @@
    machines:[],distance:0,distanceSource:'manual',travel:0,labor:0,parts:[],expenses:[],discount:0,
    vatOn:true,vatPct:num(c.vatPct)||7,note:'',payment:'ตามเงื่อนไข',
    preparedBy:userName(),preparedDate:todayISO(),authorizedBy:'',authorizedDate:todayISO(),
-   warrantyMonths:12,warrantyType:'standard'};
+   warrantyMonths:12,warrantyType:'standard',attachments:[]};
  }
  /* any quotation (from these pages or the old one) → the page model */
  function fromRecord(q){
@@ -243,6 +244,7 @@
   m.warrantyMonths=num(q.warrantyMonths)||12;
   m.warrantyType=meta.warrantyType||((settings().quoteWarrantyType||{})[q.id])||'standard';
   m.parts=(q.parts||[]).map(function(p){return normPart(p,c)}).filter(Boolean);
+  m.attachments=Array.isArray(q.attachments)?q.attachments.slice():[];
   if(metaOf(q)){
    m.expenses=(meta.expenses||[]).map(function(e){return {name:e.name||'',amount:num(e.amount)}});
    m.discount=num(meta.discount);m.travel=num(meta.travel);m.labor=num(meta.labor);
@@ -301,7 +303,8 @@
    extraHours:0,extraTechs:0,diagnosis:0,toll:0,otherExpense:t.expenses,discountPct:0,
    serviceFee:t.machines,emergency:0,travel:t.travel,pickup:0,labor:t.labor,partsTotal:t.parts,other:t.expenses,
    discount:t.discount,subtotal:t.subtotal,vat:t.vat,grand:t.grand,
-   status:m.status||'ร่าง',createdAt:m.createdAt||now,updatedAt:now};
+   status:m.status||'ร่าง',createdAt:m.createdAt||now,updatedAt:now,
+   attachments:(m.attachments||[]).slice(0,ATT_MAX)};
  }
 
  /* ------------------------------------------------------------------- save ---- */
@@ -325,7 +328,15 @@
    if(!c)return {ok:true,cloud:false,id:rec.id,rec:rec,first:first,message:'บันทึกในเครื่องนี้แล้ว (ยังไม่ได้เชื่อมต่อ Cloud)'};
    return withTimeout(c.from('quotations').upsert(toQuotationDb(rec))).then(function(r){
     if(r&&r.error)return {ok:true,cloud:false,id:rec.id,rec:rec,first:first,message:'บันทึกในเครื่องแล้ว แต่ส่งขึ้น Cloud ไม่สำเร็จ: '+r.error.message};
-    return {ok:true,cloud:true,id:rec.id,rec:rec,first:first,message:'บันทึก '+rec.id+' แล้ว'};
+    /* 2026-11-08: photos / files ride in quotations.attachments (supabase/19-quote-attachments.sql),
+       written in a second update exactly like js/157 so a database without the column still saves */
+    return withTimeout(c.from('quotations').update({attachments:rec.attachments||[]}).eq('id',rec.id)).then(function(a){
+     if(a&&a.error){
+      try{console.warn('quotation attachments not on the server (run supabase/19-quote-attachments.sql):',a.error.message)}catch(e){}
+      if((rec.attachments||[]).length)return {ok:true,cloud:true,id:rec.id,rec:rec,first:first,message:'บันทึก '+rec.id+' แล้ว แต่ไฟล์แนบยังอยู่ในเครื่องนี้เท่านั้น'};
+     }
+     return {ok:true,cloud:true,id:rec.id,rec:rec,first:first,message:'บันทึก '+rec.id+' แล้ว'};
+    },function(){return {ok:true,cloud:true,id:rec.id,rec:rec,first:first,message:'บันทึก '+rec.id+' แล้ว'}});
    },function(e){return {ok:true,cloud:false,id:rec.id,rec:rec,first:first,message:'บันทึกในเครื่องแล้ว แต่ส่งขึ้น Cloud ไม่สำเร็จ'}});
   });
  }
@@ -443,11 +454,44 @@
    +'<div class="quote-paper-summary"><div class="sum-row"><div style="text-align:right">Total</div><div><b>'+money(q.subtotal)+'</b></div></div>'
    +'<div class="sum-row"><div style="text-align:right">VAT '+(q.vatOn?num(meta.vatPct!=null?meta.vatPct:c.vatPct)+'%':'-')+'</div><div><b>'+money(q.vat)+'</b></div></div>'
    +'<div class="sum-row total"><div style="text-align:right">Grand Total</div><div><b>'+money(q.grand)+'</b></div></div></div>'
+   +paperPartPhotos(q)
+   +((q.attachments||[]).length?'<div style="font-size:11px;color:#475467;margin:8px 0">มีเอกสารแนบ '+q.attachments.length+' รายการ (ดูหน้าถัดไป)</div>':'')
    +'<div class="quote-paper-sign"><div><b>หมายเหตุเพิ่มเติม</b><div style="margin-top:7px;line-height:1.55">'+note+'</div></div>'
    +cell('ผู้อนุมัติ','Authorized by',au&&au.sig,(au&&au.name)||q.authorizedBy,thDate(q.authorizedDate))
    +cell('ผู้จัดทำ','Prepared by',pr&&pr.sig,(pr&&pr.name)||q.preparedBy,thDate(q.preparedDate))
    +cell('ลูกค้า','Customer',appr&&appr.sig,appr&&appr.name,appr&&appr.at?thDate(String(appr.at).slice(0,10)):'...............')
-   +'</div><div class="quote-paper-footer">กรุณาลงนามและส่งกลับมายัง '+esc(s.companyEmail||'-')+' เพื่อยืนยันใบเสนอราคานี้</div></div>';
+   +'</div><div class="quote-paper-footer">กรุณาลงนามและส่งกลับมายัง '+esc(s.companyEmail||'-')+' เพื่อยืนยันใบเสนอราคานี้</div>'
+   +paperAttachPage(q)+'</div>';
+ }
+ /* inline styles only: print() writes the paper into a new window with PRINT_CSS alone */
+ function paperPartPhotos(q){
+  var items=[];
+  (q.parts||[]).forEach(function(p){
+   if(!p||p.kind||!Array.isArray(p.photos)||!p.photos.length)return;
+   p.photos.forEach(function(src){items.push({src:src,name:p.name||'อะไหล่'})});
+  });
+  if(!items.length)return '';
+  return '<div class="quote-paper-photos" style="margin:12px 0;border:1px solid #cfd8ea;padding:10px;break-inside:avoid;page-break-inside:avoid">'
+   +'<div style="font-weight:700;font-size:12px;margin-bottom:8px;color:#0c225e">รูปอะไหล่ที่เสนอ / Spare Part Photos</div>'
+   +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+items.map(function(it){
+     return '<figure style="margin:0;text-align:center"><img src="'+esc(it.src)+'" alt="" style="width:100%;aspect-ratio:4/3;object-fit:contain;background:#f5f7fb;border:1px solid #e3eaf5">'
+      +'<figcaption style="font-size:10px;margin-top:3px;color:#33415c">'+esc(it.name)+'</figcaption></figure>';
+    }).join('')+'</div></div>';
+ }
+ function paperAttachPage(q){
+  var a=Array.isArray(q.attachments)?q.attachments:[];
+  if(!a.length)return '';
+  var imgs=a.filter(function(x){return x.kind==='image'}),docs=a.filter(function(x){return x.kind!=='image'});
+  return '<div class="quote-attach-page" style="break-before:page;page-break-before:always;margin-top:22px;padding-top:14px;border-top:2px dashed #c9d4ea">'
+   +'<div style="font-weight:800;font-size:16px;color:#0c225e;margin-bottom:10px">เอกสารแนบ / Attachments'+(q.id?' · '+esc(q.id):'')+'</div>'
+   +(imgs.length?'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">'+imgs.map(function(x,i){
+     return '<figure style="margin:0;break-inside:avoid;page-break-inside:avoid"><img src="'+esc(x.data)+'" alt="" style="width:100%;aspect-ratio:4/3;object-fit:contain;background:#f5f7fb;border:1px solid #e3eaf5">'
+      +'<figcaption style="font-size:11px;margin-top:4px;color:#33415c">'+(i+1)+'. '+esc(x.caption||x.name||'')+'</figcaption></figure>';
+    }).join('')+'</div>':'')
+   +(docs.length?'<div style="margin-top:14px;font-size:12px;color:#1d232f"><b>ไฟล์ประกอบ / Attached files</b><ul style="margin:6px 0 0 18px;padding:0">'
+     +docs.map(function(x){return '<li>'+esc(x.name)+' ('+(BADGE[x.kind]||'FILE')+', '+sizeLabel(x.size)+')'+(x.caption?' — '+esc(x.caption):'')+'</li>'}).join('')
+     +'</ul><div style="font-size:10.5px;color:#667085;margin-top:4px">ไฟล์เหล่านี้แนบมาพร้อมใบเสนอราคาในระบบ ขอรับไฟล์ได้จากเจ้าหน้าที่</div></div>':'')
+   +'</div>';
  }
  var PRINT_CSS='body{font-family:Arial,Tahoma,sans-serif;padding:18px;color:#1d232f}.quote-doc.official{max-width:1020px;margin:auto;border:1px solid #dadce8;padding:18px 22px;background:#fff}.quote-paper-header{display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start;padding-bottom:10px;border-bottom:2px solid #1748a5}.quote-paper-logo{width:210px;height:92px;object-fit:contain}.quote-paper-company{font-size:12px;line-height:1.5;color:#222}.quote-paper-company b{font-size:14px;color:#000}.quote-paper-title{text-align:center;font-size:22px;font-weight:800;margin:6px 0 10px;color:#111}.quote-paper-meta{display:grid;grid-template-columns:1.2fr .9fr;gap:18px;margin-bottom:8px}.quote-paper-block .row{display:grid;grid-template-columns:140px 1fr;gap:8px;margin-bottom:6px;font-size:13px}.quote-paper-block .label{font-weight:700;color:#21306e}.quote-paper-table table{width:100%;border-collapse:collapse;border:1px solid #444}.quote-paper-table th,.quote-paper-table td{border:1px solid #444;padding:7px 8px;font-size:12px;vertical-align:top}.quote-paper-table th{background:#f7f7fb;text-align:center}.quote-paper-table td.right{text-align:right}.quote-paper-remark{display:grid;grid-template-columns:90px 1fr;border:1px solid #444;border-top:0}.quote-paper-remark div{padding:8px;font-size:12px}.quote-paper-remark .label{font-weight:700;color:#21306e;border-right:1px solid #444}.quote-paper-summary{margin-left:auto;width:340px;border:1px solid #444;border-top:0}.quote-paper-summary .sum-row{display:grid;grid-template-columns:1fr 140px}.quote-paper-summary .sum-row>div{padding:6px 8px;border-top:1px solid #444;font-size:12px}.quote-paper-summary .sum-row b{text-align:right;display:block}.quote-paper-summary .sum-row.total{font-weight:800;color:#21306e}.quote-paper-sign{display:grid;grid-template-columns:1.1fr .9fr .9fr .9fr;border:1px solid #444;margin-top:12px}.quote-paper-sign>div{min-height:122px;padding:10px;border-right:1px solid #444;font-size:12px}.quote-paper-sign>div:last-child{border-right:0}.quote-paper-sign .sign-line{text-align:center;font-weight:700}.quote-paper-footer{margin-top:8px;font-size:11px;line-height:1.55;color:#333}@media print{body{padding:0}.quote-doc.official{border:0;max-width:none;margin:0}}';
  function print(q){
@@ -626,6 +670,112 @@
   setTimeout(function(){try{$('qcChatPerson').focus()}catch(e){}},30);
  }
 
+ /* ------------------------------------------------ photos and attached files ---- */
+ /* 2026-11-08 owner (checklist 23): the new pages get what the old page has — a 📷 per part row
+    (js/153: up to 4, longest side 1024 px) and "รูปและไฟล์แนบ" (js/157: images 1280 px, PDF / Excel /
+    Word up to 2.5 MB, 10 per quotation). Same shapes, so index.html's paper shows them too. */
+ var ATT_MAX=10,ATT_FILE_MAX=2.5*1024*1024,PART_PH_MAX=4;
+ function shrinkImage(file,side){
+  return new Promise(function(resolve,reject){
+   var url=URL.createObjectURL(file),img=new Image();
+   img.onload=function(){
+    var k=Math.min(1,side/Math.max(img.width,img.height)),cv=document.createElement('canvas');
+    cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    URL.revokeObjectURL(url);resolve(cv.toDataURL('image/jpeg',0.8));
+   };
+   img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('image'))};
+   img.src=url;
+  });
+ }
+ function readDataUrl(file){
+  return new Promise(function(resolve,reject){var r=new FileReader();r.onload=function(){resolve(String(r.result||''))};r.onerror=function(){reject(r.error)};r.readAsDataURL(file)});
+ }
+ function fileKind(t,name){
+  t=String(t||'');name=String(name||'').toLowerCase();
+  if(/^image\//.test(t))return 'image';
+  if(/pdf$/i.test(t)||/\.pdf$/.test(name))return 'pdf';
+  if(/sheet|excel|csv/i.test(t)||/\.(xlsx?|csv)$/.test(name))return 'xlsx';
+  if(/word|officedocument\.wordprocessing/i.test(t)||/\.docx?$/.test(name))return 'docx';
+  return '';
+ }
+ var BADGE={pdf:'PDF',xlsx:'XLSX',docx:'DOCX'};
+ function sizeLabel(n){n=Number(n)||0;return n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB'}
+ function bytesOf(data){var bin=atob(String(data||'').split(',')[1]||''),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
+ /* an image opens large on the page; a PDF in a new tab; Excel / Word download */
+ function openAttachment(a){
+  if(!a||!a.data)return;
+  if(a.kind==='image'||/^data:image\//.test(String(a.data))){
+   var lb=document.createElement('div');lb.className='qc-light';lb.setAttribute('role','dialog');lb.setAttribute('aria-label',a.name||'รูป');
+   lb.innerHTML='<img alt="">';lb.firstChild.src=a.data;lb.addEventListener('click',function(){lb.remove()});
+   document.body.appendChild(lb);return;
+  }
+  try{
+   var url=URL.createObjectURL(new Blob([bytesOf(a.data)],{type:a.type||'application/octet-stream'}));
+   if(a.kind==='pdf'){window.open(url,'_blank','noopener')}
+   else{var l=document.createElement('a');l.href=url;l.download=a.name||'file';document.body.appendChild(l);l.click();l.remove()}
+   setTimeout(function(){URL.revokeObjectURL(url)},60000);
+  }catch(e){toast('เปิดไฟล์ไม่ได้')}
+ }
+ function attachEditor(el,m,onChange){
+  if(!el)return {render:function(){}};
+  function by(){return userName()}
+  function html(){
+   var list=m.attachments||[],imgs=list.filter(function(a){return a.kind==='image'}),docs=list.filter(function(a){return a.kind!=='image'});
+   return (imgs.length?'<div class="qc-att-photos">'+imgs.map(function(a){
+     return '<figure class="qc-att-ph"><button type="button" class="qc-att-img" data-att-open="'+esc(a.id)+'" aria-label="ดูรูป '+esc(a.name)+'"><img src="'+esc(a.data)+'" alt=""></button>'
+      +'<button type="button" class="qc-att-x" data-att-rm="'+esc(a.id)+'" aria-label="เอารูปออก">✕</button>'
+      +'<input data-att-cap="'+esc(a.id)+'" maxlength="80" placeholder="คำอธิบายรูป" value="'+esc(a.caption||'')+'" aria-label="คำอธิบายรูป"></figure>';
+    }).join('')+'</div>':'')
+    +(docs.length?'<div class="qc-att-files">'+docs.map(function(a){
+     return '<div class="qc-att-file"><span class="qc-att-badge is-'+esc(a.kind)+'">'+(BADGE[a.kind]||'FILE')+'</span>'
+      +'<div class="qc-att-fmain"><button type="button" class="qc-att-name" data-att-open="'+esc(a.id)+'">'+esc(a.name)+'</button>'
+      +'<input data-att-cap="'+esc(a.id)+'" maxlength="80" placeholder="คำอธิบายไฟล์ (ถ้ามี)" value="'+esc(a.caption||'')+'" aria-label="คำอธิบายไฟล์"></div>'
+      +'<small>'+sizeLabel(a.size)+'</small><button type="button" class="qc-att-x2" data-att-rm="'+esc(a.id)+'" aria-label="เอาไฟล์ออก">✕</button></div>';
+    }).join('')+'</div>':'')
+    +(list.length?'':'<div class="qc-empty">ยังไม่มีไฟล์แนบ</div>')
+    +'<label class="qc-btn is-add qc-addrow qc-att-add'+(list.length>=ATT_MAX?' is-off':'')+'">📎 เพิ่มรูป / ไฟล์'
+    +'<input type="file" class="qc-att-input" multiple hidden accept="image/*,application/pdf,.pdf,.xls,.xlsx,.csv,.doc,.docx"'+(list.length>=ATT_MAX?' disabled':'')+'></label>'
+    +'<small class="qc-att-hint">รูป, PDF, Excel, Word · สูงสุด '+ATT_MAX+' ไฟล์ · ไฟล์ละไม่เกิน 2.5 MB · ออกเป็นหน้าเอกสารแนบต่อจากใบเสนอราคา</small>';
+  }
+  function render(){el.innerHTML=html()}
+  function add(files){
+   m.attachments=m.attachments||[];
+   return [].slice.call(files||[]).reduce(function(pr,file){
+    return pr.then(function(){
+     var k=fileKind(file.type,file.name);
+     if(!k){toast(file.name+' — แนบได้เฉพาะรูป PDF Excel หรือ Word');return}
+     if(m.attachments.length>=ATT_MAX){toast('แนบได้สูงสุด '+ATT_MAX+' ไฟล์');return}
+     var job=k==='image'?shrinkImage(file,1280).then(function(d){return {data:d,type:'image/jpeg'}})
+                        :readDataUrl(file).then(function(d){return {data:d,type:file.type||''}});
+     return job.then(function(o){
+      var size=Math.round((o.data.length-o.data.indexOf(',')-1)*0.75);
+      if(size>ATT_FILE_MAX){toast(file.name+' ใหญ่เกิน 2.5 MB');return}
+      m.attachments.push({id:'QA-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+       name:file.name,type:o.type,kind:k,size:size,data:o.data,caption:'',by:by(),at:new Date().toISOString()});
+     },function(){toast('อ่านไฟล์ '+file.name+' ไม่ได้')});
+    });
+   },Promise.resolve()).then(function(){render();onChange()});
+  }
+  el.addEventListener('change',function(e){var t=e.target;if(t&&t.classList.contains('qc-att-input')){add(t.files);t.value=''}});
+  el.addEventListener('click',function(e){
+   var rm=e.target.closest('[data-att-rm]');
+   if(rm){
+    var id=rm.getAttribute('data-att-rm'),a=(m.attachments||[]).filter(function(x){return x.id===id})[0];
+    if(a&&!confirm('เอา “'+(a.name||'ไฟล์')+'” ออก?'))return;
+    m.attachments=(m.attachments||[]).filter(function(x){return x.id!==id});render();onChange();return;
+   }
+   var op=e.target.closest('[data-att-open]');
+   if(op){var oid=op.getAttribute('data-att-open');openAttachment((m.attachments||[]).filter(function(x){return x.id===oid})[0])}
+  });
+  el.addEventListener('input',function(e){
+   var t=e.target;if(!t||!t.hasAttribute('data-att-cap'))return;
+   var a=(m.attachments||[]).filter(function(x){return x.id===t.getAttribute('data-att-cap')})[0];
+   if(a){a.caption=String(t.value||'').slice(0,80);onChange(true)}
+  });
+  return {render:render};
+ }
+
  /* -------------------------------------------------------- row editors ---- */
  function mkPct(){return num(cfg().markupStock)}
  /* Spare parts: name, quantity, a Stock switch PER ROW (on = cost + markupStock %, off = type the
@@ -639,10 +789,21 @@
    return '<div class="qc-line qc-part">'
     +'<div class="qc-field qc-f-name"><label for="pn'+i+'">ชื่ออะไหล่ / รหัส</label><input id="pn'+i+'" data-k="name" data-i="'+i+'" value="'+esc(p.name)+'" placeholder="เช่น สายพาน, หัวพ่น" autocomplete="off"></div>'
     +'<div class="qc-field"><label for="pq'+i+'">จำนวน</label><input id="pq'+i+'" data-k="qty" data-i="'+i+'" type="number" min="1" step="1" inputmode="numeric" value="'+esc(p.qty||1)+'"></div>'
-    +'<div class="qc-field"><label aria-hidden="true">&nbsp;</label><label class="qc-switch" title="Stock = ต้นทุน + '+mk+'%"><input type="checkbox" data-k="stock" data-i="'+i+'"'+(p.stock?' checked':'')+'><span class="trk" aria-hidden="true"></span>Stock '+mk+'%</label></div>'
+    +'<div class="qc-field"><label aria-hidden="true">&nbsp;</label><label class="qc-switch is-box" title="Stock = ต้นทุน + '+mk+'%"><input type="checkbox" data-k="stock" data-i="'+i+'"'+(p.stock?' checked':'')+'><span class="trk" aria-hidden="true"></span>Stock '+mk+'%</label></div>'
     +price
     +'<div class="qc-field"><label>รวม</label><div class="qc-amount" data-line="'+i+'">'+money(line)+'</div></div>'
-    +'<button type="button" class="qc-x" data-del="'+i+'" aria-label="ลบอะไหล่แถว '+(i+1)+'">×</button></div>';
+    +'<button type="button" class="qc-x" data-del="'+i+'" aria-label="ลบอะไหล่แถว '+(i+1)+'">×</button>'
+    +photoStrip(p,i)+'</div>';
+  }
+  /* 📷 per part, up to PART_PH_MAX (js/153's rule); the photos go on the quotation paper */
+  function photoStrip(p,i){
+   var ph=Array.isArray(p.photos)?p.photos:[];
+   return '<div class="qc-pph">'
+    +ph.map(function(src,k){return '<span class="qc-pph-th"><button type="button" class="qc-pph-img" data-pph-open="'+i+'|'+k+'" aria-label="ดูรูปอะไหล่"><img src="'+esc(src)+'" alt=""></button>'
+      +'<button type="button" class="qc-pph-x" data-pph-del="'+i+'|'+k+'" aria-label="ลบรูปอะไหล่">✕</button></span>'}).join('')
+    +(ph.length<PART_PH_MAX?'<label class="qc-pph-add" title="แนบรูปอะไหล่ (สูงสุด '+PART_PH_MAX+' รูป)">📷 รูปอะไหล่'+(ph.length?' <b>'+ph.length+'</b>':'')
+      +'<input type="file" accept="image/*" multiple hidden data-pph="'+i+'"></label>':'<small class="qc-unit">ครบ '+PART_PH_MAX+' รูปแล้ว</small>')
+    +'</div>';
   }
   function render(){el.innerHTML=m.parts.length?m.parts.map(html).join(''):'<div class="qc-empty">ยังไม่มีรายการอะไหล่</div>'}
   function lines(){
@@ -659,7 +820,17 @@
    lines();onChange();
   });
   el.addEventListener('change',function(e){
-   var t=e.target,i=Number(t.getAttribute('data-i')),p=m.parts[i];
+   var t=e.target;
+   if(t.hasAttribute('data-pph')){
+    var pi=Number(t.getAttribute('data-pph')),pp=m.parts[pi];if(!pp)return;
+    pp.photos=Array.isArray(pp.photos)?pp.photos:[];
+    var room=PART_PH_MAX-pp.photos.length,files=[].slice.call(t.files||[]).filter(function(f){return /^image\//.test(f.type)});
+    if(files.length>room)toast('แนบได้อีก '+room+' รูป');
+    files.slice(0,room).reduce(function(pr,f){return pr.then(function(){return shrinkImage(f,1024).then(function(d){pp.photos.push(d)},function(){toast('อ่านรูป '+f.name+' ไม่ได้')})})},Promise.resolve())
+     .then(function(){render();onChange()});
+    t.value='';return;
+   }
+   var i=Number(t.getAttribute('data-i')),p=m.parts[i];
    if(t.getAttribute('data-k')!=='stock'||!p)return;
    var was=unitPrice(p);p.stock=t.checked;
    if(!p.stock&&!p.price)p.price=was;              /* switching off keeps the price it had */
@@ -667,13 +838,22 @@
    var f=$((p.stock?'pc':'pp')+i);if(f)f.focus();
   });
   el.addEventListener('click',function(e){
+   var po=e.target.closest('[data-pph-open]');
+   if(po){var a=po.getAttribute('data-pph-open').split('|'),pa=m.parts[Number(a[0])];if(pa&&pa.photos)openAttachment({kind:'image',data:pa.photos[Number(a[1])],name:pa.name});return}
+   var pd=e.target.closest('[data-pph-del]');
+   if(pd){
+    if(!confirm('ต้องการลบรูปอะไหล่นี้หรือไม่?'))return;
+    var d=pd.getAttribute('data-pph-del').split('|'),pq=m.parts[Number(d[0])];
+    if(pq&&Array.isArray(pq.photos))pq.photos.splice(Number(d[1]),1);
+    render();onChange();return;
+   }
    var b=e.target.closest('[data-del]');if(!b)return;
    var i=Number(b.getAttribute('data-del')),p=m.parts[i];
    if(p&&(p.name||p.cost||p.price)&&!confirm('ลบ “'+(p.name||'แถวที่ '+(i+1))+'” ?'))return;
    m.parts.splice(i,1);render();onChange();
   });
   if(addBtn)addBtn.addEventListener('click',function(){
-   m.parts.push({name:'',qty:1,stock:true,cost:0,price:0,photos:[]});render();onChange();
+   m.parts.push({name:'',qty:1,stock:false,cost:0,price:0,photos:[]});render();onChange();
    var f=$('pn'+(m.parts.length-1));if(f)f.focus();
   });
   return {render:render};
@@ -748,7 +928,7 @@
     chat. Element ids are the same on every page (qcSave, qcDiscount, sGrand …). The page passes
     its own editors and summary rows. */
  function page(o){
-  var type=o.type,m=blankModel(type),dirty=false,saving=false,lastRec=null,pick=null;
+  var type=o.type,m=blankModel(type),dirty=false,saving=false,lastRec=null,pick=null,att=null;
   function set(id,v){var e=$(id);if(e)e.textContent=v}
   function sums(){
    var t=totals(m);
@@ -772,6 +952,7 @@
    $('qcDiscount').value=m.discount||0;$('qcNote').value=m.note||'';
    $('qcVatOn').checked=!!m.vatOn;$('qcVatPct').value=m.vatPct;$('qcVatPct').disabled=!m.vatOn;
    if(o.fill)o.fill(m,api);
+   if(att)att.render();
    sums();head();
    if($('qcPrepared'))staffSelect($('qcPrepared'),m.preparedBy);
    if($('qcAuthorized'))staffSelect($('qcAuthorized'),m.authorizedBy);
@@ -813,6 +994,7 @@
 
   function start(){
    pick=picker($('qcPicker'),m,function(what,c){if(o.onPick)o.onPick(what,c,m,api);touch(true);head()});
+   att=attachEditor($('qcAttach'),m,touch);
    if(o.init)o.init(m,api);
    fillAll();
    refresh().then(function(ok){if(ok){if(pick)pick.refill();if(o.onRefresh)o.onRefresh(m,api)}});
@@ -852,7 +1034,7 @@
   totals:totals,unitPrice:unitPrice,save:save,expenseOptions:expenseOptions,addExpenseOptions:addExpenseOptions,
   chatPost:chatPost,chatDialog:chatDialog,rows:rows,rowsHTML:rowsHTML,remarkText:remarkText,paperHTML:paperHTML,print:print,
   mapsUrl:mapsUrl,travelFee:travelFee,toast:toast,pageUrl:pageUrl,typeBar:typeBar,picker:picker,staffSelect:staffSelect,
-  partsEditor:partsEditor,expensesEditor:expensesEditor,machinesEditor:machinesEditor,page:page,
+  partsEditor:partsEditor,expensesEditor:expensesEditor,machinesEditor:machinesEditor,attachEditor:attachEditor,openAttachment:openAttachment,page:page,
   combo:combo,useOldPage:function(){try{return localStorage.getItem(K.oldPage)==='1'}catch(e){return false}}
  };
 })();

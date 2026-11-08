@@ -71,7 +71,7 @@
  /* ------------------------------------------------------------------- state ---- */
  var me={id:'',name:''},people=[],byPerson={};
  var dms=[],dmState='idle',caseLast={},caseState='idle';
- var groups=[],gMembers={},gRead={},gMsgs=[],groupState='idle';
+ var groups=[],gMembers={},gRead={},gAdded={},gMsgs=[],groupState='idle';
  var view={tab:'dm',open:null};      /* open: {kind:'dm'|'case'|'group',id} | {kind:'gform',id} */
  var thread=[],threadState='idle',pending=[],sending=false;
  var isOpen=false;
@@ -124,6 +124,10 @@
   '.ch-mem .ch-av{width:32px;height:32px;font-size:12px}',
   '.ch-mem small{display:block;color:var(--muted,#6b7d9e);font-size:12px}',
   '.ch-fbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}',
+  '.ch-rename{display:flex;gap:8px;align-items:center}.ch-rename input{flex:1;min-width:0}',
+  '.ch-owner-note{margin:10px 0 0;font-size:12.5px;color:var(--muted,#6b7d9e);line-height:1.5}',
+  '.ch-sys{display:flex;justify-content:center;margin:8px 0}',
+  '.ch-sys span{background:#eef3fb;color:#4a5b7d;border-radius:999px;padding:4px 12px;font-size:12px;text-align:center;max-width:90%}',
   '.ch-btn{height:38px;border-radius:10px;border:1px solid var(--line,#e2ecfb);background:#fff;font:inherit;font-weight:700;font-size:13px;color:var(--imode-navy,#0c225e);padding:0 12px;cursor:pointer}',
   '.ch-btn.is-primary{background:var(--imode-orange,#f27a1a);border-color:var(--imode-orange,#f27a1a);color:#fff}',
   '.ch-btn.is-danger{color:#c0262d;border-color:#f3c4c6}',
@@ -268,21 +272,22 @@
  /* -------------------------------------------------------------- groups ---- */
  function loadGroups(c){
   return Promise.all([
-   Promise.resolve(c.from(GT).select('id,name,created_by,created_at,updated_at').limit(500)),
-   Promise.resolve(c.from(GM).select('group_id,user_id,last_read_at').limit(5000))
+   Promise.resolve(c.from(GT).select('id,name,created_by,owner_id,created_at,updated_at').limit(500)),
+   Promise.resolve(c.from(GM).select('group_id,user_id,added_at,last_read_at').limit(5000))
   ]).then(function(rs){
    var g=rs[0],m=rs[1];
    if((g&&g.error)||(m&&m.error)){groupState=missingTable((g&&g.error)||(m&&m.error))?'nosql':'error';return}
-   gMembers={};gRead={};
+   gMembers={};gRead={};gAdded={};
    ((m&&m.data)||[]).forEach(function(x){
     (gMembers[x.group_id]=gMembers[x.group_id]||[]).push(x.user_id);
+    (gAdded[x.group_id]=gAdded[x.group_id]||{})[x.user_id]=x.added_at||'';
     if(x.user_id===me.id)gRead[x.group_id]=x.last_read_at||'';
    });
    /* only the groups I am in; an admin also sees the others in the database, not listed here */
    groups=((g&&g.data)||[]).filter(function(x){return Object.prototype.hasOwnProperty.call(gRead,x.id)});
    var ids=groups.map(function(x){return x.id});
    if(!ids.length){gMsgs=[];groupState='ok';return}
-   return Promise.resolve(c.from(GX).select('id,group_id,sender_id,sender_name,body,created_at').in('group_id',ids)
+   return Promise.resolve(c.from(GX).select('id,group_id,sender_id,sender_name,body,kind,created_at').in('group_id',ids)
     .order('created_at',{ascending:false}).limit(1000)).then(function(r){
     if(r&&r.error){groupState=missingTable(r.error)?'nosql':'error';return}
     gMsgs=(r&&r.data)||[];groupState='ok';
@@ -290,8 +295,20 @@
   },function(){groupState='error'});
  }
  function findGroup(id){return groups.filter(function(g){return g.id===id})[0]||null}
- /* the UI's guess; the database (chat_can_manage) is what actually decides */
- function canManage(g){var u=user();return !!g&&(g.created_by===me.id||!!(u&&/admin|manager|coordinator/i.test(String(u.role||''))))}
+ /* 2026-11-08 owner (checklist 32): only the group's owner adds / removes people, renames and
+    deletes — a system admin who is not the owner cannot. The database (chat_can_manage in
+    22-group-chat.sql) is what actually decides; this only decides what to show. */
+ function ownerOf(g){return g?(g.owner_id||g.created_by||''):''}
+ function canManage(g){return !!g&&ownerOf(g)===me.id}
+ /* who takes over when the owner leaves: the member who has been in the group longest (same
+    order as the server's trigger) */
+ function nextOwner(gid,leaving){
+  var ad=gAdded[gid]||{};
+  return (gMembers[gid]||[]).filter(function(u){return u!==leaving}).sort(function(a,b){
+   var x=ad[a]||'',y=ad[b]||'';return x<y?-1:x>y?1:(a<b?-1:a>b?1:0);
+  })[0]||'';
+ }
+ function personName(u){return (byPerson[u]||{}).name||'สมาชิก'}
  function groupRows(){
   return groups.map(function(g){
    var last=null,unread=0,since=gRead[g.id]||'';
@@ -480,6 +497,7 @@
   thread.forEach(function(m){
    var t=Date.parse(m.created_at),dk=dayKey(t);
    if(dk!==last){html+='<div class="ch-day">'+esc(dayLabel(t))+'</div>';last=dk}
+   if(m.kind==='system'){html+='<div class="ch-sys" data-id="'+esc(m.id)+'"><span>'+esc(m.body)+' · '+hhmm(t)+'</span></div>';return}
    var isMine=(m.sender_id||m.author_id)===me.id,name=m.sender_name||m.author_name||'พนักงาน';
    var ph=Array.isArray(m.photos)?m.photos.filter(function(p){return typeof p==='string'&&/^data:image\//.test(p)}):[];
    var isG=view.open.kind==='group';
@@ -507,7 +525,7 @@
     .or('and(sender_id.eq.'+me.id+',recipient_id.eq.'+o.id+'),and(sender_id.eq.'+o.id+',recipient_id.eq.'+me.id+')')
     .order('created_at',{ascending:true}).limit(500);
   }else if(o.kind==='group'){
-   q=c.from(GX).select('id,group_id,body,photos,sender_id,sender_name,created_at').eq('group_id',o.id)
+   q=c.from(GX).select('id,group_id,body,photos,kind,sender_id,sender_name,created_at').eq('group_id',o.id)
     .order('created_at',{ascending:true}).limit(500);
   }else{
    q=c.from(CM).select('id,case_id,body,photos,author_id,author_name,created_at').eq('case_id',o.id)
@@ -635,6 +653,7 @@
    else if(k==='gnone'){view.open.pick={};view.open.pick[me.id]=true;keepName();renderGroupForm()}
    else if(k==='gsave')saveGroup();
    else if(k==='gleave')leaveGroup();
+   else if(k==='grename')renameGroup();
    else if(k==='gdelete')deleteGroup();
    else if(k==='tag')tagPop();
    else if(k==='tagins')insertTag(a.getAttribute('data-name'));
@@ -671,12 +690,17 @@
   var o=view.open,g=o.id?findGroup(o.id):null,manage=!g||canManage(g),fq=o.fq||'';
   if(o.name==null)o.name=g?g.name:'';
   var list=people.filter(function(p){return match(fq,p.name+' '+p.role)});
+  var owner=ownerOf(g);
   panel.innerHTML='<div class="ch-head"><button type="button" class="ch-icon" data-ch="back" aria-label="กลับ" title="กลับ">‹</button>'
    +'<div class="ch-sp"><b>'+(g?(manage?'ตั้งค่ากลุ่ม':'สมาชิกกลุ่ม'):'สร้างกลุ่มใหม่')+'</b><small id="chGCount">'+pickedCount(o)+' คนในกลุ่ม · เฉพาะสมาชิกเห็นข้อความ</small></div>'
    +'<button type="button" class="ch-icon" data-ch="close" aria-label="ปิดแชท" title="ปิด">✕</button></div>'
    +'<div class="ch-form">'
    +'<label class="ch-lb" for="chGName">ชื่อกลุ่ม</label>'
-   +'<input type="text" id="chGName" maxlength="80" placeholder="เช่น ทีมช่างภาคตะวันออก" value="'+esc(o.name)+'"'+(manage?'':' disabled')+'>'
+   /* 2026-11-08 (checklist 32): renaming has its own button at the top, so it is not hidden in the save */
+   +(g&&manage
+     ?'<div class="ch-rename"><input type="text" id="chGName" maxlength="80" value="'+esc(o.name)+'"><button type="button" class="ch-btn" data-ch="grename" id="chGRename">✏ เปลี่ยนชื่อ</button></div>'
+     :'<input type="text" id="chGName" maxlength="80" placeholder="เช่น ทีมช่างภาคตะวันออก" value="'+esc(o.name)+'"'+(manage?'':' disabled')+'>')
+   +(g&&!manage?'<p class="ch-owner-note">เฉพาะเจ้าของกลุ่ม ('+esc(personName(owner))+') เพิ่มคน เอาคนออก และเปลี่ยนชื่อกลุ่มได้</p>':'')
    +'<label class="ch-lb" for="chGQ">สมาชิก'+(manage?' (เลือกทีละคน หรือเลือกทั้งหมด)':'')+'</label>'
    +(manage?'<div class="ch-fbar"><button type="button" class="ch-btn" data-ch="gall">เลือกทั้งหมด</button><button type="button" class="ch-btn" data-ch="gnone">ล้าง</button></div>':'')
    +'<input type="text" id="chGQ" placeholder="ค้นหาชื่อคน" value="'+esc(fq)+'" aria-label="ค้นหาชื่อคน">'
@@ -685,12 +709,12 @@
      if(!manage&&!on)return '';
      return '<label class="ch-mem"><input type="checkbox" data-ch-pick="'+esc(p.id)+'"'+(on?' checked':'')+((!manage||self)?' disabled':'')+'>'
       +'<span class="ch-av" style="background:'+color(p.name)+'" aria-hidden="true">'+esc(initials(p.name))+'</span>'
-      +'<span><b>'+esc(p.name)+(self?' (คุณ)':'')+(g&&g.created_by===p.id?' · ผู้สร้างกลุ่ม':'')+'</b><small>'+esc(p.role)+'</small></span></label>';
+      +'<span><b>'+esc(p.name)+(self?' (คุณ)':'')+(g&&owner===p.id?' · เจ้าของกลุ่ม':'')+'</b><small>'+esc(p.role)+'</small></span></label>';
     }).join('')+'</div></div>'
    +'<div class="ch-ffoot"><span>'
    +(g?'<button type="button" class="ch-btn is-danger" data-ch="gleave">ออกจากกลุ่ม</button>':'')
    +(g&&manage?' <button type="button" class="ch-btn is-danger" data-ch="gdelete">ลบกลุ่ม</button>':'')+'</span>'
-   +(manage?'<button type="button" class="ch-btn is-primary" data-ch="gsave" id="chGSave">'+(g?'บันทึก':'สร้างกลุ่ม')+'</button>':'')+'</div>';
+   +(manage?'<button type="button" class="ch-btn is-primary" data-ch="gsave" id="chGSave">'+(g?'บันทึกสมาชิก':'สร้างกลุ่ม')+'</button>':'')+'</div>';
   var gq=document.getElementById('chGQ');
   gq.addEventListener('input',function(){keepName();o.fq=gq.value;renderGroupForm();var x=document.getElementById('chGQ');x.focus();x.setSelectionRange(x.value.length,x.value.length)});
   document.getElementById('chGList').addEventListener('change',function(e){
@@ -707,31 +731,58 @@
   if(!name){alert('กรุณาตั้งชื่อกลุ่ม');var n=document.getElementById('chGName');if(n)n.focus();return}
   var want=Object.keys(o.pick).filter(function(k){return o.pick[k]&&k!==me.id});
   var btn=document.getElementById('chGSave');if(btn){btn.disabled=true;btn.textContent='กำลังบันทึก...'}
-  function fail(msg){if(btn){btn.disabled=false;btn.textContent=o.id?'บันทึก':'สร้างกลุ่ม'}alert(msg)}
+  function fail(msg){if(btn){btn.disabled=false;btn.textContent=o.id?'บันทึกสมาชิก':'สร้างกลุ่ม'}alert(msg)}
   var step;
   if(!o.id){
    step=Promise.resolve(c.from(GT).insert({name:name}).select('id,name,created_by,created_at,updated_at')).then(function(r){
     if(r&&r.error)throw r.error;
     var g=(r&&r.data||[])[0];if(!g)throw new Error('สร้างกลุ่มไม่สำเร็จ');
     groups.unshift(g);gMembers[g.id]=[me.id];gRead[g.id]=new Date().toISOString();o.id=g.id;
+    gAdded[g.id]={};gAdded[g.id][me.id]=gRead[g.id];
     return want.length?Promise.resolve(c.from(GM).insert(want.map(function(u){return {group_id:g.id,user_id:u}}))).then(function(x){if(x&&x.error)throw x.error;gMembers[g.id]=[me.id].concat(want)}):null;
    });
   }else{
    var had=(gMembers[o.id]||[]).filter(function(u){return u!==me.id});
    var add=want.filter(function(u){return had.indexOf(u)<0}),drop=had.filter(function(u){return want.indexOf(u)<0});
    var g0=findGroup(o.id);
+   /* 2026-11-08 (checklist 32): ask before anyone is taken out */
+   if(drop.length&&!confirm('เอาคนเหล่านี้ออกจากกลุ่ม?\n\n'+drop.map(function(u){return '• '+personName(u)}).join('\n')+'\n\nเขาจะไม่เห็นกลุ่มและข้อความอีก จนกว่าจะเพิ่มกลับเข้ามา')){
+    if(btn){btn.disabled=false;btn.textContent='บันทึกสมาชิก'}return;
+   }
    step=Promise.all([
     g0&&g0.name!==name?Promise.resolve(c.from(GT).update({name:name}).eq('id',o.id)).then(function(r){if(r&&r.error)throw r.error;g0.name=name}):null,
     add.length?Promise.resolve(c.from(GM).insert(add.map(function(u){return {group_id:o.id,user_id:u}}))).then(function(r){if(r&&r.error)throw r.error}):null,
     drop.length?Promise.resolve(c.from(GM).delete().eq('group_id',o.id).in('user_id',drop)).then(function(r){if(r&&r.error)throw r.error}):null
-   ]).then(function(){gMembers[o.id]=[me.id].concat(want)});
+   ]).then(function(){
+    gMembers[o.id]=[me.id].concat(want);
+    var ad=gAdded[o.id]=gAdded[o.id]||{},now=new Date().toISOString();
+    add.forEach(function(u){ad[u]=now});drop.forEach(function(u){delete ad[u]});
+   });
   }
   step.then(function(){openThread('group',o.id)},function(e){fail('บันทึกกลุ่มไม่ได้: '+((e&&e.message)||'เชื่อมต่อไม่ได้'))});
  }
+ function renameGroup(){
+  var c=db(),o=view.open;if(!c||!o||!o.id)return;
+  var g=findGroup(o.id),n=document.getElementById('chGName'),name=String(n?n.value:'').trim();
+  if(!name){alert('กรุณาตั้งชื่อกลุ่ม');if(n)n.focus();return}
+  if(g&&g.name===name){alert('ชื่อกลุ่มยังเหมือนเดิม');return}
+  var b=document.getElementById('chGRename');if(b){b.disabled=true;b.textContent='กำลังบันทึก...'}
+  Promise.resolve(c.from(GT).update({name:name}).eq('id',o.id).select('id,name')).then(function(r){
+   if(b){b.disabled=false;b.textContent='✏ เปลี่ยนชื่อ'}
+   if(r&&r.error){alert('เปลี่ยนชื่อไม่ได้: '+r.error.message);return}
+   if(!r||!r.data||!r.data.length){alert('เปลี่ยนชื่อไม่ได้: เปลี่ยนได้เฉพาะเจ้าของกลุ่ม');return}
+   if(g)g.name=r.data[0].name;o.name=r.data[0].name;
+   alert('เปลี่ยนชื่อกลุ่มเป็น "'+o.name+'" แล้ว');
+  },function(){if(b){b.disabled=false;b.textContent='✏ เปลี่ยนชื่อ'}alert('เปลี่ยนชื่อไม่ได้: เชื่อมต่อไม่ได้')});
+ }
  function leaveGroup(){
   var c=db(),o=view.open;if(!c||!o||!o.id)return;
-  var g=findGroup(o.id);
-  if(!confirm('ออกจากกลุ่ม "'+(g?g.name:'')+'"?\nคุณจะไม่เห็นข้อความในกลุ่มนี้อีก จนกว่าจะมีคนเพิ่มกลับเข้ามา'))return;
+  var g=findGroup(o.id),others=(gMembers[o.id]||[]).filter(function(u){return u!==me.id});
+  /* 2026-11-08 owner (a/b): the last one out deletes the group; the owner leaving hands it over */
+  var msg='ออกจากกลุ่ม "'+(g?g.name:'')+'"?\nคุณจะไม่เห็นข้อความในกลุ่มนี้อีก จนกว่าจะมีคนเพิ่มกลับเข้ามา';
+  if(!others.length)msg='คุณเป็นสมาชิกคนสุดท้ายของกลุ่ม "'+(g?g.name:'')+'"\nถ้าออก กลุ่มและข้อความทั้งหมดจะถูกลบ กู้คืนไม่ได้\n\nออกจากกลุ่มและลบกลุ่ม?';
+  else if(canManage(g))msg='ออกจากกลุ่ม "'+(g?g.name:'')+'"?\nคุณเป็นเจ้าของกลุ่ม สิทธิ์ดูแลกลุ่มจะโอนให้ '+personName(nextOwner(o.id,me.id))+' (อยู่ในกลุ่มนานที่สุด)\nคุณจะไม่เห็นข้อความในกลุ่มนี้อีก';
+  if(!confirm(msg))return;
   Promise.resolve(c.from(GM).delete().eq('group_id',o.id).eq('user_id',me.id)).then(function(r){
    if(r&&r.error){alert('ออกจากกลุ่มไม่ได้: '+r.error.message);return}
    groups=groups.filter(function(x){return x.id!==o.id});delete gRead[o.id];
@@ -744,7 +795,7 @@
   if(!confirm('ลบกลุ่ม "'+(g?g.name:'')+'" และข้อความทั้งหมดในกลุ่ม?\nลบแล้วกู้คืนไม่ได้'))return;
   Promise.resolve(c.from(GT).delete().eq('id',o.id).select('id')).then(function(r){
    if(r&&r.error){alert('ลบกลุ่มไม่ได้: '+r.error.message);return}
-   if(!r||!r.data||!r.data.length){alert('ลบกลุ่มไม่ได้: ลบได้เฉพาะผู้สร้างกลุ่มหรือแอดมิน');return}
+   if(!r||!r.data||!r.data.length){alert('ลบกลุ่มไม่ได้: ลบได้เฉพาะเจ้าของกลุ่ม');return}
    groups=groups.filter(function(x){return x.id!==o.id});gMsgs=gMsgs.filter(function(m){return m.group_id!==o.id});delete gRead[o.id];
    view.open=null;view.tab='group';render();badge();
   });

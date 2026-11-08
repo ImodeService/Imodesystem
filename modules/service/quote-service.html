@@ -11,7 +11,7 @@
 <style id="scdGateStyle">html.scd-gate body{visibility:hidden}</style>
 <script>document.documentElement.classList.add('scd-gate')</script>
 <link rel="icon" href="./assets/Iconservice.png">
-<link rel="stylesheet" href="./css/quote-pages.css?v=20261107">
+<link rel="stylesheet" href="./css/quote-pages.css?v=20261108">
 <!--
   ใบเสนอราคา Service (QS) — 2026-11-07. One of three pages (quote-service / quote-parts /
   quote-warranty); shared code in js/quote-common.js. Machines with a price that can be edited
@@ -101,6 +101,10 @@
           <div class="qc-field"><label for="qcAuthorized">ผู้อนุมัติ</label><select id="qcAuthorized"></select></div>
         </div></div>
       </section>
+      <section class="qc-card" aria-labelledby="hAttach">
+        <header><div><h3 id="hAttach">รูปและไฟล์แนบ</h3><p>รูปหน้างาน แบบ หรือเอกสารประกอบ</p></div></header>
+        <div class="qc-body" id="qcAttach"></div>
+      </section>
     </div>
 
     <aside class="qc-card qc-sum" aria-labelledby="hSum">
@@ -136,7 +140,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./js/143-v70CaseDetailGateScript.js"></script>
 <script src="./js/35-v70ComboBoxScript.js"></script>
-<script src="./js/quote-common.js?v=20261107"></script>
+<script src="./js/quote-common.js?v=20261108"></script>
 <script>
 (function(){
 'use strict';

@@ -80,10 +80,18 @@
   return true;
  };
 
+ /* 2026-11-08 owner (checklist 8): Field Service is the technicians' tile only. Admins and
+    office staff open a job's หน้างานช่าง from the case page, so the tile is not on their Home
+    (quick board or โมดูลทั้งหมด). The sidebar entry is already hidden for everyone (js/44). */
+ function fieldTileForMe(){
+  const r=String((currentUser&&(currentUser.permissionRole||currentUser.role))||'');
+  return /technician|r&d|engineer|ช่าง|lead|supervisor|หัวหน้า/i.test(r);
+ }
  function homeModules(){
   const perms=effectivePermissions();
-  if(!perms)return MODULES.slice();
-  return MODULES.filter(m=>m.perm?perms.includes(m.perm):backOfficeRole(perms));
+  const list=MODULES.filter(m=>m.page!=='field-service'||fieldTileForMe());
+  if(!perms)return list;
+  return list.filter(m=>m.perm?perms.includes(m.perm):backOfficeRole(perms));
  }
 
  function isCustomerSession(){return !!(currentUser&&currentUser.accountType==='customer')}

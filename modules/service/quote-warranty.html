@@ -11,7 +11,7 @@
 <style id="scdGateStyle">html.scd-gate body{visibility:hidden}</style>
 <script>document.documentElement.classList.add('scd-gate')</script>
 <link rel="icon" href="./assets/Iconservice.png">
-<link rel="stylesheet" href="./css/quote-pages.css?v=20261107">
+<link rel="stylesheet" href="./css/quote-pages.css?v=20261108">
 <!--
   ใบเสนอราคาประกัน (QW) — 2026-11-07. One of three pages (quote-service / quote-parts /
   quote-warranty); shared code in js/quote-common.js. Package length (6/12/24 months) and type,
@@ -53,8 +53,9 @@
         </div></div>
       </section>
 
-      <section class="qc-card" aria-labelledby="hMach">
-        <header><div><h3 id="hMach">เครื่องที่ทำประกัน</h3><p>ราคาตั้งต้นตามราคาแพ็กเกจในตั้งค่า แก้ไขราคาได้ทุกแถว</p></div></header>
+      <section class="qc-card" aria-labelledby="hMach" id="qwMachCard">
+        <header><div><h3 id="hMach">เครื่องที่ทำประกัน</h3><p>ราคาตั้งต้นตามราคาแพ็กเกจในตั้งค่า แก้ไขราคาได้ทุกแถว</p>
+          <p class="qc-err" id="qwMachErr" role="alert" hidden>⚠ กรุณาเลือกเครื่องที่ทำประกันอย่างน้อย 1 เครื่อง</p></div></header>
         <div class="qc-body">
           <div id="qsMach" class="qc-lines"></div>
           <button type="button" class="qc-btn is-add qc-addrow" id="qsAddMach">＋ เพิ่มเครื่อง</button>
@@ -75,6 +76,10 @@
           <div class="qc-field"><label for="qcPrepared">ผู้จัดทำ</label><select id="qcPrepared"></select></div>
           <div class="qc-field"><label for="qcAuthorized">ผู้อนุมัติ</label><select id="qcAuthorized"></select></div>
         </div></div>
+      </section>
+      <section class="qc-card" aria-labelledby="hAttach">
+        <header><div><h3 id="hAttach">รูปและไฟล์แนบ</h3><p>รูปหน้างาน แบบ หรือเอกสารประกอบ</p></div></header>
+        <div class="qc-body" id="qcAttach"></div>
       </section>
     </div>
 
@@ -107,7 +112,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./js/143-v70CaseDetailGateScript.js"></script>
 <script src="./js/35-v70ComboBoxScript.js"></script>
-<script src="./js/quote-common.js?v=20261107"></script>
+<script src="./js/quote-common.js?v=20261108"></script>
 <script>
 (function(){
 'use strict';
@@ -116,6 +121,11 @@ var NOTE='ความคุ้มครองตามประเภทปร�
 var mach,M=null;
 function $(id){return document.getElementById(id)}
 /* the package price per machine (ตั้งค่า Warranty, settings.warrantyConfig.packagePrices) */
+function machErr(on){
+  var card=$('qwMachCard'),msg=$('qwMachErr');if(!card||!msg)return;
+  card.classList.toggle('is-invalid',!!on);msg.hidden=!on;
+  if(on)try{card.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){card.scrollIntoView()}
+}
 function rate(){var p=(QC.settings().warrantyConfig||{}).packagePrices||{};return num(p[M?M.warrantyMonths:12])}
 QC.page({
   type:'warranty',
@@ -123,13 +133,18 @@ QC.page({
     m.note=NOTE;M=m;
     if(c&&c.machineId)m.machines.push({id:c.machineId,label:QC.machineLabel(QC.machine(c.machineId))||c.machine||'',price:rate()});
   },
+  /* 2026-11-08 owner (checklist 18): the 4-second toast alone was easy to miss, so the machines box
+     itself turns red with the message under its heading and the page scrolls to it. */
   validate:function(m){
-    if(!m.machines.some(function(x){return x.id}))return 'กรุณาเลือกเครื่องที่ทำประกันอย่างน้อย 1 เครื่อง';
+    if(!m.machines.some(function(x){return x.id})){machErr(true);return 'กรุณาเลือกเครื่องที่ทำประกันอย่างน้อย 1 เครื่อง'}
     return '';
   },
   init:function(m,api){
     M=m;
-    mach=QC.machinesEditor($('qsMach'),$('qsAddMach'),m,rate,function(){api.touch()});
+    mach=QC.machinesEditor($('qsMach'),$('qsAddMach'),m,rate,function(){
+      if(m.machines.some(function(x){return x.id}))machErr(false);
+      api.touch();
+    });
     $('qwMonths').addEventListener('change',function(){
       m.warrantyMonths=num(this.value)||12;
       if(m.machines.length&&confirm('ใช้ราคาแพ็กเกจ '+m.warrantyMonths+' เดือนกับทุกเครื่องหรือไม่?\n(ราคาที่แก้ไขเองจะถูกแทนที่)'))mach.reprice();

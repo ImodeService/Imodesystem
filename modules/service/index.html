@@ -67,7 +67,7 @@
 <link rel="stylesheet" href="./css/18-cases-toolbar-tabs.css">
 <link rel="stylesheet" href="./css/19-v6.8---machine-display-limit-total-counter.css">
 <!-- 2026-10-12: flat themes. In <head> so the first paint already has the chosen theme (it used to load at the end of <body> and the old look flashed on refresh). Its selectors carry id-level weight, so the styles injected later by js/NN files do not override it. -->
-<link rel="stylesheet" href="./css/24-flat-ui.css?v=20261021b">
+<link rel="stylesheet" href="./css/24-flat-ui.css?v=20261108">
 
 </head>
 <body>
@@ -753,7 +753,7 @@
 
 <script src="./js/09-v68UatAccountsScript.js"></script>
 
-<script src="./js/10-v68RoleHomeScript.js?v=20261103"></script>
+<script src="./js/10-v68RoleHomeScript.js?v=20261108"></script>
 
 <script src="./auth/auth-core.js"></script>
 <script src="./auth/auth-local.js"></script>
@@ -1137,7 +1137,7 @@
 <!-- 2026-10-20: รับเคสใหม่ — attach files, and ask before a machine that is not in the list (js/140). -->
 <script src="./js/140-v70CaseIntakeScript.js?v=20261030o"></script>
 <!-- 2026-10-20: floating chat button — personal chats (supabase/15-direct-chat.sql) + case/job chats, and แชทงานนี้ on หน้างาน (js/141). -->
-<script src="./js/141-v70ChatHubScript.js"></script>
+<script src="./js/141-v70ChatHubScript.js?v=20261108"></script>
 <!-- 2026-10-20: machines not bought from I-MODE get their own tab on เครื่องจักร (machines.source = NON-IMODE) (js/142). -->
 <script src="./js/142-v70MachineOriginScript.js"></script>
 <!-- 2026-10-25: a closed case stays in the working lists until midnight Thai time, then only on งานที่สำเร็จแล้ว (js/145). -->
@@ -1157,7 +1157,7 @@
 <!-- 2026-10-29: service_cases.reported - the first problem text, kept when ลงรายละเอียดเคส changes it (js/152, supabase/17) -->
 <script src="./js/152-v70CaseReportedScript.js?v=20261029"></script>
 <!-- 2026-10-30: photos of the spare parts on a quotation (js/153) -->
-<script src="./js/153-v70QuotePartPhotosScript.js?v=20261105"></script>
+<script src="./js/153-v70QuotePartPhotosScript.js?v=20261108"></script>
 <!-- 2026-10-31: ทำใบเสนอราคา from the case page loads the case without a needless "start new?" question (js/154) -->
 <script src="./js/154-v70QuoteFromCaseScript.js?v=20261031"></script>
 <!-- 2026-11-03: หน้าหลัก Service — drag the quick modules and choose them yourself (js/155, hooks in js/10) -->
@@ -1169,7 +1169,7 @@
 <!-- 2026-11-04: ใบเสนอราคาอะไหล่, a third quotation type (js/158) -->
 <script src="./js/158-v70PartsQuoteScript.js?v=20261105"></script>
 <!-- 2026-11-07: the quotation split into quote-service / quote-parts / quote-warranty.html; shared code + the bridge (js/159) -->
-<script src="./js/quote-common.js?v=20261107"></script>
+<script src="./js/quote-common.js?v=20261108"></script>
 <script src="./js/159-v70QuotePagesScript.js?v=20261107"></script>
 
 </body>

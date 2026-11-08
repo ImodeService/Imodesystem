@@ -83,7 +83,7 @@ function html(text, file) {
   text = text.replace(/(<meta charset[^>]*>)/i, '$1\n' + ENV_TAG);
   return text;
 }
-const DOCS = ['index.html', 'service-case-detail.html', 'quote-service.html', 'quote-parts.html', 'quote-warranty.html'];
+const DOCS = ['index.html', 'service-case-detail.html', 'quote-service.html', 'quote-parts.html', 'quote-warranty.html', 'track.html'];
 DOCS.forEach(f => copy(path.join(SRC, f), path.join(OUT, f), html));
 
 // ---------- 1. the allow-list ----------

@@ -9,24 +9,33 @@
 --   3. only MEMBERS read the messages — an admin who is not a member cannot (like personal chat);
 --      customers never see anything
 --   4. text + up to 4 photos, @name and @ทุกคน (= every member) tags
+-- 2026-11-08 the owner's answers to the checklist (items 32 + a/b/c) tightened rule 2:
+--   5. only the group's OWNER adds people, removes people, renames and deletes the group;
+--      a system admin who is not the owner cannot, and cannot add himself either
+--   6. the owner leaving hands the group to the member who has been in it longest, and a
+--      system line in the group says so
+--   7. the last member leaving deletes the group and its messages
 -- js/141 (the 💬 button in the Service app) is the page side. Personal chat is 15-direct-chat.sql,
 -- case chat is 14-case-chat.sql; neither is touched.
 --
 -- TABLES
---   chat_groups         id, name, created_by (set by the server), created_at, updated_at
+--   chat_groups         id, name, created_by + owner_id (set by the server), created_at, updated_at
+--                       created_by never changes; owner_id moves only when the owner leaves
 --   chat_group_members  group_id + user_id, added_by, added_at, last_read_at (unread count)
---   group_messages      id, group_id, body, photos, sender_id / sender_name / created_at (server)
+--   group_messages      id, group_id, body, photos, kind ('text' | 'system'),
+--                       sender_id / sender_name / created_at (server)
 --
 -- WHO MAY DO WHAT (RLS)
---   groups   see: members, the creator, admins · create: staff · rename: creator, admins
---            delete: creator, admins
---   members  see: members of that group, admins · add: creator, admins (active staff only)
---            remove: creator, admins, or yourself (leave) · last_read_at: only your own row
+--   groups   see: members, the owner, admins · create: staff · rename / delete: the owner only
+--   members  see: members of that group, admins · add: the owner only (active staff only)
+--            remove: the owner, or yourself (leave) · last_read_at: only your own row
 --   messages read / send: members only · delete: the sender, their own message · edit: nobody
+--            'system' lines are written only by the server (owner hand-over)
 --   anon / Customer accounts: nothing
 --
--- SAFE TO RE-RUN: create ... if not exists, policies dropped before being recreated.
--- Touches no existing table and no existing row.
+-- SAFE TO RE-RUN: create ... if not exists, policies dropped before being recreated. Also safe to
+-- run over the first version of this file (2026-11-08 morning): it adds owner_id / kind and
+-- copies created_by into owner_id. Touches no other table.
 
 begin;
 
@@ -42,6 +51,7 @@ create table if not exists public.chat_groups (
   id          uuid primary key default gen_random_uuid(),
   name        text not null,
   created_by  uuid default auth.uid(),
+  owner_id    uuid default auth.uid(),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now(),
   constraint chat_groups_name_len check (char_length(btrim(name)) between 1 and 80)
@@ -62,6 +72,7 @@ create table if not exists public.group_messages (
   group_id     uuid not null references public.chat_groups(id) on delete cascade,
   body         text not null default '',
   photos       jsonb not null default '[]'::jsonb,
+  kind         text not null default 'text',
   sender_id    uuid default auth.uid(),
   sender_name  text not null default '',
   created_at   timestamptz not null default now(),
@@ -71,16 +82,27 @@ create table if not exists public.group_messages (
 );
 create index if not exists group_messages_group_idx on public.group_messages (group_id, created_at);
 
+-- upgrade from the first version of this file
+alter table public.chat_groups    add column if not exists owner_id uuid;
+alter table public.group_messages add column if not exists kind text not null default 'text';
+update public.chat_groups set owner_id = created_by where owner_id is null;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'group_messages_kind_chk') then
+    alter table public.group_messages add constraint group_messages_kind_chk check (kind in ('text', 'system'));
+  end if;
+end $$;
+
 -- ----------------------------------------------------------------- helpers ---
 -- security definer so the policies below can ask "am I a member" without recursing into RLS
 create or replace function public.chat_is_member(g uuid)
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.chat_group_members m where m.group_id = g and m.user_id = auth.uid())
 $$;
+-- "manage" = add / remove other people, rename, delete: the owner only (2026-11-08, rule 5)
 create or replace function public.chat_can_manage(g uuid)
 returns boolean language sql stable security definer set search_path = public as $$
-  select public.is_admin()
-      or exists (select 1 from public.chat_groups x where x.id = g and x.created_by = auth.uid())
+  select exists (select 1 from public.chat_groups x where x.id = g and x.owner_id = auth.uid())
 $$;
 revoke all on function public.chat_is_member(uuid)  from public, anon;
 revoke all on function public.chat_can_manage(uuid) from public, anon;
@@ -94,10 +116,16 @@ returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if tg_op = 'INSERT' then
     new.created_by := auth.uid();
+    new.owner_id   := auth.uid();
     new.created_at := now();
   else
     new.created_by := old.created_by;      -- the creator never changes
     new.created_at := old.created_at;
+    -- the owner moves only inside chat_group_members_after_delete (a nested trigger); a client
+    -- update can never reach owner_id anyway (only "name" is granted), this is the backstop
+    if pg_trigger_depth() < 2 then
+      new.owner_id := old.owner_id;
+    end if;
   end if;
   new.name := btrim(new.name);
   new.updated_at := now();
@@ -111,7 +139,7 @@ create or replace function public.chat_groups_add_creator()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   insert into public.chat_group_members (group_id, user_id, added_by, last_read_at)
-  values (new.id, new.created_by, new.created_by, now())
+  values (new.id, new.owner_id, new.owner_id, now())
   on conflict do nothing;
   return new;
 end $$;
@@ -141,6 +169,13 @@ create trigger chat_group_members_stamp before insert or update on public.chat_g
 create or replace function public.group_messages_stamp()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
+  -- a 'system' line comes only from the server's own trigger below; anyone else's is plain text
+  if new.kind = 'system' and pg_trigger_depth() >= 2 then
+    new.sender_id  := null;
+    new.created_at := now();
+    return new;
+  end if;
+  new.kind        := 'text';
   new.sender_id   := auth.uid();
   new.sender_name := coalesce(
     (select nullif(btrim(full_name), '') from public.profiles where id = auth.uid()),
@@ -153,6 +188,46 @@ drop trigger if exists group_messages_stamp on public.group_messages;
 create trigger group_messages_stamp before insert on public.group_messages
   for each row execute function public.group_messages_stamp();
 
+-- someone left or was removed (2026-11-08, rules 6 and 7)
+--   nobody left        -> the group and its messages are deleted
+--   the owner left     -> the longest-standing member becomes the owner, with a system line
+-- When the group itself is being deleted its member rows go by cascade; the group row is already
+-- gone then, so this does nothing.
+create or replace function public.chat_display_name(u uuid)
+returns text language sql stable security definer set search_path = public as $$
+  select coalesce((select coalesce(nullif(btrim(full_name), ''), username) from public.profiles where id = u), 'สมาชิก')
+$$;
+revoke all on function public.chat_display_name(uuid) from public, anon, authenticated;
+
+create or replace function public.chat_group_members_after_delete()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_owner uuid;
+  v_next  uuid;
+begin
+  select owner_id into v_owner from public.chat_groups where id = old.group_id;
+  if not found then
+    return null;
+  end if;
+  if not exists (select 1 from public.chat_group_members where group_id = old.group_id) then
+    delete from public.chat_groups where id = old.group_id;
+    return null;
+  end if;
+  if v_owner is null or v_owner = old.user_id then
+    select user_id into v_next from public.chat_group_members
+     where group_id = old.group_id order by added_at, user_id limit 1;
+    update public.chat_groups set owner_id = v_next where id = old.group_id;
+    insert into public.group_messages (group_id, body, kind, sender_name)
+    values (old.group_id,
+            public.chat_display_name(old.user_id) || ' ออกจากกลุ่ม · ' || public.chat_display_name(v_next) || ' เป็นผู้ดูแลกลุ่มแทน',
+            'system', 'ระบบ');
+  end if;
+  return null;
+end $$;
+drop trigger if exists chat_group_members_after_delete on public.chat_group_members;
+create trigger chat_group_members_after_delete after delete on public.chat_group_members
+  for each row execute function public.chat_group_members_after_delete();
+
 -- -------------------------------------------------------------------- RLS ---
 alter table public.chat_groups        enable row level security;
 alter table public.chat_group_members enable row level security;
@@ -163,7 +238,7 @@ drop policy if exists chat_groups_create on public.chat_groups;
 drop policy if exists chat_groups_rename on public.chat_groups;
 drop policy if exists chat_groups_delete on public.chat_groups;
 create policy chat_groups_read on public.chat_groups for select to authenticated
-  using (public.is_staff() and (public.chat_is_member(id) or created_by = auth.uid() or public.is_admin()));
+  using (public.is_staff() and (public.chat_is_member(id) or owner_id = auth.uid() or public.is_admin()));
 create policy chat_groups_create on public.chat_groups for insert to authenticated
   with check (public.is_staff());
 create policy chat_groups_rename on public.chat_groups for update to authenticated

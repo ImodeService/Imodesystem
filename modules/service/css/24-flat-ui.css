@@ -783,6 +783,19 @@ html[data-ui="flat-dark"]:is(:root,#fx) .ch-msg.is-auto .ch-bub { background-col
 html[data-ui="flat-dark"]:is(:root,#fx) .ch-av.is-case { background: var(--fx-accent-soft) !important; color: #cfe2ff !important; }
 html[data-ui="flat-dark"]:is(:root,#fx) .ch-link { color: var(--fx-accent) !important; }
 html[data-ui="flat-dark"]:is(:root,#fx) .ch-ph button { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line) !important; }
+/* 👥 group create / settings form (2026-11-08, checklist 29): the boxes stayed white with the dark theme's white text */
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-form input[type=text] { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line-strong) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-form input[type=text], .ch-search input, .ch-crow textarea)::placeholder { color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-form input[type=text]:disabled { opacity: .75; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-mem:hover, .ch-new:hover, .ch-btn:not(.is-primary):hover) { background-color: var(--fx-hover) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-mem b { color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) :is(.ch-mem small, .ch-form label.ch-lb, .ch-owner-note) { color: var(--fx-muted) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-btn:not(.is-primary) { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line-strong) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-btn.is-danger { color: #ff8a8f !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-ffoot { border-color: var(--fx-line) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-new { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line-strong) !important; color: var(--fx-accent) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-tagpop button { background-color: var(--fx-surface-2) !important; border-color: var(--fx-line-strong) !important; color: var(--fx-text) !important; }
+html[data-ui="flat-dark"]:is(:root,#fx) .ch-sys span { background-color: var(--fx-surface-2) !important; color: var(--fx-muted) !important; }
 
 /* ผู้ใช้งานและสิทธิ์ (2026-10-29): การ์ดในหน้านี้ยังพื้นขาว/ฟ้าอ่อน แต่ตัวอักษรเป็นสีสว่างของธีมมืด อ่านไม่ออก */
 html[data-ui="flat-dark"]:is(:root,#fx) .modal .roles-top-note,
