@@ -249,3 +249,15 @@ html[data-theme="dark"] .qc-side-item.is-on{background:#2563c9;color:#fff}
   .qc-side-btn{display:inline-grid;place-items:center}
 }
 @media (prefers-reduced-motion:reduce){.qc-side{transition:none}}
+
+/* 2026-11-08 owner: the menu folds away on a desktop too, like the app (body.v68-nav-collapsed there) */
+@media (min-width:1101px){
+  .qc-side-btn{display:inline-grid;place-items:center}
+  .qc-side{transition:transform .22s ease,opacity .22s ease}
+  .qc-has-side .qc-top,.qc-has-side .qc-wrap{transition:margin-left .22s ease}
+  .qc-side-collapsed .qc-side{transform:translateX(-120%);opacity:0;pointer-events:none}
+  .qc-has-side.qc-side-collapsed .qc-top,.qc-has-side.qc-side-collapsed .qc-wrap{margin-left:0}
+  .qc-has-side.qc-side-collapsed .qc-wrap{margin-left:auto}
+  .qc-has-side.qc-side-collapsed .qc-top{border-radius:0}
+}
+@media (min-width:1101px) and (prefers-reduced-motion:reduce){.qc-side,.qc-has-side .qc-top,.qc-has-side .qc-wrap{transition:none}}

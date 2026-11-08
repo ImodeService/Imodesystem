@@ -1053,11 +1053,16 @@
   document.body.insertAdjacentHTML('afterbegin',html);
   document.body.classList.add('qc-has-side');
   var btn=document.createElement('button');
-  btn.type='button';btn.className='qc-side-btn';btn.id='qcSideBtn';btn.setAttribute('aria-label','เปิดเมนู');btn.setAttribute('aria-controls','qcSide');btn.setAttribute('aria-expanded','false');btn.textContent='☰';
+  btn.type='button';btn.className='qc-side-btn';btn.id='qcSideBtn';btn.setAttribute('aria-label','เปิด/ปิดเมนู');btn.setAttribute('aria-controls','qcSide');btn.setAttribute('aria-expanded','false');btn.textContent='☰';
   top.insertBefore(btn,top.firstChild);
   var side=$('qcSide'),shade=$('qcSideShade');
   function open(on){document.body.classList.toggle('qc-side-open',on);shade.hidden=!on;btn.setAttribute('aria-expanded',String(on))}
-  btn.addEventListener('click',function(){open(!document.body.classList.contains('qc-side-open'))});
+  /* same as the app's ☰ (js/06): on a desktop it folds the menu away and back, on a phone it opens it */
+  btn.addEventListener('click',function(){
+   if(window.innerWidth>1100){var c=document.body.classList.toggle('qc-side-collapsed');btn.setAttribute('aria-expanded',String(!c));return}
+   open(!document.body.classList.contains('qc-side-open'));
+  });
+  if(window.innerWidth>1100)btn.setAttribute('aria-expanded','true');
   shade.addEventListener('click',function(){open(false)});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.body.classList.contains('qc-side-open'))open(false)});
   side.addEventListener('click',function(e){if(e.target.closest('a'))open(false)});
