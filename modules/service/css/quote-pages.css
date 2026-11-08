@@ -56,6 +56,15 @@ html[data-theme="dark"] .qc-status.is-saved{background:#163526;border-color:#255
 .qc-field .req{color:var(--danger)}
 .qc-field input,.qc-field select,.qc-field textarea,.qc-input{width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 .qc-field textarea{min-height:76px;resize:vertical}
+.qc-field input,.qc-field select,.qc-field textarea,.qc-input{color:var(--ink)}
+/* js/35's type-to-search box hard-codes light colours and loads after this file: follow the theme */
+.qc-wrap .cbx-input{min-height:40px;background:var(--card);color:var(--ink);border-color:var(--line);border-radius:10px}
+.qc-wrap .cbx-input::placeholder{color:var(--muted)}
+.qc-wrap .cbx-caret{color:var(--muted)}
+.qc-wrap .cbx-list{background:var(--card);border-color:var(--line)}
+.qc-wrap .cbx-opt{color:var(--ink)}
+.qc-wrap .cbx-opt.is-active{background:var(--soft);color:var(--imode-blue)}
+.qc-wrap .cbx-empty{color:var(--muted)}
 .qc-field input:focus,.qc-field select:focus,.qc-field textarea:focus,.qc-input:focus{outline:2px solid #b9d3f5;border-color:var(--imode-blue)}
 .qc-inline{display:flex;gap:8px;align-items:stretch}
 .qc-inline>input,.qc-inline>select{flex:1;min-width:0}
