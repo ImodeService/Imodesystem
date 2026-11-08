@@ -96,6 +96,58 @@
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(ensureBar,400)},{once:true});
  else setTimeout(ensureBar,400);
 
+ /* ------------------------------- 4b. the menu item ทำใบเสนอราคา opens the new page ---- */
+ /* 2026-11-08 owner: "ปุ่มแบบเดิมก็ได้" — the sidebar item goes straight to the new quotation page
+    (Service first; the type buttons at its top switch to อะไหล่ / ประกัน). The old page stays one
+    link away (its footer link, and ?page=quotation, which this does not touch). */
+ document.addEventListener('click',function(e){
+  var it=e.target&&e.target.closest&&e.target.closest('#sidebar .nav-item[data-page="quotation"]');
+  if(!it||QC.useOldPage())return;
+  e.preventDefault();e.stopImmediatePropagation();
+  location.href=QC.TYPES.service.page;
+ },true);
+
+ /* ------------------------------------------ 5. the sidebar for the new pages ---- */
+ /* 2026-11-08 owner (option A): the three quote pages show the same left menu as this app. They
+    are separate documents and cannot run the dozens of scripts that build and role-filter the
+    menu here, so this page leaves a snapshot of the menu AS IT IS SHOWN (role visibility, groups,
+    labels, badges already applied) and quote-common.js draws it. Per account: another account's
+    snapshot is never used. */
+ var SIDE_KEY='imode_v70_side_menu',sideT=0;
+ function shown(el){if(!el||el.hidden)return false;var cs=getComputedStyle(el);return cs.display!=='none'&&cs.visibility!=='hidden'}
+ function snapSide(){
+  try{
+   var nav=document.querySelector('#sidebar .side-nav');if(!nav)return;
+   var u=null;try{u=currentUser}catch(e){}
+   if(!u)return;
+   var items=[];
+   [].forEach.call(nav.querySelectorAll('.nav-group, .nav-item[data-page]'),function(el){
+    if(el.classList.contains('nav-group')){
+     if(!shown(el))return;
+     var l=el.querySelector('.nav-group-label');items.push({g:String((l||el).textContent||'').trim()});return;
+    }
+    /* role visibility sets style.display (applyRoleVisibility, js/44); a collapsed group only adds
+       .nav-item-collapsed (js/36), and its items still belong in the menu */
+    if(el.style.display==='none'||el.hidden)return;
+    var ic=el.querySelector('span'),tx=el.querySelector('b'),bd=el.querySelector('.nav-badge');
+    items.push({p:el.getAttribute('data-page'),i:ic?ic.textContent:'',t:tx?String(tx.textContent||'').trim():String(el.textContent||'').trim(),
+     n:bd&&shown(bd)?String(bd.textContent||'').trim():''});
+   });
+   if(!items.some(function(x){return x.p}))return;
+   localStorage.setItem(SIDE_KEY,JSON.stringify({u:String(u.username||u.id||u.name||''),at:Date.now(),items:items}));
+  }catch(e){}
+ }
+ function queueSide(){clearTimeout(sideT);sideT=setTimeout(snapSide,700)}
+ function watchSide(){
+  var nav=document.querySelector('#sidebar .side-nav');
+  if(!nav){setTimeout(watchSide,800);return}
+  try{new MutationObserver(queueSide).observe(nav,{subtree:true,childList:true,attributes:true,attributeFilter:['style','hidden','class'],characterData:true})}catch(e){}
+  queueSide();
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watchSide,{once:true});else watchSide();
+ /* leaving for a quote page right after load: take the latest menu with us */
+ window.addEventListener('pagehide',snapSide);
+
  var st=document.createElement('style');
  st.id='v70QuotePagesStyle';
  st.textContent='.qp-newbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 12px;padding:10px 14px;'

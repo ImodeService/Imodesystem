@@ -215,3 +215,37 @@ html[data-theme="dark"] .qc-status.is-saved{background:#163526;border-color:#255
 .qc-part>.qc-x{margin-top:20px;height:38px;min-height:38px}
 .qc-part .qc-amount{height:38px}
 @media (max-width:640px){.qc-part>.qc-x{margin-top:0}}
+
+/* 2026-11-08 left menu (owner option A) — same look as the Service app's sidebar */
+.qc-side{position:fixed;left:18px;top:18px;bottom:18px;width:244px;z-index:60;display:flex;flex-direction:column;padding:16px;border-radius:28px;
+  background:linear-gradient(180deg,#0e3ba6,#071f5c);box-shadow:0 24px 44px rgba(8,34,95,.28);color:#fff}
+.qc-side-brand{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:6px 6px 12px;border-bottom:1px solid rgba(255,255,255,.14);text-decoration:none;color:#fff}
+.qc-side-brand img{height:44px;width:auto;filter:brightness(0) invert(1)}
+.qc-side-brand b{font-size:14px}.qc-side-brand b span{font-size:11.5px;font-weight:500;opacity:.85}
+.qc-side-nav{display:flex;flex-direction:column;gap:3px;margin-top:10px;overflow-y:auto;flex:1;min-height:0;scrollbar-width:thin}
+.qc-side-item{display:grid;grid-template-columns:25px 1fr auto;align-items:center;gap:9px;padding:10px 12px;border-radius:13px;color:#eaf0ff;text-decoration:none;font-size:14.5px}
+.qc-side-item:hover{background:rgba(255,255,255,.09)}
+.qc-side-item.is-on{background:#fff;color:#0b63e5;box-shadow:0 8px 16px rgba(0,0,0,.14)}
+.qc-side-item b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qc-side-item i{font-style:normal;background:#ff3b30;color:#fff;border-radius:99px;min-width:22px;height:22px;display:grid;place-items:center;font-size:11px;padding:0 6px}
+.qc-side-group{margin:10px 12px 2px;font-size:11px;font-weight:700;letter-spacing:.03em;color:rgba(255,255,255,.62)}
+.qc-side-user{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;border:1px solid rgba(255,255,255,.18);border-radius:14px}
+.qc-side-av{width:32px;height:32px;border-radius:50%;background:#f27a1a;display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.qc-side-user b{display:block;font-size:13px}.qc-side-user small{display:block;font-size:11px;opacity:.75}
+.qc-side-ver{padding:8px 8px 0;font-size:11px;font-weight:700;color:rgba(255,255,255,.9)}
+.qc-side-btn{display:none;width:38px;height:38px;flex:none;border:1px solid rgba(255,255,255,.35);border-radius:10px;background:transparent;color:#fff;font-size:18px;cursor:pointer}
+.qc-side-shade{position:fixed;inset:0;z-index:55;background:rgba(9,18,38,.45)}
+.qc-side-item:focus-visible,.qc-side-btn:focus-visible{outline:3px solid #f27a1a;outline-offset:2px}
+html[data-theme="dark"] .qc-side{background:#111111;box-shadow:none;border:1px solid #2a2a2a}
+html[data-theme="dark"] .qc-side-item.is-on{background:#2563c9;color:#fff}
+@media (min-width:1101px){
+  .qc-has-side .qc-top,.qc-has-side .qc-wrap{margin-left:280px}
+  .qc-has-side .qc-wrap{max-width:1180px;margin-right:auto}
+  .qc-has-side .qc-top{border-radius:0 0 0 18px}
+}
+@media (max-width:1100px){
+  .qc-side{left:0;top:0;bottom:0;border-radius:0 22px 22px 0;transform:translateX(-105%);transition:transform .2s ease;width:min(280px,86vw)}
+  .qc-side-open .qc-side{transform:none}
+  .qc-side-btn{display:inline-grid;place-items:center}
+}
+@media (prefers-reduced-motion:reduce){.qc-side{transition:none}}

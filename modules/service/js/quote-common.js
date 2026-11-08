@@ -1019,6 +1019,51 @@
   return api;
  }
 
+ /* ------------------------------------------------------------ left menu ---- */
+ /* 2026-11-08 owner (option A): the same left menu as the Service app. index.html leaves a snapshot
+    of its menu as shown to this account (js/159 §5, localStorage imode_v70_side_menu); without one
+    (first visit, another account) a plain list is shown. Every item opens that page of index.html;
+    ทำใบเสนอราคา opens the new Service quotation page (owner 2026-11-08). Desktop: always shown. Phone / tablet: ☰. */
+ var SIDE_KEY='imode_v70_side_menu';
+ var SIDE_DEFAULT=[['cases','📋','เคสงานบริการ'],['quotation','฿','ทำใบเสนอราคา'],['customers','👥','ลูกค้า'],['machines','⚙','เครื่องจักร'],
+  ['qc','✅','QC เครื่อง'],['calendar','📅','ปฏิทินงาน'],['warranty','🛡','ระบบประกันเครื่อง'],['documents','📁','เอกสารเครื่องจักร'],
+  ['notifications','🔔','การแจ้งเตือน'],['reports','📊','รายงาน']];
+ function sideItems(){
+  var u=user(),me=String(u.username||u.id||u.name||''),snap=readJ(SIDE_KEY,null);
+  if(snap&&Array.isArray(snap.items)&&me&&snap.u===me)return snap.items;
+  return SIDE_DEFAULT.map(function(x){return {p:x[0],i:x[1],t:x[2]}});
+ }
+ function sidebar(){
+  var top=document.querySelector('.qc-top');
+  if(!top||document.getElementById('qcSide'))return;
+  var u=user(),nm=userName()||'ผู้ใช้',role=String(u.permissionRole||u.role||'');
+  var ini=nm.split(/\s+/).slice(0,2).map(function(w){return w.charAt(0)}).join('');
+  var html='<aside class="qc-side" id="qcSide" aria-label="เมนูหลัก">'
+   +'<a class="qc-side-brand" href="./index.html"><img src="./assets/imode-ui-logo-v532.png" alt="I-MODE"><b>I-MODE Plus <span>Service &amp; Maintenance</span></b></a>'
+   +'<nav class="qc-side-nav"><a class="qc-side-item" href="./index.html?page=home"><span>▦</span><b>หน้าเลือกโมดูลหลัก</b></a>'
+   +sideItems().map(function(x){
+     if(x.g)return '<div class="qc-side-group">'+esc(x.g)+'</div>';
+     if(!x.p||x.p==='home')return '';
+     var href=x.p==='quotation'?TYPES.service.page:'./index.html?page='+encodeURIComponent(x.p);
+     return '<a class="qc-side-item'+(x.p==='quotation'?' is-on':'')+'" href="'+href+'"'+(x.p==='quotation'?' aria-current="page"':'')+'>'
+      +'<span>'+esc(x.i||'•')+'</span><b>'+esc(x.t||x.p)+'</b>'+(x.n&&x.n!=='0'?'<i>'+esc(x.n)+'</i>':'')+'</a>';
+    }).join('')+'</nav>'
+   +'<div class="qc-side-user"><span class="qc-side-av">'+esc(ini||'--')+'</span><span><b>'+esc(nm)+'</b><small>'+esc(role)+'</small></span></div>'
+   +'<div class="qc-side-ver">Version 1.0</div></aside><div class="qc-side-shade" id="qcSideShade" hidden></div>';
+  document.body.insertAdjacentHTML('afterbegin',html);
+  document.body.classList.add('qc-has-side');
+  var btn=document.createElement('button');
+  btn.type='button';btn.className='qc-side-btn';btn.id='qcSideBtn';btn.setAttribute('aria-label','เปิดเมนู');btn.setAttribute('aria-controls','qcSide');btn.setAttribute('aria-expanded','false');btn.textContent='☰';
+  top.insertBefore(btn,top.firstChild);
+  var side=$('qcSide'),shade=$('qcSideShade');
+  function open(on){document.body.classList.toggle('qc-side-open',on);shade.hidden=!on;btn.setAttribute('aria-expanded',String(on))}
+  btn.addEventListener('click',function(){open(!document.body.classList.contains('qc-side-open'))});
+  shade.addEventListener('click',function(){open(false)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.body.classList.contains('qc-side-open'))open(false)});
+  side.addEventListener('click',function(e){if(e.target.closest('a'))open(false)});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sidebar,{once:true});else sidebar();
+
  /* the phone bottom bar's buttons press the real ones */
  document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest&&e.target.closest('[data-proxy]');if(!b)return;
