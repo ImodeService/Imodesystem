@@ -261,3 +261,54 @@ html[data-theme="dark"] .qc-side-item.is-on{background:#2563c9;color:#fff}
   .qc-has-side.qc-side-collapsed .qc-top{border-radius:0}
 }
 @media (min-width:1101px) and (prefers-reduced-motion:reduce){.qc-side,.qc-has-side .qc-top,.qc-has-side .qc-wrap{transition:none}}
+
+/* ---------------------------------------------------------------------------------------------
+   2026-11-08 owner (option A, pictures approved): the quote pages wear the Service app's shell.
+   Values measured from index.html in the flat theme: sidebar (#sidebar), top bar (.topbar.v68-topbar),
+   page heading (.v68-global-hero), page background, flat cards (.panel). Same breakpoints as above.
+   No transform is used to centre anything (Service's hover rules reset transform). */
+:root{--shell-bg:#f3f3f3;--shell-card:#fff;--shell-line:#e1e1e1;--shell-ink:#1f1f1f;--shell-title:#0c225e;--shell-sub:#5f6672;--shell-side:#0c225e;--shell-accept:#c25e00}
+html[data-theme="dark"]{--shell-bg:#1b1b1b;--shell-card:#262626;--shell-line:#3a3a3a;--shell-ink:#f1f1f1;--shell-title:#e8eefc;--shell-sub:#a9adb4;--shell-side:#111;--shell-accept:#e07a1f}
+body.qc-has-side{background:var(--shell-bg)}
+.qc-has-side .qc-side{left:0;top:0;bottom:0;width:262px;border-radius:0;box-shadow:none;border:0;background:var(--shell-side);padding:15px 14px 14px}
+.qc-has-side .qc-side-brand{align-items:center;text-align:center;padding:10px 4px 14px}
+.qc-has-side .qc-side-brand img{height:70px}
+.qc-has-side .qc-side-brand b{font-size:16px}
+.qc-has-side .qc-side-item{font-size:17.25px;padding:8px 11px 8px 9px;border-radius:4px;min-height:55px;border-left:4px solid transparent}
+.qc-has-side .qc-side-item.is-on{background:rgba(255,255,255,.14);color:#fff;box-shadow:none;border-left-color:#f79009}
+html[data-theme="dark"] .qc-has-side .qc-side-item.is-on,html[data-theme="dark"] .qc-side-item.is-on{background:rgba(255,255,255,.12);color:#fff}
+.qc-has-side .qc-side-group{font-size:10.5px;color:rgba(255,255,255,.65);margin:10px 9px 4px}
+.qc-has-side .qc-side-user{border-radius:4px}
+.qs-top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;height:65px;padding:8px 14px;background:var(--shell-card);border-bottom:1px solid var(--shell-line);color:var(--shell-ink)}
+.qs-top .qs-menu{display:inline-grid;place-items:center;width:42px;height:42px;border:0;border-radius:4px;background:transparent;font-size:20px;color:var(--shell-ink);cursor:pointer}
+.qs-top .qs-menu:hover{background:var(--soft)}
+.qs-brand b{display:block;font-size:13px;letter-spacing:.04em;color:var(--shell-ink)}
+.qs-brand small{display:block;font-size:9.5px;color:var(--shell-sub)}
+.qs-sp{flex:1}
+.qs-accept{height:40px;padding:0 16px;border-radius:4px;background:var(--shell-accept);color:#fff;font-weight:700;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;white-space:nowrap}
+.qs-search{min-width:150px;font-weight:700;font-size:15px;color:var(--shell-ink);text-decoration:none;padding:0 14px;white-space:nowrap}
+.qs-chip{font-weight:800;font-size:13px;color:var(--shell-ink);padding:0 10px;text-decoration:none;white-space:nowrap}
+.qs-aa b{font-size:10px;color:var(--shell-sub);font-weight:600;margin-left:3px}
+.qs-icon{position:relative;width:42px;height:42px;display:inline-grid;place-items:center;text-decoration:none;color:var(--shell-ink);font-size:17px;border-radius:4px}
+.qs-icon:hover,.qs-chip:hover,.qs-search:hover{background:var(--soft)}
+.qs-icon i{position:absolute;top:2px;right:2px;min-width:18px;height:18px;border-radius:9px;background:#e31b2f;color:#fff;font-size:10px;font-style:normal;display:grid;place-items:center;padding:0 4px}
+.qs-top a:focus-visible,.qs-top button:focus-visible{outline:3px solid var(--imode-orange);outline-offset:1px}
+.qs-hero{padding:20px 16px 14px}
+.qs-hero h2{margin:0;font-size:24px;font-weight:700;color:var(--shell-title)}
+.qs-hero p{margin:3px 0 0;font-size:11.5px;color:var(--shell-sub)}
+.qc-has-side .qc-card,.qc-has-side .qc-sum{border-radius:4px;box-shadow:none;border-color:var(--shell-line)}
+.qc-has-side .qc-type{border-radius:4px;box-shadow:none}
+@media (min-width:1101px){
+  .qs-top,.qs-hero,.qc-has-side .qc-wrap{margin-left:318px;margin-right:18px}
+  .qc-has-side .qc-wrap{max-width:none;padding:0 0 110px}
+  .qs-top,.qs-hero{transition:margin-left .22s ease}
+  .qc-side-collapsed .qs-top,.qc-side-collapsed .qs-hero,.qc-has-side.qc-side-collapsed .qc-wrap{margin-left:18px}
+}
+@media (max-width:1100px){
+  .qs-search,.qs-aa,.qs-brand,.qs-accept{display:none}
+  .qs-top{height:58px;padding:8px 10px}
+  .qs-hero{padding:14px 12px 8px}
+}
+@media (prefers-reduced-motion:reduce){.qs-top,.qs-hero{transition:none}}
+html[data-theme="dark"] .qc-switch .trk{background:#4a4f57}
+html[data-theme="dark"] .qc-switch input:checked+.trk{background:var(--ok)}

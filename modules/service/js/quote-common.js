@@ -1052,9 +1052,26 @@
    +'<div class="qc-side-ver">Version 1.0</div></aside><div class="qc-side-shade" id="qcSideShade" hidden></div>';
   document.body.insertAdjacentHTML('afterbegin',html);
   document.body.classList.add('qc-has-side');
-  var btn=document.createElement('button');
-  btn.type='button';btn.className='qc-side-btn';btn.id='qcSideBtn';btn.setAttribute('aria-label','เปิด/ปิดเมนู');btn.setAttribute('aria-controls','qcSide');btn.setAttribute('aria-expanded','false');btn.textContent='☰';
-  top.insertBefore(btn,top.firstChild);
+  /* 2026-11-08 owner (option A, pictures approved): the app's own top bar and page heading
+     (index.html .topbar.v68-topbar + .v68-global-hero) instead of the page's blue bar. */
+  var bell='';sideItems().forEach(function(x){if(x.p==='notifications'&&x.n&&x.n!=='0')bell=x.n});
+  var fp=readJ('imode_v5_font_preferences',{})||{},pct=Number(fp[u.id||'guest'])||115;
+  var shell=document.createElement('header');shell.className='qs-top';
+  shell.innerHTML='<button type="button" class="qs-menu qc-side-btn" id="qcSideBtn" aria-label="เปิด/ปิดเมนู" aria-controls="qcSide" aria-expanded="false">☰</button>'
+   +'<div class="qs-brand"><b>I-MODE SERVICE</b><small>Version 1.0</small></div><span class="qs-sp"></span>'
+   +'<a class="qs-accept" href="./index.html?page=cases">＋ รับเคสใหม่</a>'
+   +'<a class="qs-search" href="./index.html">⌕ ค้นหา...</a>'
+   +'<span class="qs-chip" title="ภาษาไทย">TH</span>'
+   +'<a class="qs-chip qs-aa" href="./index.html" title="ขนาดตัวอักษร (ปรับในระบบหลัก)">Aa<b>'+esc(pct)+'%</b></a>'
+   +'<a class="qs-icon" href="./index.html?page=home" aria-label="หน้าเลือกโมดูลหลัก" title="หน้าเลือกโมดูลหลัก">⌂</a>'
+   +'<a class="qs-icon" href="./index.html?page=notifications" aria-label="การแจ้งเตือน" title="การแจ้งเตือน">🔔'+(bell?'<i>'+esc(bell)+'</i>':'')+'</a>';
+  var hero=document.createElement('section');hero.className='qs-hero';
+  hero.innerHTML='<h2>ทำใบเสนอราคา</h2><p>ใบเสนอราคา Service / อะไหล่ / ประกัน · บันทึก พิมพ์ และส่งเข้าแชทเคส</p>';
+  top.hidden=true;
+  top.parentNode.insertBefore(shell,top.nextSibling);
+  var wrap=document.querySelector('.qc-wrap');
+  if(wrap)wrap.parentNode.insertBefore(hero,wrap);else shell.parentNode.insertBefore(hero,shell.nextSibling);
+  var btn=$('qcSideBtn');
   var side=$('qcSide'),shade=$('qcSideShade');
   function open(on){document.body.classList.toggle('qc-side-open',on);shade.hidden=!on;btn.setAttribute('aria-expanded',String(on))}
   /* same as the app's ☰ (js/06): on a desktop it folds the menu away and back, on a phone it opens it */
