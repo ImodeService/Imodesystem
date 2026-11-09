@@ -11,7 +11,7 @@
 <style id="scdGateStyle">html.scd-gate body{visibility:hidden}</style>
 <script>document.documentElement.classList.add('scd-gate')</script>
 <link rel="icon" href="./assets/Iconservice.png">
-<link rel="stylesheet" href="./css/quote-pages.css?v=20261108e">
+<link rel="stylesheet" href="./css/quote-pages.css?v=20261109b">
 <!--
   ใบเสนอราคา Service (QS) — 2026-11-07. One of three pages (quote-service / quote-parts /
   quote-warranty); shared code in js/quote-common.js. Machines with a price that can be edited
@@ -50,15 +50,31 @@
           <div class="qc-grid">
             <div class="qc-field"><label for="qsType">ประเภทบริการ</label>
               <select id="qsType"><option value="OS">Onsite Service (ไปหน้างาน)</option><option value="WS">Workshop Service (ซ่อมที่ศูนย์)</option><option value="DG">Diagnosis Only (ตรวจวินิจฉัย)</option></select></div>
+            <div class="qc-field"><label for="qsUrgency">ความเร่งด่วน</label>
+              <select id="qsUrgency"><option value="normal">ปกติ 0%</option><option value="urgent">เร่งด่วน</option><option value="emergency">ฉุกเฉิน</option><option value="critical">Critical • เสนอราคาเป็นกรณี</option></select></div>
+            <div class="qc-field"><label for="qsCoverage">การรับประกัน</label>
+              <select id="qsCoverage"><option value="none">ไม่เกี่ยวกับ Warranty</option><option value="existing">อยู่ในประกันเดิมของเครื่อง</option><option value="repair">Warranty งานซ่อมเดิม / จุดเดิม</option></select>
+              <small class="qc-help">ต่อประกันเครื่อง ใช้ปุ่ม "ใบเสนอราคาประกัน" ด้านบน</small></div>
+            <div class="qc-field"><label for="qsPickup">Pickup / Delivery</label>
+              <select id="qsPickup"><option value="0">ไม่มี</option><option value="1">Pickup</option><option value="2">Delivery</option><option value="3">Pickup + Delivery</option></select>
+              <small class="qc-help">คิดตามโซนระยะทาง · Pickup + Delivery = 2 เท่า</small></div>
             <div class="qc-field"><label for="qsDistance">ระยะทางเที่ยวเดียว (km)</label>
               <input id="qsDistance" type="number" min="0" step="0.1" inputmode="decimal" value="0">
-              <small class="qc-help">ดูระยะทางได้จากปุ่ม Google Maps ด้านบน</small></div>
+              <small class="qc-help" id="qsDistHelp">ดูระยะทางได้จากปุ่ม Google Maps ด้านบน</small></div>
             <div class="qc-field"><label for="qsTravel">ค่าเดินทาง (บาท)</label>
               <input id="qsTravel" type="number" min="0" step="0.01" inputmode="decimal" value="0">
               <small class="qc-help" id="qsTravelHelp"></small></div>
+            <div class="qc-field"><label for="qsHours">ชั่วโมงเพิ่มเติม</label>
+              <input id="qsHours" type="number" min="0" step="0.5" inputmode="decimal" value="0"></div>
+            <div class="qc-field"><label for="qsTechs">จำนวนช่างเพิ่ม</label>
+              <input id="qsTechs" type="number" min="0" step="1" inputmode="numeric" value="0"></div>
             <div class="qc-field"><label for="qsLabor">ค่าแรงเพิ่มเติม (บาท)</label>
-              <input id="qsLabor" type="number" min="0" step="0.01" inputmode="decimal" value="0"></div>
+              <input id="qsLabor" type="number" min="0" step="0.01" inputmode="decimal" value="0">
+              <small class="qc-help" id="qsLaborHelp"></small></div>
+            <div class="qc-field"><label for="qsDiag">Diagnosis ที่ชำระแล้ว (หัก)</label>
+              <input id="qsDiag" type="number" min="0" step="0.01" inputmode="decimal" value="0"></div>
           </div>
+          <div class="qc-warns" id="qsWarn" role="status"></div>
         </div>
       </section>
 
@@ -99,6 +115,9 @@
           <div class="qc-field qc-span2"><label for="qcNote">หมายเหตุเพิ่มเติม</label><textarea id="qcNote" rows="3"></textarea></div>
           <div class="qc-field"><label for="qcPrepared">ผู้จัดทำ</label><select id="qcPrepared"></select></div>
           <div class="qc-field"><label for="qcAuthorized">ผู้อนุมัติ</label><select id="qcAuthorized"></select></div>
+          <div class="qc-field"><label for="qcPayment">เงื่อนไขชำระเงิน</label><input id="qcPayment" type="text" maxlength="120"></div>
+          <div class="qc-field"><label for="qcPurchaser">ผู้ซื้อ (ชื่อ)</label><input id="qcPurchaser" type="text" maxlength="120"></div>
+          <div class="qc-field"><label for="qcPurchaserDate">วันที่ผู้ซื้อ</label><input id="qcPurchaserDate" type="date"></div>
         </div></div>
       </section>
       <section class="qc-card" aria-labelledby="hAttach">
@@ -111,10 +130,13 @@
       <header><div><h3 id="hSum">สรุปใบเสนอราคา</h3></div></header>
       <div class="qc-body">
         <div class="qc-row"><span>ค่าบริการเครื่อง</span><b id="sMach">0.00</b></div>
+        <div class="qc-row"><span id="sEmergL">ค่าเร่งด่วน</span><b id="sEmerg">0.00</b></div>
         <div class="qc-row"><span>ค่าเดินทาง</span><b id="sTravel">0.00</b></div>
+        <div class="qc-row"><span>Pickup / Delivery</span><b id="sPickup">0.00</b></div>
         <div class="qc-row"><span>ค่าแรงเพิ่มเติม</span><b id="sLabor">0.00</b></div>
         <div class="qc-row"><span>ค่าอะไหล่</span><b id="sParts">0.00</b></div>
         <div class="qc-row"><span>ค่าใช้จ่ายอื่น</span><b id="sExp">0.00</b></div>
+        <div class="qc-row is-neg"><span>หัก Diagnosis</span><b id="sDiag">-0.00</b></div>
         <div class="qc-row is-neg"><span>ส่วนลด</span><b id="sDisc">-0.00</b></div>
         <div class="qc-row"><span>รวมก่อน VAT</span><b id="sSub">0.00</b></div>
         <div class="qc-vatrow">
@@ -134,19 +156,18 @@
     </aside>
   </div>
   <div class="qc-mbar"><span>รวมทั้งสิ้น<b id="sGrandBar">฿0.00</b></span><button type="button" class="qc-btn is-primary" data-proxy="qcSave">💾 บันทึก</button></div>
-  <p class="qc-foot">ต้องการหน้าแบบเดิม? <a href="./index.html?page=quotation">เปิดหน้าใบเสนอราคาเดิม</a></p>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./js/143-v70CaseDetailGateScript.js"></script>
 <script src="./js/35-v70ComboBoxScript.js"></script>
-<script src="./js/quote-common.js?v=20261109"></script>
+<script src="./js/quote-common.js?v=20261109b"></script>
 <script>
 (function(){
 'use strict';
 var QC=window.QuoteCommon,num=QC.num,money=QC.money;
 var NOTE='ราคาในใบเสนอราคานี้ไม่รวมอะไหล่ที่ไม่ได้ระบุในรายการ\nรับประกันหลังงานซ่อม 30 วัน';
-var mach,parts,exps,M=null,travelEdited=false;
+var mach,parts,exps,M=null,travelEdited=false,laborEdited=false;
 function $(id){return document.getElementById(id)}
 function size(mc){var s=String(mc&&(mc.size||mc.machineSize)||'').trim().toUpperCase();return s==='S'||s==='L'?s:''}
 /* the same table js/03 machineRate() reads (ตั้งค่าใบเสนอราคา); M size or none → 0, type it */
@@ -162,6 +183,48 @@ function autoTravel(){
   M.travel=M.service==='OS'?QC.travelFee(M.distance):0;
   $('qsTravel').value=M.travel;
 }
+/* js/03 calcQuote: hours × technicians × the S / L labour rate from ตั้งค่าใบเสนอราคา */
+function autoLabor(){
+  if(laborEdited)return;
+  M.labor=QC.laborFromHours(M);$('qsLabor').value=M.labor;
+}
+function laborHelp(){
+  var r=QC.laborRate(M),calc=QC.laborFromHours(M);
+  $('qsLaborHelp').textContent=laborEdited?'แก้ไขเอง · ตามชั่วโมง = '+money(calc)
+    :'ชั่วโมง × ช่าง × อัตรา '+(QC.laborRate(M)===num(QC.cfg().laborL)&&num(QC.cfg().laborL)!==num(QC.cfg().laborS)?'L':'S')+' '+money(r)+' บาท';
+}
+/* ตั้งค่าระบบ → ระยะทางลูกค้า (js/118): a customer's distance fills in, typing still wins */
+function autoDistance(force){
+  var km=QC.customerKm(M.customerId),h=$('qsDistHelp');
+  if(km&&(force||M.distanceSource!=='manual'||!num(M.distance))){
+    M.distance=km;M.distanceSource='customer_setting';$('qsDistance').value=km;
+  }
+  h.textContent=M.distanceSource==='customer_setting'?'📍 ใช้ระยะทางที่ตั้งไว้ของลูกค้านี้: '+km.toLocaleString('th-TH')+' km (แก้ได้)'
+    :km?'แก้ไขเอง · ที่ตั้งไว้ของลูกค้า = '+km.toLocaleString('th-TH')+' km':'ยังไม่ได้ตั้งระยะทางของลูกค้านี้ (ตั้งได้ที่ ตั้งค่าระบบ) · ดูจากปุ่ม Google Maps ด้านบน';
+}
+function urgencyFromCase(c){
+  var p=String(c&&c.priority||'').toLowerCase();
+  if(/ฉุกเฉิน|emergency/.test(p))return 'emergency';
+  if(/critical|วิกฤต/.test(p))return 'critical';
+  if(/เร่ง|ด่วน|urgent|high|สูง/.test(p))return 'urgent';
+  return 'normal';
+}
+function warnings(){
+  var w=[],c=QC.cfg();
+  (M.machines||[]).forEach(function(x){if(x.id&&!size(QC.machine(x.id)))w.push('เครื่อง '+(x.label||x.id)+' ยังไม่ระบุ Size S/L ในหน้าเครื่องจักร — ราคาตั้งต้นเป็น 0 กรุณาพิมพ์ราคาหรือระบุ Size ก่อนส่งราคา')});
+  if(M.urgency==='critical')w.push('Critical Emergency: ต้องเสนอราคาเป็นกรณีและให้ผู้มีอำนาจอนุมัติ');
+  if(QC.covered(M))w.push(M.coverage==='repair'?'Warranty งานซ่อมเดิม: ค่าบริการ / เร่งด่วน / เดินทาง / ค่าแรง = 0 แต่ค่าอะไหล่ยังคิดตามปกติ':'อยู่ในประกันเดิมของเครื่อง: ค่าบริการ / เร่งด่วน / เดินทาง / ค่าแรง = 0 กรุณาตรวจความคุ้มครองก่อนส่งราคา');
+  if(M.service==='DG')w.push('Diagnosis Only: ไม่คิดค่าอะไหล่ในใบเสนอราคานี้');
+  $('qsWarn').innerHTML=w.map(function(t){return '<div class="qc-warn'+(/^Critical/.test(t)?' is-bad':'')+'">'+QC.esc(t)+'</div>'}).join('');
+}
+function urgencyLabels(){
+  var c=QC.cfg(),o=$('qsUrgency').options;
+  o[1].textContent='เร่งด่วน +'+num(c.urgentPct)+'%';o[2].textContent='ฉุกเฉิน +'+num(c.emergencyPct)+'%';
+}
+function partsLock(){
+  var dg=M.service==='DG',add=$('qpAddPart'),box=$('qpParts');
+  if(add)add.disabled=dg;if(box)box.classList.toggle('is-locked',dg);
+}
 function travelHelp(){
   $('qsTravelHelp').textContent=M.service!=='OS'?'Workshop / Diagnosis ไม่คิดค่าเดินทางตั้งต้น (พิมพ์เองได้)'
     :travelEdited?'แก้ไขเอง · ตามโซนระยะทาง = '+money(QC.travelFee(M.distance)):'คิดตามโซนระยะทางอัตโนมัติ';
@@ -176,49 +239,72 @@ var page=QC.page({
     m.note=NOTE;
     if(c){
       m.service=serviceFromCase(c);
+      m.urgency=urgencyFromCase(c);
       if(c.machineId){var mc=QC.machine(c.machineId);M=m;m.machines.push({id:c.machineId,label:QC.machineLabel(mc)||c.machine||'',price:rate(mc,0)})}
     }
   },
   init:function(m,api){
     M=m;
     travelEdited=!!m.id&&num(m.travel)!==(m.service==='OS'?QC.travelFee(m.distance):0);
-    mach=QC.machinesEditor($('qsMach'),$('qsAddMach'),m,rate,function(){api.touch()});
+    laborEdited=!!m.id&&num(m.labor)!==QC.laborFromHours(m);
+    mach=QC.machinesEditor($('qsMach'),$('qsAddMach'),m,rate,function(){autoLabor();laborHelp();warnings();api.touch()});
     parts=QC.partsEditor($('qpParts'),$('qpAddPart'),m,function(){api.touch()});
     exps=QC.expensesEditor($('qpExp'),$('qpAddExp'),m,function(){api.touch()});
     $('qsType').addEventListener('change',function(){
       m.service=this.value;
       if(m.machines.length&&confirm('คำนวณราคาเครื่องใหม่ตามประเภทบริการนี้หรือไม่?\n(ราคาที่แก้ไขเองจะถูกแทนที่)'))mach.reprice();
-      autoTravel();travelHelp();api.touch();
+      autoTravel();travelHelp();partsLock();parts.render();warnings();api.touch();
     });
-    $('qsDistance').addEventListener('input',function(){m.distance=Math.max(0,num(this.value));m.distanceSource='manual';autoTravel();travelHelp();api.touch()});
+    /* an old-page quotation kept its priced urgency / pickup; touching either prices them anew */
+    $('qsUrgency').addEventListener('change',function(){m.urgency=this.value;delete m.legacyFixed;warnings();api.touch()});
+    $('qsCoverage').addEventListener('change',function(){m.coverage=this.value;warnings();api.touch()});
+    $('qsPickup').addEventListener('change',function(){m.pickupMode=num(this.value);delete m.legacyFixed;api.touch()});
+    $('qsDistance').addEventListener('input',function(){m.distance=Math.max(0,num(this.value));m.distanceSource='manual';delete m.legacyFixed;autoTravel();travelHelp();autoDistance(false);api.touch()});
     $('qsTravel').addEventListener('input',function(){m.travel=Math.max(0,num(this.value));travelEdited=true;travelHelp();api.touch()});
-    $('qsLabor').addEventListener('input',function(){m.labor=Math.max(0,num(this.value));api.touch()});
+    $('qsHours').addEventListener('input',function(){m.extraHours=Math.max(0,num(this.value));autoLabor();laborHelp();api.touch()});
+    $('qsTechs').addEventListener('input',function(){m.extraTechs=Math.max(0,Math.floor(num(this.value)));autoLabor();laborHelp();api.touch()});
+    $('qsLabor').addEventListener('input',function(){m.labor=Math.max(0,num(this.value));laborEdited=true;laborHelp();api.touch()});
+    $('qsDiag').addEventListener('input',function(){m.diagnosis=Math.max(0,num(this.value));api.touch()});
+    $('qcPayment').addEventListener('input',function(){m.payment=this.value;api.touch(true)});
+    $('qcPurchaser').addEventListener('input',function(){m.purchaserName=this.value;api.touch(true)});
+    $('qcPurchaserDate').addEventListener('input',function(){m.purchaserDate=this.value;api.touch(true)});
   },
   fill:function(m){
     $('qsType').value=m.service==='WS'||m.service==='DG'?m.service:'OS';m.service=$('qsType').value;
+    if(!m.id)autoDistance(false);
     $('qsDistance').value=m.distance||0;$('qsLabor').value=m.labor||0;
-    if(!m.id)autoTravel();
+    $('qsUrgency').value=QC.URGENCY[m.urgency]?m.urgency:'normal';$('qsCoverage').value=m.coverage||'none';
+    $('qsPickup').value=String(num(m.pickupMode));$('qsHours').value=m.extraHours||0;$('qsTechs').value=m.extraTechs||0;
+    $('qsDiag').value=m.diagnosis||0;$('qcPayment').value=m.payment||'';$('qcPurchaser').value=m.purchaserName||'';$('qcPurchaserDate').value=m.purchaserDate||'';
+    if(!m.id){autoTravel();autoLabor()}
     $('qsTravel').value=m.travel||0;
     $('qpMk').textContent=num(QC.cfg().markupStock);
-    travelHelp();mach.render();parts.render();exps.render();
+    urgencyLabels();travelHelp();laborHelp();if(m.id)autoDistance(false);partsLock();warnings();mach.render();parts.render();exps.render();
   },
   onPick:function(what,c,m,api){
     if(what==='case'&&c){
       m.service=serviceFromCase(c);$('qsType').value=m.service;
+      m.urgency=urgencyFromCase(c);$('qsUrgency').value=m.urgency;
       if(c.machineId&&!m.machines.some(function(x){return String(x.id)===String(c.machineId)})){
         var mc=QC.machine(c.machineId);
         m.machines.push({id:c.machineId,label:QC.machineLabel(mc)||c.machine||'',price:rate(mc,m.machines.length)});
       }
-      autoTravel();travelHelp();
+      autoDistance(true);autoTravel();travelHelp();partsLock();
     }
     if(what==='customer'){
+      autoDistance(true);autoTravel();travelHelp();
       /* machines of another customer do not belong on this quotation */
       m.machines=m.machines.filter(function(x){var mc=QC.machine(x.id);return !mc||!m.customerId||String(mc.customerId)===String(m.customerId)});
     }
-    mach.render();api.sums();
+    autoLabor();laborHelp();mach.render();warnings();api.sums();
   },
-  onRefresh:function(){mach.render()},
-  onSettings:function(m){$('qpMk').textContent=num(QC.cfg().markupStock);parts.render();exps.options();autoTravel();travelHelp()},
+  onSums:function(t){
+    if(!M)return;
+    $('sEmergL').textContent=M.urgency==='urgent'||M.urgency==='emergency'?'ค่าเร่งด่วน +'+QC.urgencyPct(M.urgency)+'%':'ค่าเร่งด่วน';
+    $('sEmerg').textContent=money(t.emergency);$('sPickup').textContent=money(t.pickup);$('sDiag').textContent='-'+money(t.diagnosis);
+  },
+  onRefresh:function(){mach.render();warnings()},
+  onSettings:function(m){$('qpMk').textContent=num(QC.cfg().markupStock);parts.render();exps.options();urgencyLabels();autoDistance(false);autoTravel();travelHelp();autoLabor();laborHelp();warnings()},
   onOptions:function(){exps.options()}
 });
 })();

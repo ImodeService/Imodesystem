@@ -33,7 +33,7 @@
   cases:'imode_test_v532_cases',customers:'imode_test_v532_customers',machines:'imode_test_v532_machines',
   tech:'imode_v5_tech',quotes:'imode_test_v532_quotes',settings:'imode_v5_settings',
   user:'imode_v5_current_user',session:'imode_v69_session',cloud:'imode_v5_cloud',
-  oldPage:'imode_v70_quote_old_page'
+  oldPage:'imode_v70_quote_old_page',requests:'imode_test_v532_line_requests'
  };
  var TYPES={
   service:{code:'QS',page:'quote-service.html',icon:'🛠',label:'ใบเสนอราคา Service',sub:'ซ่อม PM ติดตั้ง ค่าเดินทาง'},
@@ -228,7 +228,31 @@
    machines:[],distance:0,distanceSource:'manual',travel:0,labor:0,parts:[],expenses:[],discount:0,
    vatOn:true,vatPct:num(c.vatPct)||7,note:'',payment:'ตามเงื่อนไข',
    preparedBy:userName(),preparedDate:todayISO(),authorizedBy:'',authorizedDate:todayISO(),
-   warrantyMonths:12,warrantyType:'standard',attachments:[]};
+   warrantyMonths:12,warrantyType:'standard',attachments:[],
+   /* 2026-11-09 owner: the Service page does everything the old page did (js/03 calcQuote) */
+   pickupMode:0,coverage:'none',extraHours:0,extraTechs:0,diagnosis:0,purchaserName:'',purchaserDate:''};
+ }
+ /* the old page's rules (js/03 calcQuote), shared by the Service page and totals() */
+ var URGENCY={normal:['ปกติ 0%',0],urgent:['เร่งด่วน','urgentPct'],emergency:['ฉุกเฉิน','emergencyPct'],critical:['Critical • เสนอราคาเป็นกรณี',0]};
+ function urgencyPct(u,c){var x=URGENCY[u];return x&&typeof x[1]==='string'?num((c||cfg())[x[1]]):0}
+ function isLargeJob(m){return (m.machines||[]).some(function(x){var mc=machine(x.id);return String(mc&&(mc.size||mc.machineSize)||'').toUpperCase()==='L'})}
+ function laborRate(m,c){c=c||cfg();return num(isLargeJob(m)?c.laborL:c.laborS)}
+ function laborFromHours(m,c){return r2(num(m.extraHours)*num(m.extraTechs)*laborRate(m,c))}
+ function pickupFee(m){var mode=num(m.pickupMode),f=travelFee(m.distance);return r2(mode===3?f*2:(mode===1||mode===2)?f:0)}
+ function covered(m){return m.type==='service'&&(m.coverage==='existing'||m.coverage==='repair')}
+ /* ตั้งค่าระบบ → ระยะทางลูกค้า (js/118, settings.customerDistances) */
+ function customerKm(cid){var d=(settings().customerDistances||{})[cid];d=Number(d);return cid&&isFinite(d)&&d>0?d:0}
+ /* The old page saved its breakdown (serviceFee, emergency, travel, pickup, labor…) on the record it
+    kept on this device; the cloud row has only the totals. Either copy may come in. */
+ function legacyBreakdown(q){
+  if(!q||metaOf(q))return null;
+  var b=('serviceFee' in q&&q.serviceFee!=null)?q:null;
+  if(!b){var l=byId(quotes(),q.id);if(l&&!metaOf(l)&&'serviceFee' in l&&l.serviceFee!=null)b=l}
+  if(!b)return null;
+  /* trust it only when it adds up to the total the customer saw */
+  var gross=num(b.serviceFee)+num(b.emergency)+num(b.travel)+num(b.pickup)+num(b.labor)+num(b.partsTotal)+num(b.toll)+num(b.otherExpense)-num(b.diagnosis);
+  var sub=r2(Math.max(0,gross)*(1-Math.min(100,num(b.discountPct))/100));
+  return Math.abs(sub-num(q.subtotal))<0.05?b:null;
  }
  /* any quotation (from these pages or the old one) → the page model */
  function fromRecord(q){
@@ -245,12 +269,32 @@
   m.warrantyType=meta.warrantyType||((settings().quoteWarrantyType||{})[q.id])||'standard';
   m.parts=(q.parts||[]).map(function(p){return normPart(p,c)}).filter(Boolean);
   m.attachments=Array.isArray(q.attachments)?q.attachments.slice():[];
+  m.purchaserName=q.purchaserName||'';m.purchaserDate=q.purchaserDate||'';
   if(metaOf(q)){
    m.expenses=(meta.expenses||[]).map(function(e){return {name:e.name||'',amount:num(e.amount)}});
    m.discount=num(meta.discount);m.travel=num(meta.travel);m.labor=num(meta.labor);
    m.machines=(meta.machines||[]).map(function(x){return {id:x.id||'',label:x.label||machineLabel(machine(x.id)),price:num(x.price)}});
+   m.urgency=URGENCY[q.urgency]?q.urgency:'normal';m.pickupMode=num(meta.pickupMode||q.pickupMode);
+   m.coverage=meta.coverage||'none';m.extraHours=num(meta.extraHours);m.extraTechs=num(meta.extraTechs);m.diagnosis=num(meta.diagnosis);
+  }else if(legacyBreakdown(q)){
+   /* an old-page quotation whose breakdown this device still holds: every component as it was priced,
+      so the total comes out exactly the same and the urgency / pickup / labour / diagnosis show */
+   var b=legacyBreakdown(q);
+   m.urgency=URGENCY[b.urgency]?b.urgency:'normal';m.pickupMode=num(b.pickupMode);
+   m.coverage=(b.warrantyMode==='existing'||b.warrantyMode==='repair')?b.warrantyMode:'none';
+   m.extraHours=num(b.extraHours);m.extraTechs=num(b.extraTechs);m.diagnosis=num(b.diagnosis);
+   m.travel=num(b.travel);m.labor=num(b.labor);
+   if(num(b.toll))m.expenses.push({name:'ค่าทางด่วน',amount:num(b.toll)});
+   if(num(b.otherExpense))m.expenses.push({name:'ค่าใช้จ่ายอื่น',amount:num(b.otherExpense)});
+   var ids0=b.machineIds||q.machineIds||[],fee=num(b.serviceFee),each0=ids0.length?r2(fee/ids0.length):0;
+   m.machines=ids0.map(function(id,i){return {id:id,label:machineLabel(machine(id)),price:i===ids0.length-1?r2(fee-each0*(ids0.length-1)):each0}});
+   var gross0=num(b.serviceFee)+num(b.emergency)+num(b.travel)+num(b.pickup)+num(b.labor)+num(b.partsTotal!=null?b.partsTotal:0)+num(b.toll)+num(b.otherExpense)-num(b.diagnosis);
+   m.discount=r2(gross0*Math.min(100,num(b.discountPct))/100);
+   m.legacyFixed={emergency:num(b.emergency),pickup:num(b.pickup)};
   }else{
    /* an old quotation: the stored totals are the truth; spread them onto lines the user can edit */
+   /* a cloud row of an old-page quotation keeps only its totals: they are spread onto lines the user
+      can edit, so the grand total stays exactly what the customer was quoted */
    var other=num(q.toll)+num(q.otherExpense);
    if(num(q.toll))m.expenses.push({name:'ค่าทางด่วน',amount:num(q.toll)});
    if(num(q.otherExpense))m.expenses.push({name:'ค่าใช้จ่ายอื่น',amount:num(q.otherExpense)});
@@ -267,14 +311,22 @@
  }
  function totals(m){
   var machinesSum=(m.machines||[]).reduce(function(s,x){return s+num(x.price)},0);
-  var partsSum=(m.parts||[]).reduce(function(s,p){return s+Math.max(1,num(p.qty)||1)*unitPrice(p)},0);
+  var partsSum=(m.service==='DG')?0:(m.parts||[]).reduce(function(s,p){return s+Math.max(1,num(p.qty)||1)*unitPrice(p)},0);
   var expSum=(m.expenses||[]).reduce(function(s,e){return s+num(e.amount)},0);
   var travel=num(m.travel),labor=num(m.labor);
-  var gross=r2(machinesSum+travel+labor+partsSum+expSum);
+  /* js/03 calcQuote: urgency on the machine fee; pickup / delivery by distance zone; a covered job
+     (existing warranty / repeat repair) charges no service, urgency, travel or labour */
+  var emergency=m.legacyFixed?num(m.legacyFixed.emergency):r2(machinesSum*urgencyPct(m.urgency)/100);
+  var pickup=m.legacyFixed?num(m.legacyFixed.pickup):pickupFee(m);
+  if(m.type!=='service'){emergency=0;pickup=0}
+  if(covered(m)){machinesSum=0;emergency=0;travel=0;labor=0}
+  var diagnosis=m.type==='service'?Math.max(0,num(m.diagnosis)):0;
+  var gross=r2(Math.max(0,machinesSum+emergency+travel+pickup+labor+partsSum+expSum-diagnosis));
   var discount=Math.min(gross,Math.max(0,num(m.discount)));
   var subtotal=r2(gross-discount);
   var vat=m.vatOn?r2(subtotal*num(m.vatPct)/100):0;
   return {machines:r2(machinesSum),parts:r2(partsSum),expenses:r2(expSum),travel:r2(travel),labor:r2(labor),
+   emergency:r2(emergency),pickup:r2(pickup),diagnosis:r2(diagnosis),
    gross:gross,discount:r2(discount),subtotal:subtotal,vat:vat,grand:r2(subtotal+vat)};
  }
  /* page model → the quotation record every other screen reads */
@@ -291,17 +343,19 @@
    .map(function(e){return {name:String(e.name||'').trim()||'ค่าใช้จ่ายอื่น',amount:r2(e.amount)}});
   parts.push({kind:'meta',v:2,page:m.type,discount:t.discount,vatPct:num(m.vatPct),expenses:expenses,
    machines:(m.machines||[]).map(function(x){return {id:x.id,label:x.label||machineLabel(machine(x.id)),price:r2(x.price)}}),
-   travel:t.travel,labor:t.labor,warrantyType:m.type==='warranty'?m.warrantyType:''});
+   travel:t.travel,labor:t.labor,warrantyType:m.type==='warranty'?m.warrantyType:'',
+   emergency:t.emergency,pickup:t.pickup,pickupMode:num(m.pickupMode),coverage:m.coverage||'none',
+   extraHours:num(m.extraHours),extraTechs:num(m.extraTechs),diagnosis:t.diagnosis});
   return {id:m.id,caseId:m.caseId||'',caseTicket:cs.ticket||'',customerId:m.customerId||'',customer:cu.name||'',
    contact:m.contact||'',location:m.location||'',service:m.service,
-   warrantyMode:m.type==='warranty'?'extend':'none',warrantyMonths:num(m.warrantyMonths)||12,
-   distance:num(m.distance),distanceSource:m.distanceSource||'manual',routeDurationMinutes:0,pickupMode:0,
-   urgency:m.urgency||'normal',warranty:false,vatOn:!!m.vatOn,note:m.note||'',delivery:m.note||'',
-   payment:m.payment||'',purchaserName:'',purchaserDate:'',preparedBy:m.preparedBy||'',preparedDate:m.preparedDate||'',
+   warrantyMode:m.type==='warranty'?'extend':(covered(m)?m.coverage:'none'),warrantyMonths:num(m.warrantyMonths)||12,
+   distance:num(m.distance),distanceSource:m.distanceSource||'manual',routeDurationMinutes:0,pickupMode:m.type==='service'?num(m.pickupMode):0,
+   urgency:m.type==='service'?(m.urgency||'normal'):'normal',warranty:covered(m),vatOn:!!m.vatOn,note:m.note||'',delivery:m.note||'',
+   payment:m.payment||'',purchaserName:m.purchaserName||'',purchaserDate:m.purchaserDate||'',preparedBy:m.preparedBy||'',preparedDate:m.preparedDate||'',
    authorizedBy:m.authorizedBy||'',authorizedDate:m.authorizedDate||'',
    machineIds:(m.machines||[]).map(function(x){return x.id}).filter(Boolean),parts:parts,
-   extraHours:0,extraTechs:0,diagnosis:0,toll:0,otherExpense:t.expenses,discountPct:0,
-   serviceFee:t.machines,emergency:0,travel:t.travel,pickup:0,labor:t.labor,partsTotal:t.parts,other:t.expenses,
+   extraHours:num(m.extraHours),extraTechs:num(m.extraTechs),diagnosis:t.diagnosis,toll:0,otherExpense:t.expenses,discountPct:0,
+   serviceFee:t.machines,emergency:t.emergency,travel:t.travel,pickup:t.pickup,labor:t.labor,partsTotal:t.parts,other:t.expenses,
    discount:t.discount,subtotal:t.subtotal,vat:t.vat,grand:t.grand,
    status:m.status||'ร่าง',createdAt:m.createdAt||now,updatedAt:now,
    attachments:(m.attachments||[]).slice(0,ATT_MAX)};
@@ -386,7 +440,9 @@
     :svc+' - '+(x.label||'-');
    out.push({no:++n,desc:desc,qty:1,unit:num(x.price),amount:num(x.price)});
   });
+  if(num(meta.emergency)){var up=URGENCY[q.urgency];out.push({no:++n,desc:'Urgent Service Surcharge (ค่าบริการเร่งด่วน'+(up&&typeof up[1]==='string'?' +'+num(c[up[1]])+'%':'')+')',qty:1,unit:num(meta.emergency),amount:num(meta.emergency)})}
   if(num(meta.travel))out.push({no:++n,desc:'Travel & Fuel Charge (ค่าเดินทางและค่าน้ำมัน)',qty:1,unit:num(meta.travel),amount:num(meta.travel)});
+  if(num(meta.pickup)){var pm=num(meta.pickupMode);out.push({no:++n,desc:(pm===3?'Pickup + Delivery':pm===1?'Pickup':'Delivery')+' (ค่ารับ-ส่งเครื่อง)',qty:1,unit:num(meta.pickup),amount:num(meta.pickup)})}
   if(num(meta.labor))out.push({no:++n,desc:'Additional Labor (ค่าแรงเพิ่มเติม)',qty:1,unit:num(meta.labor),amount:num(meta.labor)});
   (q.parts||[]).forEach(function(p){
    var x=normPart(p,c);if(!x)return;
@@ -397,6 +453,7 @@
    if(!num(e.amount))return;
    out.push({no:++n,desc:(e.name||'ค่าใช้จ่ายอื่น'),qty:1,unit:num(e.amount),amount:num(e.amount)});
   });
+  if(num(meta.diagnosis))out.push({no:'',desc:'หัก Diagnosis ที่ชำระแล้ว / Diagnosis paid',qty:'',unit:'',amount:-num(meta.diagnosis)});
   if(num(meta.discount))out.push({no:'',desc:'ส่วนลด / Discount',qty:'',unit:'',amount:-num(meta.discount)});
   return out;
  }
@@ -1008,12 +1065,23 @@
     m=fromRecord(q);lastRec=q;start();
    });
   }else{
-   var cid=param('caseId'),cu=param('customerId');
+   var cid=param('caseId'),cu=param('customerId'),rid=param('requestId'),from=caseById(cid);
    if(cid){var c=caseById(cid);m.caseId=cid;if(c){m.customerId=c.customerId||'';m.contact=c.contact||''}}
+   /* 2026-11-09: คำขอจากลูกค้า → ทำใบเสนอราคา (js/159) arrives here with the request's customer,
+      machine, service and contact — what js/03 prepareService/WarrantyQuoteFromRequest filled in */
+   if(rid&&!cid){
+    var rq=byId(readJ(K.requests,[])||[],rid);
+    if(rq){
+     m.customerId=rq.customerId||'';m.contact=rq.contact||'';
+     from={customerId:rq.customerId,machineId:rq.machineId||'',machine:rq.machine||'',
+      serviceType:{WS:'workshop',DG:'diagnosis'}[rq.serviceMode]||'onsite',priority:rq.priority||''};
+     if(type==='warranty'&&num(param('months')||rq.months))m.warrantyMonths=num(param('months')||rq.months);
+    }
+   }
    if(cu&&!m.customerId)m.customerId=cu;
    var x=customer(m.customerId);
    if(x){if(!m.contact)m.contact=x.contact||'';m.location=x.address||[x.branch,x.location].filter(Boolean).join(' / ')}
-   if(o.blank)o.blank(m,caseById(cid));
+   if(o.blank)o.blank(m,from);
    start();
   }
   return api;
@@ -1101,6 +1169,7 @@
   totals:totals,unitPrice:unitPrice,save:save,expenseOptions:expenseOptions,addExpenseOptions:addExpenseOptions,
   chatPost:chatPost,chatDialog:chatDialog,rows:rows,rowsHTML:rowsHTML,remarkText:remarkText,paperHTML:paperHTML,print:print,
   mapsUrl:mapsUrl,travelFee:travelFee,toast:toast,pageUrl:pageUrl,typeBar:typeBar,picker:picker,staffSelect:staffSelect,
+  URGENCY:URGENCY,urgencyPct:urgencyPct,laborFromHours:laborFromHours,laborRate:laborRate,pickupFee:pickupFee,covered:covered,customerKm:customerKm,legacyBreakdown:legacyBreakdown,
   partsEditor:partsEditor,expensesEditor:expensesEditor,machinesEditor:machinesEditor,attachEditor:attachEditor,openAttachment:openAttachment,page:page,
   combo:combo,useOldPage:function(){try{return localStorage.getItem(K.oldPage)==='1'}catch(e){return false}}
  };

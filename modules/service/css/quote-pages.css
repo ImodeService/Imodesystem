@@ -312,3 +312,13 @@ html[data-theme="dark"] .qc-has-side .qc-side-item.is-on,html[data-theme="dark"]
 @media (prefers-reduced-motion:reduce){.qs-top,.qs-hero{transition:none}}
 html[data-theme="dark"] .qc-switch .trk{background:#4a4f57}
 html[data-theme="dark"] .qc-switch input:checked+.trk{background:var(--ok)}
+
+/* 2026-11-09 Service page: the old page's warnings, and Diagnosis Only parts lock */
+.qc-warns{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.qc-warns:empty{display:none}
+.qc-warn{padding:8px 12px;border-radius:4px;border:1px solid #f5d38a;background:#fff8e6;color:#7a4d00;font-size:13px}
+.qc-warn.is-bad{border-color:#f3b4b8;background:#fdecec;color:#a3131e}
+html[data-theme="dark"] .qc-warn{background:#3a2f17;border-color:#6b5520;color:#ffd58a}
+html[data-theme="dark"] .qc-warn.is-bad{background:#3d1d20;border-color:#7a2f35;color:#ffb3b8}
+.qc-lines.is-locked{opacity:.55;pointer-events:none}
+

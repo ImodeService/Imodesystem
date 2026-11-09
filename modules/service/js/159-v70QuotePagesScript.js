@@ -10,8 +10,8 @@
         The paper drawn here — popup, customer portal (js/56), the copy js/80 stores for the case
         page — gets its rows, remark and VAT label from js/quote-common.js for those quotations,
         and imodeQuoteWithTotals() stops re-deriving travel / labour for them.
-     4. The old quotation page stays (owner: keep it until the new pages pass their tests), with a
-        bar on top linking to the new pages.
+     4. 2026-11-09: the old quotation page is no longer reachable — every route lands on the new pages
+        (owner: "ในเมื่อมีหน้าใหม่แล้วก็ทำให้มันทำงานได้"); คำขอจากลูกค้า prefill the new pages.
 
    Way back without a release: localStorage imode_v70_quote_old_page = '1' turns 1 and 2 off on
    that device. Remove this file and index.html behaves exactly as before. */
@@ -29,7 +29,10 @@
   window.loadQuotation=function(id){
    if(!QC.useOldPage()){
     var q=find(id);
-    if(q){closePopup();location.href=QC.pageUrl(q);return}
+    closePopup();
+    /* not on this device yet: the Service page loads it from the cloud and moves to its type */
+    location.href=q?QC.pageUrl(q):'quote-service.html?id='+encodeURIComponent(id);
+    return;
    }
    return baseLoad.apply(this,arguments);
   };
@@ -46,6 +49,19 @@
   };
  }
 
+ /* 2026-11-09 owner: "ในเมื่อมีหน้าใหม่แล้วก็ทำให้มันทำงานได้" — the new pages replace the old one.
+    คำขอจากลูกค้า → ทำใบเสนอราคา opens them with what js/03 used to fill into the old form. */
+ [['prepareServiceQuoteFromRequest','quote-service.html'],['prepareWarrantyQuoteFromRequest','quote-warranty.html']].forEach(function(x){
+  var base=window[x[0]];
+  if(typeof base!=='function')return;
+  window[x[0]]=function(id){
+   if(QC.useOldPage())return base.apply(this,arguments);
+   var r=null;try{r=(lineRequests||[]).filter(function(y){return y&&y.id===id})[0]}catch(e){}
+   closePopup();
+   location.href=x[1]+'?requestId='+encodeURIComponent(id)+(r&&r.months&&x[1]==='quote-warranty.html'?'&months='+encodeURIComponent(r.months):'');
+  };
+ });
+
  /* ------------------------------------------------------------- 3. the paper ---- */
  var baseTotals=window.imodeQuoteWithTotals;
  if(typeof baseTotals==='function'){
@@ -53,7 +69,8 @@
    if(!QC.isV2(q))return baseTotals.apply(this,arguments);
    var o={},k,meta=QC.metaOf(q)||{};
    for(k in q)if(Object.prototype.hasOwnProperty.call(q,k))o[k]=q[k];
-   o.travel=QC.num(meta.travel);o.labor=QC.num(meta.labor);o.pickup=0;
+   o.travel=QC.num(meta.travel);o.labor=QC.num(meta.labor);o.pickup=QC.num(meta.pickup);
+   o.emergency=QC.num(meta.emergency);o.diagnosis=QC.num(meta.diagnosis);
    o.other=QC.num(q.otherExpense);o.warranty=false;
    return o;
   };
@@ -74,27 +91,17 @@
   };
  }
 
- /* ------------------------------------------------- 4. a way to the new pages ---- */
- function ensureBar(){
-  var p=document.getElementById('page-quotation');
-  if(!p||document.getElementById('qpNewBar'))return;
-  var anchor=document.getElementById('qmodeBar')||p.querySelector('.panel')||p.firstElementChild;
-  if(!anchor)return;
-  var t=QC.TYPES;
-  anchor.insertAdjacentHTML('beforebegin','<div id="qpNewBar" class="qp-newbar" role="note"><b>หน้าใบเสนอราคาแบบใหม่</b>'
-   +Object.keys(t).map(function(k){return '<a href="'+t[k].page+'">'+t[k].icon+' '+QC.esc(t[k].label)+'</a>'}).join('')
-   +'<small>หน้านี้เป็นแบบเดิม ใช้ได้จนกว่าหน้าใหม่จะทดสอบเสร็จ</small></div>');
- }
+ /* ------------------------------------------------- 4. the old page is gone ---- */
+ /* 2026-11-09: every way onto the old in-app page (menu, Home card, ?page=quotation, code that calls
+    goPage('quotation')) now lands on the new Service page. The old page's markup stays in index.html
+    unused; localStorage imode_v70_quote_old_page = '1' brings it back on one device. */
  var baseGo=window.goPage;
  if(typeof baseGo==='function'){
   window.goPage=function(name){
-   var r=baseGo.apply(this,arguments);
-   if(String(name||'')==='quotation')setTimeout(ensureBar,300);
-   return r;
+   if(String(name||'')==='quotation'&&!QC.useOldPage()){closePopup();location.href=QC.TYPES.service.page;return}
+   return baseGo.apply(this,arguments);
   };
  }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(ensureBar,400)},{once:true});
- else setTimeout(ensureBar,400);
 
  /* ------------------------------- 4b. the menu item ทำใบเสนอราคา opens the new page ---- */
  /* 2026-11-08 owner: "ปุ่มแบบเดิมก็ได้" — the sidebar item goes straight to the new quotation page
