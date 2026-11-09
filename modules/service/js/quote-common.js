@@ -343,7 +343,7 @@
 
  /* ------------------------------------------------ company-wide expense names ---- */
  function expenseOptions(){
-  var m=settings().quoteExpenseOptions,out=['ค่าจัดส่ง','ค่าทางด่วน','ค่าที่พัก','ค่าเบี้ยเลี้ยง'];
+  var m=settings().quoteExpenseOptions,out=['ค่าจัดส่ง','ค่าที่พัก','ค่าเบี้ยเลี้ยง'];
   if(m&&typeof m==='object')Object.keys(m).forEach(function(k){var v=m[k],n=String(v&&v.name||k).trim();if(n&&!(v&&v.off)&&out.indexOf(n)<0)out.push(n)});
   return out;
  }
