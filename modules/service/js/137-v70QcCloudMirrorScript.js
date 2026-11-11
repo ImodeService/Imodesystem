@@ -7,37 +7,10 @@
    same shape (no photos). The page's own 10-second refresh then shows the result.
    Platform only (js/00 production env); does nothing if the table is not there yet.
 
-   2026-10-20: Service and QC & R&D are separate modules with separate admins (Service js/136).
-   The case page keeps showing the QC result and keeps the hand-back locked until QC passes,
-   but its "ทำ QC ก่อนส่งคืน ›" and "ดู / พิมพ์ในหน้า QC ›" buttons no longer leave Service:
-   they are replaced by a note that the QC team does it in its own module. */
-(function(){
- 'use strict';
- if(!window.IMODE_PLATFORM)return;
- var NOTE='⏳ รอทีม QC & R&D ตรวจ Pre-Delivery QC ในโมดูลของทีม QC — ผลจะขึ้นที่หน้านี้เอง';
- var st=document.createElement('style');
- st.textContent='[data-qc-open]{display:none!important}';
- (document.head||document.documentElement).appendChild(st);
- function swap(){
-  document.querySelectorAll('[data-action="ws-qc"]').forEach(function(b){
-   var n=document.createElement('span');
-   n.className='sd-wait imode-qc-note';
-   n.textContent=NOTE;
-   b.replaceWith(n);
-  });
- }
- document.addEventListener('click',function(e){
-  var b=e.target&&e.target.closest?e.target.closest('[data-action="ws-qc"],[data-qc-open]'):null;
-  if(!b)return;
-  e.preventDefault();e.stopImmediatePropagation();
- },true);
- function watch(){
-  swap();
-  new MutationObserver(function(){if(document.querySelector('[data-action="ws-qc"]'))swap()})
-   .observe(document.body,{childList:true,subtree:true});
- }
- if(document.body)watch();else document.addEventListener('DOMContentLoaded',watch);
-})();
+   2026-10-20 to 2026-11-10 this file also hid the case page's QC buttons. 2026-11-11 they are
+   back ("ใช้ปุ่ม QC เดิม"): "ทำ QC ก่อนส่งคืน" and "ดู / พิมพ์" open the QC & R&D module
+   through index.html?page=qc (Service js/136). Since QC SQL 04, a QC counts as Pass only
+   after Head QC approves it, so the hand-back unlocks after approval. */
 (function(){
  'use strict';
  var E=window.IMODE_ENV;
