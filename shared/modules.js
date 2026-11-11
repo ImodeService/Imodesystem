@@ -2,7 +2,7 @@
    2026-11-03: `hidden: true` keeps a module out of the launcher until its department starts
    using the system (owner: "เอาโมดูลที่ยังไม่ได้ทำหรือปิดไว้ลบออกไปก่อน"). Delete the flag to bring
    one back; nothing else changes. Paths are from the platform root.
-   2026-11-12: owner chose to show Inventory and HR again; unfinished modules stay hidden.
+   2026-11-12: owner chose to show HR again; Inventory and unfinished modules stay hidden.
    `href` stays empty until the module exists. Which modules each person sees will come
    from the Accounts module (enforced by RLS). Used by the launcher and the module shell. */
 window.IMODE_MODULES = [
@@ -12,7 +12,7 @@ window.IMODE_MODULES = [
     icon: '<path d="M30 8a10 10 0 0 0-9.6 12.8L8 33.2a4 4 0 0 0 5.7 5.7l12.4-12.4A10 10 0 0 0 39 16.6l-6 6-6.4-1.7L24.9 15l6-6A10 10 0 0 0 30 8z" fill="#0b63e5"/><circle cx="11" cy="36" r="2" fill="#fff"/><circle cx="38" cy="36" r="7" fill="#f79009"/>' },
   { id: 'qc', name: 'QC & R&D', fullName: 'ควบคุมคุณภาพและวิจัยพัฒนา', group: 'ops', href: 'modules/qc-rnd/index.html',
     icon: '<rect x="8" y="8" width="32" height="32" rx="7" fill="#12a06a"/><path d="M16 24.5l5.5 5.5L33 18.5" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>' },
-  { id: 'inventory', name: 'Inventory', fullName: 'คลังสินค้าและสต๊อก', group: 'ops', href: 'modules/inventory/index.html',
+  { id: 'inventory', hidden: true, name: 'Inventory', fullName: 'คลังสินค้าและสต๊อก', group: 'ops', href: 'modules/inventory/index.html',
     icon: '<path d="M24 6l16 9v18l-16 9-16-9V15z" fill="#f79009"/><path d="M8 15l16 9 16-9" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M24 24v18" stroke="#fff" stroke-width="3"/><path d="M24 24l16-9v18l-16 9z" fill="#c25e00"/>' },
   { id: 'planner', hidden: true, name: 'Installation Planner', fullName: 'งานติดตั้งเครื่องจักร', group: 'ops', href: '',
     icon: '<rect x="7" y="9" width="34" height="30" rx="4" fill="#6a4fd6"/><rect x="12" y="15" width="10" height="8" rx="1.5" fill="#fff"/><rect x="26" y="15" width="10" height="18" rx="1.5" fill="#fff" opacity=".85"/><rect x="12" y="27" width="10" height="6" rx="1.5" fill="#f79009"/>' },
