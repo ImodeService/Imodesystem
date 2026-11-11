@@ -73,7 +73,11 @@
  function routeFromUrl(){
   var p=new URLSearchParams(location.search);
   var page=String(p.get('page')||'').trim();
-  if(!page||!INTERNAL[page])return;                  /* customer-entry etc. belong to js/21 */
+  /* 2026-11-11: pages added after this list (ประวัติใบเสนอราคา, คำขอจากลูกค้า, มอบหมายงาน …) were
+     refused and the link fell back to the module picker. Any staff page that exists is accepted;
+     the customer pages still belong to js/21. */
+  var known=INTERNAL[page]||(!/^(customer|staff-login|scan)/.test(page)&&!!document.getElementById('page-'+page));
+  if(!page||!known)return;                           /* customer-entry etc. belong to js/21 */
   if(typeof goPage!=='function')return;
   var cid=String(p.get('caseId')||'').trim();
   var intentEarly=String(p.get('intent')||'').trim();
