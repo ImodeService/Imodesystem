@@ -76,6 +76,14 @@
     try {
       await ImodeAuth.signIn(user.value, pw.value, remember.checked);
       try { localStorage.setItem('imode.lastUser', remember.checked ? user.value.trim() : ''); } catch (e2) {}
+      /* 2026-11-11: browser storage full — signed in anyway (shared/config.js), but say what it means */
+      var S = window.IMODE_STORAGE;
+      if (S && S.full && S.where !== 'freed') {
+        showError(S.where === 'session'
+          ? 'เข้าสู่ระบบแล้ว แต่พื้นที่เก็บข้อมูลของเบราว์เซอร์เต็ม ระบบจะจำการเข้าสู่ระบบไว้จนกว่าจะปิดแท็บนี้ วิธีแก้ถาวร: ล้างข้อมูลเว็บไซต์นี้ในการตั้งค่าเบราว์เซอร์ (ข้อมูลงานอยู่บนเซิร์ฟเวอร์ ไม่หาย) · กำลังไปต่อ…'
+          : 'พื้นที่เก็บข้อมูลของเบราว์เซอร์เต็มมาก เข้าสู่ระบบได้แค่หน้านี้ กรุณาล้างข้อมูลเว็บไซต์นี้ในการตั้งค่าเบราว์เซอร์ แล้วเข้าสู่ระบบใหม่ · กำลังไปต่อ…');
+        await new Promise(function (r) { setTimeout(r, 5000); });
+      }
       location.replace(nextUrl());
     } catch (err) {
       showError(err.message);

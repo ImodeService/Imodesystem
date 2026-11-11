@@ -22,6 +22,8 @@
  try{remember=localStorage.getItem('imode.remember')!=='0'}catch(e){}
  var store;
  try{store=remember?window.localStorage:window.sessionStorage}catch(e){}
+ /* 2026-11-11: a full browser storage must not sign this page out (shared/config.js IMODE_STORAGE) */
+ if(store&&window.IMODE_STORAGE)store=window.IMODE_STORAGE.wrap(store);
 
  window.IMODE_PLATFORM={
   storageKey:C.storageKey,

@@ -11,7 +11,10 @@
     try { return localStorage.getItem(REMEMBER_KEY) !== '0'; } catch (e) { return true; }
   }
   function store() {
-    try { return rememberOn() ? window.localStorage : window.sessionStorage; } catch (e) { return undefined; }
+    var s;
+    try { s = rememberOn() ? window.localStorage : window.sessionStorage; } catch (e) { s = undefined; }
+    /* 2026-11-11: a full browser storage must never stop a sign-in (shared/config.js) */
+    return (window.IMODE_STORAGE && s) ? window.IMODE_STORAGE.wrap(s) : s;
   }
 
   function sb() {
@@ -41,6 +44,7 @@
     if (/email not confirmed/i.test(msg)) return new Error('บัญชีนี้ยังไม่ได้เปิดใช้งาน ติดต่อผู้ดูแลระบบ');
     if (/rate limit|too many/i.test(msg)) return new Error('ลองเข้าสู่ระบบหลายครั้งเกินไป รอสักครู่แล้วลองใหม่');
     if (/fetch|network|failed to/i.test(msg)) return new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
+    if (/quota|exceeded/i.test(msg)) return new Error('พื้นที่เก็บข้อมูลของเบราว์เซอร์เต็ม ลองเข้าสู่ระบบอีกครั้ง ถ้ายังไม่ได้ให้ล้างข้อมูลเว็บไซต์นี้ในการตั้งค่าเบราว์เซอร์');
     return new Error(msg || 'เข้าสู่ระบบไม่สำเร็จ');
   }
 

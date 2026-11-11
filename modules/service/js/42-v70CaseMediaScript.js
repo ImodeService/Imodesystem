@@ -122,6 +122,10 @@
   window.cloudUpsertCase=function(c){
    var self=this,args=arguments;
    var list=Array.isArray(c&&c.media)?c.media:[];
+   /* 2026-11-11: a list holding a stub (offloaded: the device was full, the file is on the server)
+      is never sent - it would overwrite the server's photos with empty entries. The row goes up
+      without its media column, so the server keeps what it has. */
+   if(list.some(function(x){return x&&x.offloaded&&!x.data})){try{console.warn('[imode] media not uploaded for '+c.id+': this device holds stubs only')}catch(e){}list=[]}
    if(!list.length||!c.id)return baseUpsertCase.apply(self,args);
    return mediaColumnReady().then(function(ok){
     if(!ok)return baseUpsertCase.apply(self,args);
@@ -143,6 +147,10 @@
   window.cloudUpsertLineRequest=function(r){
    var self=this,args=arguments;
    var list=Array.isArray(r&&r.media)?r.media:[];
+   /* 2026-11-11: a list holding a stub (offloaded: the device was full, the file is on the server)
+      is never sent - it would overwrite the server's photos with empty entries. The row goes up
+      without its media column, so the server keeps what it has. */
+   if(list.some(function(x){return x&&x.offloaded&&!x.data})){try{console.warn('[imode] media not uploaded for '+r.id+': this device holds stubs only')}catch(e){}list=[]}
    if(!list.length||!r.id)return baseUpsertReq.apply(self,args);
    return mediaColumnReady().then(function(ok){
     if(!ok)return baseUpsertReq.apply(self,args);
