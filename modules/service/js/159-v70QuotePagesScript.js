@@ -86,9 +86,68 @@
     var meta=QC.metaOf(q)||{};
     var vatLabel=q.vatOn?'VAT '+QC.num(meta.vatPct)+'%':'VAT -';
     html=html.replace(/(<div style="text-align:right">)VAT [0-9.]+%(<\/div>)/,'$1'+vatLabel+'$2');
+    /* 2026-11-11 owner: Ref is what the quotation says (default the case number), the contact mobile
+       under Tel, and a revision names the quotation it replaces */
+    var ref=QC.refOf(q),mob=QC.mobileOf(q),from=QC.revOf(q);
+    html=html.replace(/(<div class="label">Ref :<\/div><div class="value">)[\s\S]*?(<\/div>)/,function(_,a,b){return a+QC.esc(ref||'-')+b});
+    if(mob)html=html.replace(/(<div class="row"><div class="label">Tel :<\/div><div class="value">[\s\S]*?<\/div><\/div>)/,function(r){return r+'<div class="row"><div class="label">Mobile :</div><div class="value">'+QC.esc(mob)+'</div></div>'});
+    if(from)html=html.replace(/(<div class="label">No :<\/div><div class="value">)([\s\S]*?)(<\/div>)/,function(_,a,v,b){return a+v+' <span style="font-size:11px;color:#475467">(แก้ไขจาก '+QC.esc(from)+')</span>'+b});
    }catch(e){}
    return html;
   };
+ }
+ /* 2026-11-11 owner: no "Spare Part - " in front of a part's name, on every quotation's paper */
+ var baseDoc2=window.quotationDocHTML;
+ if(typeof baseDoc2==='function'){
+  window.quotationDocHTML=function(){
+   var html=baseDoc2.apply(this,arguments);
+   if(typeof html!=='string')return html;
+   return html.replace(/(<div class="quote-paper-table">[\s\S]*?<\/table>)/,function(t){return t.replace(/<td>Spare Part - /g,'<td>')});
+  };
+ }
+
+ /* ------------------------------------------------ 3b. Revise + confirm send ---- */
+ /* 2026-11-11 owner: แก้ไขใบเสนอราคา makes "<เลขเดิม>-REV01" on the quotation's own page; the
+    original is never changed (js/quote-common.js page(), ?revise=). */
+ window.imodeReviseQuote=function(id){
+  var q=find(id);
+  closePopup();
+  location.href=(q?QC.TYPES[QC.typeOfQuote(q)]||QC.TYPES.service:QC.TYPES.service).page+'?revise='+encodeURIComponent(id);
+ };
+ /* ส่งให้ลูกค้า asks first (owner 2026-11-11): the customer sees the quotation as soon as it is sent */
+ var baseSend=window.imodeSendQuoteToCustomer;
+ if(typeof baseSend==='function'){
+  window.imodeSendQuoteToCustomer=function(id,quiet){
+   var self=this,args=arguments,q=find(id);
+   var draft=q&&(typeof window.imodeQuoteIsDraft!=='function'||window.imodeQuoteIsDraft(q));
+   if(!draft||quiet==='confirmed')return baseSend.apply(self,args);
+   if(document.getElementById('qvConfirmSend'))return;
+   var d=document.createElement('div');d.id='qvConfirmSend';d.className='qvc-shade';
+   d.innerHTML='<div class="qvc-card" role="dialog" aria-modal="true" aria-labelledby="qvcT"><div class="qvc-ico" aria-hidden="true">📤</div>'
+    +'<b id="qvcT">ยืนยันการส่งใบเสนอราคา?</b>'
+    +'<p>'+QC.esc(q.id)+' · '+QC.esc(q.customer||'-')+' · '+QC.money(q.grand)+' บาท<br>ส่งแล้วลูกค้าจะเห็นใบนี้ในหน้าลูกค้า</p>'
+    +'<div class="qvc-btns"><button type="button" class="qvc-no" data-qvc="no">ยกเลิก</button><button type="button" class="qvc-yes" data-qvc="yes">ส่ง</button></div></div>';
+   function close(){d.remove();document.removeEventListener('keydown',key,true)}
+   function key(e){if(e.key==='Escape'){e.stopPropagation();close()}}
+   d.addEventListener('click',function(e){
+    var b=e.target.closest('[data-qvc]');
+    if(!b){if(e.target===d)close();return}
+    close();
+    if(b.getAttribute('data-qvc')==='yes')baseSend.call(self,id,quiet);
+   });
+   document.addEventListener('keydown',key,true);
+   document.body.appendChild(d);
+   try{d.querySelector('.qvc-no').focus()}catch(e){}
+  };
+  var st=document.createElement('style');
+  st.textContent='.qvc-shade{position:fixed;inset:0;background:rgba(9,18,38,.45);z-index:20000;display:flex;align-items:center;justify-content:center;padding:16px}'
+   +'.qvc-card{background:var(--fx-surface,#fff);color:var(--fx-text,#1f1f1f);border-radius:8px;max-width:420px;width:100%;padding:22px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}'
+   +'.qvc-ico{font-size:34px}.qvc-card b{display:block;font-size:18px;color:var(--fx-head,#0c225e);margin:6px 0}'
+   +'.qvc-card p{margin:0;color:var(--fx-muted,#5f6672);line-height:1.6}'
+   +'.qvc-btns{display:flex;gap:10px;margin-top:18px}.qvc-btns button{flex:1;min-height:44px;border-radius:4px;font:inherit;font-weight:700;cursor:pointer}'
+   +'.qvc-no{border:1px solid var(--fx-line,#e1e1e1);background:transparent;color:inherit}'
+   +'.qvc-yes{border:0;background:#c25e00;color:#fff}.qvc-btns button:focus-visible{outline:2px solid #0b63e5;outline-offset:2px}';
+  document.head.appendChild(st);
  }
 
  /* ------------------------------------------------- 4. the old page is gone ---- */

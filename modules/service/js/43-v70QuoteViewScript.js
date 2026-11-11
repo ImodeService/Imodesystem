@@ -426,14 +426,34 @@
   try{if(typeof quoteStatusPill==='function')return quoteStatusPill(q.status)}catch(e){}
   return '<span class="quote-status">'+esc2(q.status||'ร่าง')+'</span>';
  }
+ /* 2026-11-11 owner: Revise — "<เลขเดิม>-REV01" is a new quotation, the original stays as it was */
+ var revLatest=null;
+ function qRevOf(q){
+  var p=Array.isArray(q&&q.parts)?q.parts:[];
+  for(var i=0;i<p.length;i++)if(p[i]&&p[i].kind==='meta'&&p[i].revOf)return String(p[i].revOf);
+  return String(q&&q.revOf||'');
+ }
+ function latestRev(id){
+  if(!revLatest){
+   revLatest={};
+   quoteList().forEach(function(x){
+    var mt=/^(.*)-REV(\d+)$/i.exec(String(x&&x.id||''));if(!mt)return;
+    var o=revLatest[mt[1]];if(!o||+mt[2]>o.n)revLatest[mt[1]]={n:+mt[2],id:x.id};
+   });
+  }
+  return revLatest[String(id||'')]||null;
+ }
  function rowHTML(q){
   var draft=isDraft(q);
   var machines=(q.machineIds||[]).length;
-  return '<div class="qv-row'+(draft?' is-draft':'')+'" data-quote="'+esc2(q.id)+'" role="button" tabindex="0"'
+  var from=qRevOf(q),later=/-REV\d+$/i.test(String(q.id||''))?null:latestRev(q.id);
+  return '<div class="qv-row'+(draft?' is-draft':'')+(from?' is-rev':'')+'" data-quote="'+esc2(q.id)+'" role="button" tabindex="0"'
    +' aria-label="'+esc2(tl('เปิดใบเสนอราคา ','Open quotation ')+q.id)+'">'
    +'<div class="qv-row-main">'
    +'<div class="qv-row-top"><b>'+esc2(q.id)+'</b>'+pill(q)
    +(draft?'<span class="qv-unsent">'+esc2(tl('ลูกค้ายังไม่เห็น','Customer cannot see this'))+'</span>':'')
+   +(from?'<span class="qv-revchip">'+esc2(tl('ฉบับแก้ของ ','Revision of ')+from)+'</span>':'')
+   +(later?'<span class="qv-revchip is-old">'+esc2(tl('มีฉบับแก้ ','Revised as ')+later.id.slice(later.id.length-5))+tl(' แล้ว','')+'</span>':'')
    +'</div>'
    +'<small>'+esc2(q.customer||'-')+(q.caseTicket?' · '+esc2(q.caseTicket):'')+'</small>'
    +'<small>'+esc2(tl('สร้าง','Created'))+' '+esc2(fmtAny(q.createdAt))
@@ -444,6 +464,11 @@
      ?'<button type="button" class="qv-send" onclick="event.stopPropagation();imodeSendQuoteToCustomer('+imodeJsArg(q.id)+')">'
       +esc2(tl('📤 ส่งให้ลูกค้า','📤 Send'))+'</button>'
      :'<span class="qv-go">'+esc2(tl('ดูใบ','Open'))+' ›</span>')
+   +(can('quotation.create')&&typeof window.imodeReviseQuote==='function'
+     ?'<button type="button" class="qv-rev" data-qv-rev="1" onclick="event.stopPropagation();imodeReviseQuote('+imodeJsArg(q.id)+')"'
+      +' title="'+esc2(tl('ทำฉบับแก้ไข — ใบเดิมไม่ถูกเปลี่ยน','Make a revised copy — the original is kept'))+'">'
+      +esc2(tl('✏ แก้ไข (Revise)','✏ Revise'))+'</button>'
+     :'')
    +'</div></div>';
  }
 
@@ -451,6 +476,7 @@
   var host=document.getElementById('page-'+PAGE);
   if(!host)return;
   var all=quoteList();
+  revLatest=null;
   /* 2026-09-15: a ปี/เดือน/สัปดาห์ period filter (js/66, "all" by default as before) and the
      shared page-size control every other list uses, in place of "แสดงเพิ่ม". LIST_PAGER_CONFIG
      is js/03's top-level const — a lexical global, so it is reached by bare name; registering
@@ -646,6 +672,17 @@
  +'.qv-send:hover{transform:translateY(-1px);box-shadow:0 5px 0 #c96a08}'
  +'.qv-send:active{transform:translateY(3px);box-shadow:0 1px 0 #c96a08}'
  +'.qv-send:focus-visible{outline:2px solid #0b63e5;outline-offset:2px}'
+ /* 2026-11-11: Revise button and the revision chips */
+ +'.qv-rev{border:1.5px solid #0b63e5;border-radius:11px;padding:6px 12px;cursor:pointer;white-space:nowrap;'
+ +'background:transparent;color:#0b63e5;font:inherit;font-size:12px;font-weight:800;min-height:34px}'
+ +'.qv-rev:hover{background:#eef4ff}.qv-rev:focus-visible{outline:2px solid #0b63e5;outline-offset:2px}'
+ +'.qv-revchip{font-size:10.5px;font-weight:800;color:#5b2bbf;background:#f1ebff;border:1px solid #ddd0fb;border-radius:999px;padding:2px 9px}'
+ +'.qv-revchip.is-old{color:#475467;background:#f2f4f7;border-color:#e4e7ec}'
+ +'.qv-row.is-rev{border-left:4px solid #7c3aed}'
+ +'html[data-theme="dark"] .qv-rev,html[data-ui="flat-dark"] .qv-rev{color:#7db4ff;border-color:#5aa0ff}'
+ +'html[data-theme="dark"] .qv-rev:hover,html[data-ui="flat-dark"] .qv-rev:hover{background:#1e3a64}'
+ +'html[data-theme="dark"] .qv-revchip,html[data-ui="flat-dark"] .qv-revchip{background:#2e2350;border-color:#4b3a80;color:#cdb8ff}'
+ +'html[data-theme="dark"] .qv-revchip.is-old,html[data-ui="flat-dark"] .qv-revchip.is-old{background:#2e2e2e;border-color:#3a3a3a;color:#c0c4cc}'
  +'.qv-more{padding:0 14px 16px}'
  /* the period row above the totals, and the page-size row above the list */
  +'.qv-period{padding:0 14px 12px}'
@@ -665,7 +702,8 @@
  +'html[data-theme="dark"] .qv-draftnote{background:#3a2c14;border-color:#6b4f1f;color:#f0c27a}'
  +'@media (max-width:640px){'
  +'.qv-row{flex-direction:column;align-items:stretch;gap:9px}'
- +'.qv-row-side{flex-direction:row;align-items:center;justify-content:space-between}'
+ +'.qv-row-side{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap}'
+ +'.qv-row-side .qv-amount{flex:1 0 100%}.qv-row-side .qv-send,.qv-row-side .qv-rev{flex:1 1 0;min-height:40px}'
  +'.qv-filters input,.qv-filters select{flex:1 1 100%}'
  +'}'
  +'@media (prefers-reduced-motion:reduce){.qv-row,.qv-send{transition:none}'

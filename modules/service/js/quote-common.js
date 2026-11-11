@@ -196,6 +196,37 @@
   },function(){return {id:localNumber(code),server:false}});
  }
 
+ /* 2026-11-11 owner: แก้ไขใบเสนอราคา = a new copy "<เลขเดิม>-REV01", "-REV02" …; the original stays
+    as it was. Works with any base format (IM-QP2611001, a future QUO202611001 …): a revision of a
+    revision counts on from the same base, never "-REV01-REV01". */
+ function revBase(id){return String(id||'').replace(/-REV\d+$/i,'')}
+ function revNumber(src){
+  var base=revBase(src),p=base+'-REV',s=settings();
+  function next(ids){
+   var n=0;
+   ids.forEach(function(id){id=String(id||'');if(id.indexOf(p)===0){var v=parseInt(id.slice(p.length),10);if(v>n)n=v}});
+   return p+String(n+1).padStart(2,'0');
+  }
+  var ids=quotes().map(function(q){return q&&q.id});
+  ['quoteApprovals','quoteStaffSigns','quoteAccepts','quoteDocs'].forEach(function(k){var m=s[k];if(m&&typeof m==='object')ids=ids.concat(Object.keys(m))});
+  var c=db();
+  if(!c)return Promise.resolve({id:next(ids),server:false});
+  return withTimeout(c.from('quotations').select('id').like('id',p+'%')).then(function(x){
+   return {id:next(ids.concat((x&&!x.error&&x.data||[]).map(function(o){return o.id}))),server:false};
+  },function(){return {id:next(ids),server:false}});
+ }
+ function revOf(q){var m=metaOf(q);return String((m&&m.revOf)||(q&&q.revOf)||'')}
+ /* Ref on the paper: what the person typed, else the case number (owner 2026-11-11) */
+ function refOf(q){var m=metaOf(q);if(m&&typeof m.ref==='string')return m.ref;return String(q&&q.caseTicket||'')}
+ function mobileOf(q){var m=metaOf(q);return String((m&&m.mobile)||'')}
+ /* the creator's own mobile: their account, else their technician record */
+ function myMobile(name){
+  var u=user(),v=String(u.mobile||u.phone||u.tel||'').trim();if(v)return v;
+  name=String(name||userName()).trim();if(!name)return '';
+  var t=(readJ(K.tech,[])||[]).filter(function(x){return x&&String(x.name||'').trim()===name})[0];
+  return t?String(t.phone||t.mobile||'').trim():'';
+ }
+
  /* --------------------------------------------------------------- the model ---- */
  function typeOfQuote(q){
   var s=String(q&&q.service||'');
@@ -230,7 +261,9 @@
    preparedBy:userName(),preparedDate:todayISO(),authorizedBy:'',authorizedDate:todayISO(),
    warrantyMonths:12,warrantyType:'standard',attachments:[],
    /* 2026-11-09 owner: the Service page does everything the old page did (js/03 calcQuote) */
-   pickupMode:0,coverage:'none',extraHours:0,extraTechs:0,diagnosis:0,purchaserName:'',purchaserDate:''};
+   pickupMode:0,coverage:'none',extraHours:0,extraTechs:0,diagnosis:0,purchaserName:'',purchaserDate:'',
+   /* 2026-11-11: Ref (null = the case number), the contact mobile on the paper, the quotation this revises */
+   ref:null,mobile:myMobile(),revOf:''};
  }
  /* the old page's rules (js/03 calcQuote), shared by the Service page and totals() */
  var URGENCY={normal:['ปกติ 0%',0],urgent:['เร่งด่วน','urgentPct'],emergency:['ฉุกเฉิน','emergencyPct'],critical:['Critical • เสนอราคาเป็นกรณี',0]};
@@ -270,6 +303,7 @@
   m.parts=(q.parts||[]).map(function(p){return normPart(p,c)}).filter(Boolean);
   m.attachments=Array.isArray(q.attachments)?q.attachments.slice():[];
   m.purchaserName=q.purchaserName||'';m.purchaserDate=q.purchaserDate||'';
+  m.ref=typeof meta.ref==='string'?meta.ref:null;m.mobile=typeof meta.mobile==='string'?meta.mobile:'';m.revOf=revOf(q);
   if(metaOf(q)){
    m.expenses=(meta.expenses||[]).map(function(e){return {name:e.name||'',amount:num(e.amount)}});
    m.discount=num(meta.discount);m.travel=num(meta.travel);m.labor=num(meta.labor);
@@ -345,7 +379,8 @@
    machines:(m.machines||[]).map(function(x){return {id:x.id,label:x.label||machineLabel(machine(x.id)),price:r2(x.price)}}),
    travel:t.travel,labor:t.labor,warrantyType:m.type==='warranty'?m.warrantyType:'',
    emergency:t.emergency,pickup:t.pickup,pickupMode:num(m.pickupMode),coverage:m.coverage||'none',
-   extraHours:num(m.extraHours),extraTechs:num(m.extraTechs),diagnosis:t.diagnosis});
+   extraHours:num(m.extraHours),extraTechs:num(m.extraTechs),diagnosis:t.diagnosis,
+   ref:m.ref==null?(cs.ticket||''):String(m.ref),mobile:String(m.mobile||'').trim(),revOf:m.revOf||''});
   return {id:m.id,caseId:m.caseId||'',caseTicket:cs.ticket||'',customerId:m.customerId||'',customer:cu.name||'',
    contact:m.contact||'',location:m.location||'',service:m.service,
    warrantyMode:m.type==='warranty'?'extend':(covered(m)?m.coverage:'none'),warrantyMonths:num(m.warrantyMonths)||12,
@@ -357,7 +392,7 @@
    extraHours:num(m.extraHours),extraTechs:num(m.extraTechs),diagnosis:t.diagnosis,toll:0,otherExpense:t.expenses,discountPct:0,
    serviceFee:t.machines,emergency:t.emergency,travel:t.travel,pickup:t.pickup,labor:t.labor,partsTotal:t.parts,other:t.expenses,
    discount:t.discount,subtotal:t.subtotal,vat:t.vat,grand:t.grand,
-   status:m.status||'ร่าง',createdAt:m.createdAt||now,updatedAt:now,
+   revOf:m.revOf||'',status:m.status||'ร่าง',createdAt:m.createdAt||now,updatedAt:now,
    attachments:(m.attachments||[]).slice(0,ATT_MAX)};
  }
 
@@ -372,7 +407,7 @@
  function save(m){
   if(!m.customerId)return Promise.resolve({ok:false,message:'กรุณาเลือกลูกค้า'});
   var first=!m.id;
-  var numP=first?issueNumber(m.type):Promise.resolve({id:m.id});
+  var numP=first?(m.revOf?revNumber(m.revOf):issueNumber(m.type)):Promise.resolve({id:m.id});
   return numP.then(function(n){
    m.id=n.id;
    var rec=toRecord(m);
@@ -447,7 +482,7 @@
   (q.parts||[]).forEach(function(p){
    var x=normPart(p,c);if(!x)return;
    var unit=x.stock?unitPrice(x,c):num(x.price);if(!unit&&!x.name)return;
-   out.push({no:++n,desc:'Spare Part - '+(x.name||'อะไหล่')+' (ค่าอะไหล่)',qty:x.qty,unit:unit,amount:r2(unit*x.qty)});
+   out.push({no:++n,desc:(x.name||'อะไหล่')+' (ค่าอะไหล่)',qty:x.qty,unit:unit,amount:r2(unit*x.qty)});
   });
   (meta.expenses||[]).forEach(function(e){
    if(!num(e.amount))return;
@@ -501,10 +536,11 @@
    +'<div class="row"><div class="label">Customer Name :</div><div class="value">'+esc(q.contact||'-')+'</div></div>'
    +'<div class="row"><div class="label">Company Name :</div><div class="value">'+esc(q.customer||'-')+'</div></div>'
    +'<div class="row"><div class="label">Address :</div><div class="value">'+esc(q.location||'-')+'</div></div></div>'
-   +'<div class="quote-paper-block"><div class="row"><div class="label">No :</div><div class="value">'+esc(q.id||'DRAFT')+'</div></div>'
+   +'<div class="quote-paper-block"><div class="row"><div class="label">No :</div><div class="value">'+esc(q.id||'DRAFT')+(revOf(q)?' <span style="font-size:11px;color:#475467">(แก้ไขจาก '+esc(revOf(q))+')</span>':'')+'</div></div>'
    +'<div class="row"><div class="label">Date :</div><div class="value">'+thDate(q.preparedDate)+'</div></div>'
-   +'<div class="row"><div class="label">Ref :</div><div class="value">'+esc(q.caseTicket||'-')+'</div></div>'
-   +'<div class="row"><div class="label">Tel :</div><div class="value">'+esc(s.companyPhone||'-')+'</div></div></div></div>'
+   +'<div class="row"><div class="label">Ref :</div><div class="value">'+esc(refOf(q)||'-')+'</div></div>'
+   +'<div class="row"><div class="label">Tel :</div><div class="value">'+esc(s.companyPhone||'-')+'</div></div>'
+   +(mobileOf(q)?'<div class="row"><div class="label">Mobile :</div><div class="value">'+esc(mobileOf(q))+'</div></div>':'')+'</div></div>'
    +'<div class="quote-paper-table"><table><thead><tr><th style="width:56px">No.</th><th>Description</th><th style="width:70px">Qty</th><th style="width:150px">Unit Price</th><th style="width:160px">Amount Total</th></tr></thead>'
    +'<tbody>'+rowsHTML(q)+'</tbody></table></div>'
    +'<div class="quote-paper-remark"><div class="label">Remark :</div><div>'+esc(remarkText(q))+'</div></div>'
@@ -999,7 +1035,8 @@
   function touch(textOnly){dirty=true;if(!textOnly)sums()}
   function head(){
    var el=$('qcNo');
-   if(m.id){el.textContent=m.id+' · '+(m.status||'ร่าง');el.classList.add('is-saved');document.title=m.id+' · '+TYPES[type].label+' · I-MODE'}
+   if(m.id){el.textContent=m.id+' · '+(m.status||'ร่าง')+(m.revOf?' · แก้ไขจาก '+m.revOf:'');el.classList.add('is-saved');document.title=m.id+' · '+TYPES[type].label+' · I-MODE'}
+   else if(m.revOf){el.textContent='ฉบับแก้ของ '+m.revOf+' · ได้เลข '+revBase(m.revOf)+'-REVxx เมื่อบันทึก';el.classList.remove('is-saved')}
    else{el.textContent='ใบใหม่ · ยังไม่มีเลขที่';el.classList.remove('is-saved')}
    var c=$('qcChat');if(c)c.hidden=!(m.id&&m.caseId);
   }
@@ -1013,6 +1050,25 @@
    sums();head();
    if($('qcPrepared'))staffSelect($('qcPrepared'),m.preparedBy);
    if($('qcAuthorized'))staffSelect($('qcAuthorized'),m.authorizedBy);
+   fillRef();
+  }
+  /* 2026-11-11 owner: Ref (อ้างอิง) and the contact mobile, both printed on the paper and editable */
+  (function(){
+   var note=$('qcNote'),f=note&&note.closest('.qc-field');if(!f||$('qcRef'))return;
+   f.insertAdjacentHTML('beforebegin','<div class="qc-field"><label for="qcRef">Ref (อ้างอิง)</label><input id="qcRef" maxlength="80" autocomplete="off">'
+    +'<small class="qc-help">ว่างไว้ = ใช้เลขเคส · พิมพ์แก้เองได้ เช่น เลข PO ของลูกค้า</small></div>'
+    +'<div class="qc-field"><label for="qcMobile">เบอร์มือถือผู้ติดต่อ (บนใบ)</label><input id="qcMobile" type="tel" maxlength="40" autocomplete="off">'
+    +'<small class="qc-help">ดึงจากบัญชีคนทำใบ แก้ได้ · ว่างไว้ = ไม่พิมพ์บรรทัดนี้</small></div>');
+  })();
+  function caseRef(){var cs=caseById(m.caseId);return (cs&&cs.ticket)||''}
+  function fillRef(){
+   var r=$('qcRef'),mo=$('qcMobile');if(!r)return;
+   r.value=m.ref==null?caseRef():m.ref;r.placeholder=caseRef()||'—';
+   mo.value=m.mobile||'';
+  }
+  if($('qcRef')){
+   $('qcRef').addEventListener('input',function(){var v=this.value.trim();m.ref=(!v||v===caseRef())?null:v;touch(true)});
+   $('qcMobile').addEventListener('input',function(){m.mobile=this.value;touch(true)});
   }
   $('qcDiscount').addEventListener('input',function(){m.discount=Math.max(0,num(this.value));touch()});
   $('qcNote').addEventListener('input',function(){m.note=this.value;touch(true)});
@@ -1057,8 +1113,22 @@
    refresh().then(function(ok){if(ok){if(pick)pick.refill();if(o.onRefresh)o.onRefresh(m,api)}});
    settingsFresh().then(function(s){if(s&&o.onSettings)o.onSettings(m,api);if(s)sums()});
   }
-  var id=param('id');
-  if(id){
+  var id=param('id'),rev=param('revise');
+  if(rev&&!id){
+   /* 2026-11-11 owner: แก้ไขใบเสนอราคา — a copy of the quotation to edit; it gets <base>-REVnn when
+      saved and the original is never written. Signatures / customer approval belong to a number, so
+      the copy starts unsigned. */
+   loadQuote(rev).then(function(q){
+    if(!q){toast('ไม่พบใบเสนอราคา '+rev,5000);if(o.blank)o.blank(m);start();return}
+    if(typeOfQuote(q)!==type){location.replace((TYPES[typeOfQuote(q)]||TYPES.service).page+'?revise='+encodeURIComponent(q.id));return}
+    m=fromRecord(q);m.revOf=q.id;m.id='';m.status='ร่าง';m.createdAt='';
+    m.preparedBy=userName()||m.preparedBy;m.preparedDate=todayISO();m.authorizedDate=todayISO();
+    if(!m.mobile)m.mobile=myMobile();
+    if(m.ref==null&&q.caseTicket)m.ref=q.caseTicket;
+    start();dirty=true;
+    toast('กำลังแก้ไขจาก '+q.id+' · ใบเดิมจะไม่ถูกเปลี่ยน กดบันทึกเพื่อออกเลขใหม่',4500);
+   });
+  }else if(id){
    loadQuote(id).then(function(q){
     if(!q){toast('ไม่พบใบเสนอราคา '+id,5000);if(o.blank)o.blank(m);start();return}
     if(typeOfQuote(q)!==type){location.replace(pageUrl(q));return}
@@ -1165,7 +1235,7 @@
   settings:settings,cfg:cfg,user:user,userName:userName,customers:customers,cases:cases,machines:machines,quotes:quotes,
   customer:customer,caseById:caseById,machine:machine,machineLabel:machineLabel,
   db:db,refresh:refresh,settingsFresh:settingsFresh,loadQuote:loadQuote,staff:staff,issueNumber:issueNumber,
-  typeOfQuote:typeOfQuote,isV2:isV2,metaOf:metaOf,blankModel:blankModel,fromRecord:fromRecord,toRecord:toRecord,
+  typeOfQuote:typeOfQuote,isV2:isV2,revBase:revBase,revNumber:revNumber,revOf:revOf,refOf:refOf,mobileOf:mobileOf,metaOf:metaOf,blankModel:blankModel,fromRecord:fromRecord,toRecord:toRecord,
   totals:totals,unitPrice:unitPrice,save:save,expenseOptions:expenseOptions,addExpenseOptions:addExpenseOptions,
   chatPost:chatPost,chatDialog:chatDialog,rows:rows,rowsHTML:rowsHTML,remarkText:remarkText,paperHTML:paperHTML,print:print,
   mapsUrl:mapsUrl,travelFee:travelFee,toast:toast,pageUrl:pageUrl,typeBar:typeBar,picker:picker,staffSelect:staffSelect,
