@@ -1369,8 +1369,10 @@
       if (nb) {
         if (nb.dataset.ncr) { openNcr(nb.dataset.ncr); return; }
         var saved = draft.id && byId(db.qc, draft.id);
-        if (!saved || dlg.dataset.dirty === '1') { page.toast('บันทึกใบ QC ก่อน แล้วจึงเปิด NCR'); return; }
-        openNcrNew(saved, draft.checklist[+nb.closest('.qc-check').dataset.i]); return;
+        var item = draft.checklist[+nb.closest('.qc-check').dataset.i];
+        // 2026-11-13 (tester A10): an unsaved form is saved first, then the NCR opens straight away
+        if (!saved || dlg.dataset.dirty === '1') { save(false, function (q) { openNcrNew(q, (q.checklist || []).filter(function (x) { return x.id === item.id; })[0] || item); }); return; }
+        openNcrNew(saved, item); return;
       }
       var b = e.target.closest('button[data-r]'); if (!b) return;
       var row = b.closest('.qc-check'), i = +row.dataset.i, it = draft.checklist[i];
@@ -1490,7 +1492,7 @@
     return sb().from('qc_records').upsert(row, { onConflict: 'id' }).select().single();
   }
   /* submit: after saving, send to Head QC (qc_submit checks the gate again on the server) */
-  async function save(submit) {
+  async function save(submit, after) {   // after(savedQc): keep going (e.g. open an NCR) instead of closing
     readForm();
     var m = byId(db.machines, draft.machineId);
     var miss = !draft.customerId && !inQc(m) ? '#fCustomer' : !draft.machineId ? '#fMachine' : !draft.qcDate ? '#fDate' : !draft.inspector ? '#fInspector' : '';
@@ -1563,7 +1565,9 @@
       openForm(saved);
       return;
     }
-    dlg.dataset.dirty = ''; dlg.close();
+    dlg.dataset.dirty = '';
+    if (after && !sent) { page.toast('บันทึก ' + saved.qcNo + ' แล้ว'); after(saved); return; }
+    dlg.close();
     page.toast(passed ? saved.qcNo + ' ผ่าน QC แล้ว เครื่องพร้อมส่งมอบ' : sent ? 'ส่ง ' + saved.qcNo + ' ให้ Head QC อนุมัติแล้ว' : 'บันทึก ' + saved.qcNo + ' แล้ว');
   }
 

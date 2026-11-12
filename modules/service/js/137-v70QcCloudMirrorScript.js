@@ -10,7 +10,12 @@
    2026-10-20 to 2026-11-10 this file also hid the case page's QC buttons. 2026-11-11 they are
    back ("ใช้ปุ่ม QC เดิม"): "ทำ QC ก่อนส่งคืน" and "ดู / พิมพ์" open the QC & R&D module
    through index.html?page=qc (Service js/136). Since QC SQL 04, a QC counts as Pass only
-   after Head QC approves it, so the hand-back unlocks after approval. */
+   after Head QC approves it, so the hand-back unlocks after approval.
+
+   2026-11-13 (tester A5: "ดู / พิมพ์" did not show the case's QC): the rows were written to
+   localStorage but the case page kept its cached copy, so the QC list stayed empty until a
+   full reload. When the case's QC rows change, the page is now refreshed and redrawn
+   (waits while a side panel or popup is open). */
 (function(){
  'use strict';
  var E=window.IMODE_ENV;
@@ -22,6 +27,16 @@
  function db(){
   if(!client){try{client=window.supabase.createClient(E.cloud.url,E.cloud.key,window.IMODE_SB_OPTIONS)}catch(e){client=null}}
   return client;
+ }
+ var lastSig=null,pendingPaint=false;
+ function sig(rows){return(rows||[]).map(function(x){return x.id+'|'+x.status+'|'+x.updated_at}).sort().join(',')}
+ function busy(){return !!(document.querySelector('#scdPanel.is-open')||document.body.classList.contains('scd-modal-open')||document.querySelector('dialog[open]'))}
+ function repaint(){
+  if(typeof CaseDetailData==='undefined'||typeof load!=='function'||typeof renderPage!=='function'){pendingPaint=false;return}
+  if(busy()){pendingPaint=true;setTimeout(repaint,5000);return}
+  pendingPaint=false;
+  try{if(CaseDetailData.refresh)CaseDetailData.refresh();
+   Promise.resolve(load()).then(function(res){if(res&&!res.error)renderPage(res)}).catch(function(e){console.info('[qc-mirror] repaint',e&&e.message)})}catch(e){console.info('[qc-mirror] repaint',e&&e.message)}
  }
  function pull(){
   var c=db();if(!c)return;
@@ -37,6 +52,10 @@
      if(byId[x.id]!=null)list[byId[x.id]]=Object.assign({},list[byId[x.id]],q);else list.push(q);
     });
     try{localStorage.setItem(KEY,JSON.stringify(list))}catch(e){}
+    var now=sig(r.data);
+    if(lastSig!==null&&now!==lastSig&&!pendingPaint)repaint();
+    else if(lastSig===null&&(r.data||[]).length&&!pendingPaint)repaint();
+    lastSig=now;
    });
  }
  pull();
