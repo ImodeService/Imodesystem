@@ -1148,7 +1148,9 @@ var CaseDetailData=(function(){
          06-v70-case-media.sql the case column did not exist, so on a second device the
          photos can only be on the request. Without this the popup showed them and this page
          did not, for the same case. */
-      var media=(c&&c.media&&c.media.length)?c.media:(function(){
+      /* 2026-11-13 (C4): the list this page itself just saved to the server comes first — with
+         a full browser storage the local copy keeps the old list, so the new file never showed. */
+      var media=(c&&savedMedia[c.id])||((c&&c.media&&c.media.length)?c.media:(function(){
         try{
           var reqs=all().lineRequests||[];
           for(var i=0;i<reqs.length;i++){
@@ -1157,7 +1159,7 @@ var CaseDetailData=(function(){
           }
         }catch(e){}
         return [];
-      })();
+      })());
       /* 2026-10-20: staff can add files to the problem too (from:'staff', with who and when);
          they are drawn in the same block as the customer's. */
       media.forEach(function(m){
@@ -3080,6 +3082,7 @@ function renderPage(m){
    here, and merged into every render — load() rebuilds the model from storage every few seconds,
    so a one-off patch of the model would be gone on the next refresh. The stored copy is untouched. */
 var fromServer={};   /* caseId -> {media:[...]|null, reports:[...]|null} */
+var savedMedia={};   /* caseId -> the full media list this page last saved to the server (C4) */
 function mergeFromServer(m){
   var id=m&&m.case&&m.case.id,got=id&&fromServer[id];
   if(!got)return;
@@ -4069,6 +4072,8 @@ function readCaseFiles(list){
 /* What the case already shows: its own list, or — for a case from before the media column —
    the request it came from, copied over so adding one file does not hide the customer's. */
 function caseMediaBase(raw){
+  /* C4: after a save on this page, a second add builds on what was saved, not the old local list */
+  if(raw&&savedMedia[raw.id])return savedMedia[raw.id].slice();
   if(raw&&Array.isArray(raw.media)&&raw.media.length)return raw.media.slice();
   try{
     var reqs=readJSON(K.lineRequests,[])||[];
@@ -4108,9 +4113,16 @@ function addCaseFiles(){
     var media=caseMediaWith(raw,items);
     if(!media)return;
     toast('กำลังบันทึกไฟล์…');
-    CaseWrite.patch(raw.id,{media:media}).then(function(r){
+    var ch={media:media};   /* healMedia swaps ch.media for the list actually written */
+    CaseWrite.patch(raw.id,ch).then(function(r){
       if(!r||!r.ok){toast(r&&r.reason==='storage'?'พื้นที่ในเครื่องเต็ม บันทึกไฟล์ไม่ได้'
         :r&&r.reason==='nomedia'?'โหลดไฟล์เดิมจากระบบกลางไม่ได้ จึงยังไม่บันทึก (กันไฟล์เก่าถูกทับ) ลองใหม่เมื่อออนไลน์':'บันทึกไฟล์ไม่สำเร็จ');return}
+      /* 2026-11-13 (C4): the server now holds ch.media. A full browser storage keeps the old list
+         locally, so the page draws from this one (and checks lost files against it) instead. */
+      if(r.cloud){
+        savedMedia[raw.id]=ch.media.slice();
+        if(fromServer[raw.id])fromServer[raw.id].media=ch.media.slice();
+      }
       if(typeof window.imodeCaseChatNotify==='function'){
         try{window.imodeCaseChatNotify(raw.id,'📎 เพิ่มไฟล์แนบของปัญหา '+items.length+' ไฟล์: '
           +items.map(function(x){return x.name}).join(', '))}catch(e){}
