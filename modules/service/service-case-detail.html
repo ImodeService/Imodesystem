@@ -1435,10 +1435,47 @@ var CaseWrite=(function(){
       }
     }
     if(moved)notes.push(moved);        /* who got the job first, then where the case went */
-    return patchNow(caseId,changes,why).then(function(r){
+    return healMedia(caseId,changes).then(function(h){
+      if(!h.ok)return {ok:false,reason:h.reason};
+      return patchNow(caseId,changes,why);
+    }).then(function(r){
       if(r&&r.ok)notes.forEach(function(t){chatNote(caseId,t)});
       return r;
     });
+  }
+  /* 2026-11-11: a media list written to the server must never carry stubs. js/72 trims this
+     device's copy to name/type/size (no data), and adding a file used to send that trimmed list
+     back, overwriting the real files in service_cases.media with empty ones. Before a media
+     write, every item without data is refilled from the server's own copy (same index, else the
+     same name+type+size); with no answer from the server nothing is written; items the server no
+     longer has either are dropped (they are already lost) and counted in healMedia.dropped. */
+  function healMedia(caseId,changes){
+    if(!changes||!Array.isArray(changes.media)||!changes.media.some(function(x){return x&&!x.data}))
+      return Promise.resolve({ok:true});
+    var sb=db();
+    if(!sb)return Promise.resolve({ok:false,reason:'nomedia'});
+    try{
+      return Promise.resolve(sb.from('service_cases').select('media').eq('id',caseId).limit(1)).then(function(r){
+        var row=r&&r.data&&r.data[0];
+        if(!row||!Array.isArray(row.media))return {ok:false,reason:'nomedia'};
+        var srv=row.media,used={};
+        function same(a,b){return a&&b&&b.data&&String(a.name||'')===String(b.name||'')
+          &&String(a.type||'')===String(b.type||'')&&(!a.size||!b.size||a.size===b.size)}
+        var out=[],lost=0;
+        changes.media.forEach(function(x,i){
+          if(x&&x.data){out.push(x);return}
+          var hit=-1;
+          if(same(x,srv[i])&&!used[i])hit=i;
+          else for(var j=0;j<srv.length;j++)if(!used[j]&&same(x,srv[j])){hit=j;break}
+          if(hit<0){lost++;return}
+          used[hit]=1;
+          out.push(srv[hit]);
+        });
+        changes.media=out;
+        healMedia.dropped=lost;
+        return {ok:true};
+      },function(){return {ok:false,reason:'nomedia'}});
+    }catch(e){return Promise.resolve({ok:false,reason:'nomedia'})}
   }
   function patchNow(caseId,changes,why){
     var list=localCases(),hit=null;
@@ -2778,7 +2815,9 @@ function renderActionBar(){
    index travels and the lightbox reads the array. */
 function mediaTiles(items){
   return items.map(function(x){
-    var body=(x.a.type==='image'&&x.a.data)
+    var body=(x.a.lost&&!x.a.data)
+      ? '<span style="color:#e58a6e;font-size:11px;text-align:center;line-height:1.3">&#9888;<br>ไฟล์หาย<br>ต้องแนบใหม่</span>'
+      : (x.a.type==='image'&&x.a.data)
       ? '<img src="'+esc(x.a.data)+'" alt="'+esc(x.a.name||'')+'" loading="lazy">'
       : '<span>'+(x.a.type==='video'?'&#9654;':x.a.type==='audio'?'&#127925;':'&#128196;')+'</span>'
         +(x.a.type==='file'?'<small class="cmp-tile-name">'+esc(x.a.name||'PDF')+'</small>':'');
@@ -3048,6 +3087,11 @@ function mergeFromServer(m){
     var a=m.attachments[i];
     if(a&&x&&x.data&&!a.data&&String(a.name||'')===String(x.name||''))a.data=x.data;
   });
+  /* 2026-11-11: the server answered, so an item still without data after the pass above is gone
+     there too — marked, so its tile says so instead of looking like an empty document. */
+  if(got.media)m.attachments.forEach(function(a,i){
+    if(!a.data&&(a.from==='customer'||a.from==='staff')&&i<got.media.length)a.lost=true;
+  });
   if(got.reports&&got.reports.length){
     var have={};
     (m.reports||[]).forEach(function(r){if(r&&r.id)have[r.id]=r});
@@ -3070,7 +3114,7 @@ function askServer(m){
   var id=m&&m.case&&m.case.id;
   if(!id||m.isMock||fromServer[id])return;
   fromServer[id]={media:null,reports:null};
-  var needMedia=m.attachments.some(function(a){return a.type==='image'&&!a.data});
+  var needMedia=m.attachments.some(function(a){return !a.data&&(a.from==='customer'||a.from==='staff')});
   Promise.all([
     needMedia?CaseWrite.fetchMedia(id):Promise.resolve(null),
     CaseWrite.fetchReports(id)
@@ -4065,7 +4109,8 @@ function addCaseFiles(){
     if(!media)return;
     toast('กำลังบันทึกไฟล์…');
     CaseWrite.patch(raw.id,{media:media}).then(function(r){
-      if(!r||!r.ok){toast(r&&r.reason==='storage'?'พื้นที่ในเครื่องเต็ม บันทึกไฟล์ไม่ได้':'บันทึกไฟล์ไม่สำเร็จ');return}
+      if(!r||!r.ok){toast(r&&r.reason==='storage'?'พื้นที่ในเครื่องเต็ม บันทึกไฟล์ไม่ได้'
+        :r&&r.reason==='nomedia'?'โหลดไฟล์เดิมจากระบบกลางไม่ได้ จึงยังไม่บันทึก (กันไฟล์เก่าถูกทับ) ลองใหม่เมื่อออนไลน์':'บันทึกไฟล์ไม่สำเร็จ');return}
       if(typeof window.imodeCaseChatNotify==='function'){
         try{window.imodeCaseChatNotify(raw.id,'📎 เพิ่มไฟล์แนบของปัญหา '+items.length+' ไฟล์: '
           +items.map(function(x){return x.name}).join(', '))}catch(e){}
