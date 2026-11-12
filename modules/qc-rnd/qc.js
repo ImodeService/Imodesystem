@@ -51,17 +51,31 @@
        records the Stock receipt (qc_receive). Purchasing and Stock do not use the system yet, so QC records
        their steps on their behalf with the real person's name;
      - Release (STEP 06): tab ส่งมอบ: delivery plan (approved by Purchasing, recorded on behalf) → Head QC
-       confirms the release → via Stock or direct → receiver's signature photo → delivered (Service takes over). */
+       confirms the release → via Stock or direct → receiver's signature photo → delivered (Service takes over).
+
+   2026-11-12 QC meeting fixes (owner OK'd the mockup; supabase/09-qc-meeting-fixes.sql):
+     - photos are optional (the server gate no longer asks for them); two switches turn the Factory S/N and
+       IMODE S/N plate photos on or off (photo_opts); both off also drops checklist item "Model / Serial / Nameplate";
+     - accessories are a list, one row per item with its own photos (qc_evidence kind 'accessories',
+       check_id 'acc:<key>'); stored in qc_records.accessories as lines "name | qty | #key";
+     - checklist rows keep only the result and a note (older QC still print their measured / standard values);
+     - รับเครื่องเข้า QC no longer asks for supplier, PO or project (tab "PO" is gone, outstanding accessories stay);
+       ผู้รับเครื่อง / ผู้ส่งมอบ (received_by / delivered_by); สถานที่ตรวจ typed or picked from a list;
+     - customer and machine are searchable and can be added from QC;
+     - status "ผ่าน" is back: Head QC who did not make or inspect the QC passes it at once (qc_pass),
+       anyone else sends it to Head QC;
+     - the document prints photos as small thumbnails under headings. */
 (async function () {
   'use strict';
   var esc = ImodeShell.esc, icon = ImodeShell.icon;
   var LEGACY_KEY = 'imode_v66_qc_records';
   var DOC_LOGO = new URL('../service/assets/imode-document-logo.webp', location.href).href;
-  var DOC_CSS = new URL('qc-doc.css', location.href).href;
+  var DOC_CSS = new URL('qc-doc.css?v=20261112', location.href).href;
   var BUCKET = 'qc-evidence';
   var SQL_FILE = 'modules/qc-rnd/supabase/02-qc-core.sql';
   var SQL_APPROVAL = 'modules/qc-rnd/supabase/03-qc-roles-audit.sql และ 04-qc-approval.sql';
   var SERVICE_URL = '../service/index.html';
+  var SQL_MEET = 'modules/qc-rnd/supabase/09-qc-meeting-fixes.sql';
 
   var TYPES = ['Incoming Inspection', 'Pre-Delivery QC', 'Post-Service QC', 'Installation Acceptance', 'PM Verification'];
   var TYPE_TH = { 'Incoming Inspection': 'ตรวจรับเข้า', 'Pre-Delivery QC': 'ตรวจก่อนส่งมอบ', 'Post-Service QC': 'ตรวจหลังซ่อม', 'Installation Acceptance': 'ตรวจรับหลังติดตั้ง', 'PM Verification': 'ตรวจยืนยัน PM' };
@@ -79,11 +93,14 @@
   /* the seven photos every ตรวจรับเข้า / ตรวจก่อนส่งมอบ must have (spec STEP 04) */
   var PHOTOS = [
     { kind: 'front', th: 'ด้านหน้า' }, { kind: 'back', th: 'ด้านหลัง' }, { kind: 'left', th: 'ด้านซ้าย' }, { kind: 'right', th: 'ด้านขวา' },
-    { kind: 'factoryPlate', th: 'ป้ายชื่อโรงงาน (Factory S/N)' }, { kind: 'imodePlate', th: 'ป้าย IMODE S/N' }, { kind: 'accessories', th: 'อุปกรณ์ที่มากับเครื่อง' }
+    { kind: 'factoryPlate', th: 'ป้ายชื่อโรงงาน (Factory S/N)' }, { kind: 'imodePlate', th: 'ป้าย IMODE S/N' }
   ];
+  var PLATES = ['factoryPlate', 'imodePlate'];   // the two photos with an on/off switch (2026-11-12)
+  var LOC_PRESET = ['QC Area', 'คลังสินค้า', 'หน้างานลูกค้า'];
   var KIND_TH = { extra: 'รูป / ไฟล์เพิ่มเติม', test: 'ผลทดสอบ', before: 'ก่อนแก้ (Before)', after: 'หลังแก้ (After)', recheck: 'Re-QC',
     signature: 'ลายเซ็นผู้รับ', delivery: 'รูปส่งมอบ' };
   PHOTOS.forEach(function (p) { KIND_TH[p.kind] = p.th; });
+  KIND_TH.accessories = 'อุปกรณ์ที่มากับเครื่อง';
   /* Service js/03 QC_CHECKLIST_MASTER, unchanged */
   var CHECKLIST = [
     { id: 'physical', th: 'ตรวจสภาพภายนอกและความเสียหาย', en: 'Visual condition / damage' },
@@ -120,6 +137,7 @@
   var PO_TH = { Open: 'เปิด', Closed: 'ปิดแล้ว', Cancelled: 'ยกเลิก' };
   var tableMissing = false, core = false;
   var appr = false;                       // 04-qc-approval.sql is in the database
+  var meet = false;                       // 09-qc-meeting-fixes.sql is in the database
   var myRoles = [], isHead = false, canCancel = false;
   var signed = {};      // storage path -> { url, until }
   var list, mlist, page;
@@ -230,7 +248,8 @@
       accessories: r.accessories || '', accessoriesMissing: r.accessories_missing || '', accessoriesStatus: r.accessories_status || 'complete',
       createdAt: r.created_at, updatedAt: r.updated_at, createdBy: r.created_by || '',
       submittedAt: r.submitted_at || '', submittedBy: r.submitted_by || '', approvedAt: r.approved_at || '', approvedBy: r.approved_by || '',
-      approverName: r.approver_name || '', revision: r.revision || 0, statusNote: r.status_note || '' };
+      approverName: r.approver_name || '', revision: r.revision || 0, statusNote: r.status_note || '',
+      receivedBy: r.received_by || '', deliveredBy: r.delivered_by || '', photoOpts: r.photo_opts || {} };
   }
   function toRow(q, source) {
     var r = { id: q.id, qc_no: q.qcNo, type: TYPES.indexOf(q.type) >= 0 ? q.type : 'Pre-Delivery QC', qc_date: q.qcDate || null,
@@ -248,7 +267,36 @@
         received_date: q.receivedDate || null, accessories: q.accessories || '', accessories_missing: miss,
         accessories_status: q.accessoriesStatus === 'delivered' || q.accessoriesStatus === 'partial' ? q.accessoriesStatus : (miss ? 'outstanding' : 'complete') });
     }
+    if (meet) Object.assign(r, { received_by: q.receivedBy || '', delivered_by: q.deliveredBy || '', photo_opts: photoOpts(q) });
     return r;
+  }
+  /* 2026-11-12 helpers: plate-photo switches (default on) and the accessory list */
+  function photoOpts(q) {
+    var o = (q && q.photoOpts) || {};
+    return { factoryPlate: o.factoryPlate !== false, imodePlate: o.imodePlate !== false };
+  }
+  function accKey() { return Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 6); }
+  function accParse(txt) {
+    return String(txt || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
+      var p = l.split('|').map(function (x) { return x.trim(); }), k = p[2] && /^#/.test(p[2]) ? p[2].slice(1) : '';
+      return { name: p[0], qty: p.length > 1 && /^\d+$/.test(p[1]) ? p[1] : '', key: k || accKey() };
+    });
+  }
+  function accText(rows) {
+    return rows.filter(function (a) { return String(a.name || '').trim(); })
+      .map(function (a) { return a.name.trim().replace(/\|/g, '/') + ' | ' + (Math.max(1, +a.qty || 1)) + ' | #' + a.key; }).join('\n');
+  }
+  function accLabel(txt) { return accParse(txt).map(function (a) { return a.name + (a.qty ? ' x' + a.qty : ''); }).join(', '); }
+  function locOptions() {
+    var seen = {}, out = [];
+    LOC_PRESET.concat(db.qc.map(function (q) { return q.location; })).forEach(function (v) {
+      v = String(v || '').trim(); if (v && !seen[v.toLowerCase()]) { seen[v.toLowerCase()] = 1; out.push(v); }
+    });
+    return '<datalist id="qcLocList">' + out.map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join('') + '</datalist>';
+  }
+  function custLabel(c) { return c ? c.name + (c.branch ? ' · ' + c.branch : '') : ''; }
+  function machLabel(m) {
+    return m ? (m.imodeSn ? m.imodeSn + ' · ' : '') + machineName(m) + ' · ' + (m.model || '-') + ' · S/N ' + (m.factorySn || m.serial || '-') + (inQc(m) ? ' (ใน QC)' : '') : '';
   }
 
   /* copy for the Workshop case page (and anything else in Service still reading localStorage) */
@@ -298,6 +346,7 @@
       isHead = myRoles.indexOf('head qc') >= 0;
       canCancel = isHead || myRoles.indexOf('admin qc') >= 0;
     }
+    if (core) { var p9 = await c.from('qc_records').select('photo_opts').limit(1); meet = !p9.error; } else meet = false;
     if (res[1].error || res[2].error || res[3].error) console.warn('[qc] lookup tables', res[1].error, res[2].error, res[3].error);
     // phase 2: each part only when its SQL file has been run
     var ph = appr ? await Promise.all([
@@ -380,7 +429,7 @@
   } catch (e) {}
   page = await ImodeShell.start({
     module: 'qc', root: '../../',
-    subtitle: 'รับเครื่องเข้า QC ตรวจตาม Checklist พร้อมรูปบังคับ Head QC อนุมัติผล แล้วส่งมอบเครื่องให้ Service ดูแลต่อ',
+    subtitle: 'รับเครื่องเข้า QC ตรวจตาม Checklist พร้อมรูปประกอบ Head QC อนุมัติผล แล้วส่งมอบเครื่องให้ Service ดูแลต่อ',
     actions: (fromService ? [{ label: 'กลับไป Service', icon: 'chevron', onClick: function () { location.href = SERVICE_URL; } }] : []).concat([
       { label: 'ส่งออก CSV', icon: 'download', onClick: function () {
         var l = tab === 'machines' ? mlist : list;
@@ -407,7 +456,7 @@
     '<button type="button" role="tab" data-tab="ncr" hidden>' + icon('alert') + '<span>NCR</span><b class="qa-count" hidden></b></button>' +
     '<button type="button" role="tab" data-tab="release" hidden>' + icon('chevron') + '<span>ส่งมอบ</span><b class="qa-count" hidden></b></button>' +
     '<button type="button" role="tab" data-tab="machines">' + icon('inbox') + '<span>เครื่อง (IMODE S/N)</span></button>' +
-    '<button type="button" role="tab" data-tab="po" hidden>' + icon('list') + '<span>PO / อุปกรณ์ค้าง</span><b class="qa-count" hidden></b></button>';
+    '<button type="button" role="tab" data-tab="po" hidden>' + icon('list') + '<span>อุปกรณ์ค้าง</span><b class="qa-count" hidden></b></button>';
   page.body.appendChild(tabs);
   var qcView = document.createElement('div'), aView = document.createElement('div'), mView = document.createElement('div');
   var nView = document.createElement('div'), rView = document.createElement('div'), pView = document.createElement('div');
@@ -462,7 +511,7 @@
   }
 
   list = ImodeShell.list(qcView, {
-    title: 'รายการ QC เครื่อง', subtitle: 'ค้นหาด้วยเลขที่ QC ลูกค้า เครื่อง IMODE S/N, S/N, PO, ผู้ขาย หรือผู้ตรวจ แตะรายการเพื่อดูเอกสาร',
+    title: 'รายการ QC เครื่อง', subtitle: 'ค้นหาด้วยเลขที่ QC ลูกค้า เครื่อง IMODE S/N, S/N หรือผู้ตรวจ แตะรายการเพื่อดูเอกสาร',
     columns: [
       { key: 'qcNo', label: 'เลขที่ QC', isKey: true },
       { key: 'date', label: 'วันที่ตรวจ' },
@@ -481,14 +530,11 @@
     rowLabel: function (r) { return 'เปิดเอกสาร ' + r.qcNo; }
   });
   mlist = ImodeShell.list(mView, {
-    title: 'เครื่องจักรในงาน QC', subtitle: 'ค้นหาด้วย IMODE S/N, Factory S/N, PO, โครงการ, ผู้ขาย หรือลูกค้า แตะเครื่องเพื่อดูประวัติ QC และส่งมอบ',
+    title: 'เครื่องจักรในงาน QC', subtitle: 'ค้นหาด้วย IMODE S/N, Factory S/N, ชื่อเครื่อง หรือลูกค้า แตะเครื่องเพื่อดูประวัติ QC และส่งมอบ',
     columns: [
       { key: 'imodeSn', label: 'IMODE S/N', isKey: true },
       { key: 'factorySn', label: 'Factory S/N' },
       { key: 'machine', label: 'เครื่อง / รุ่น' },
-      { key: 'supplier', label: 'ผู้ขาย' },
-      { key: 'po', label: 'PO' },
-      { key: 'project', label: 'โครงการ' },
       { key: 'customer', label: 'ลูกค้า' },
       { key: 'lastQc', label: 'QC ล่าสุด' },
       { key: 'stage', label: 'สถานะเครื่อง' }
@@ -558,13 +604,9 @@
     onRowClick: function (r) { if (r.raw.rel) openRelease(r.raw.rel.id); else openReleasePlan(r.raw.machine); },
     rowLabel: function (r) { return 'เปิด ' + (r.no !== '–' ? r.no : r.machine); }
   });
-  var pTools = document.createElement('div');
-  pTools.className = 'qc-tools';
-  pTools.innerHTML = '<p class="qc-muted">ฝ่ายจัดซื้อและ Stock ยังไม่ใช้ระบบ ทีม QC บันทึกแทนโดยใส่ชื่อคนทำจริง ระบบเก็บชื่อผู้บันทึกไว้ด้วย</p>' +
-    '<button type="button" class="sh-btn is-primary" data-newpo>' + icon('plus') + '<span>เปิด PO (บันทึกแทนจัดซื้อ)</span></button>';
-  pView.appendChild(pTools);
-  pTools.querySelector('[data-newpo]').addEventListener('click', function () { openPo(null); });
-  var plist = ImodeShell.list(pView, {
+  /* 2026-11-12 meeting: PO is no longer kept in QC; the PO list is built off-page so old code paths still work */
+  var poHidden = document.createElement('div'); poHidden.hidden = true;
+  var plist = ImodeShell.list(poHidden, {
     title: 'PO / โครงการ', subtitle: 'รายการเครื่องที่สั่ง และจำนวนที่รับเข้า QC แล้ว แตะเพื่อแก้ไข',
     columns: [{ key: 'no', label: 'เลขที่ PO', isKey: true }, { key: 'project', label: 'โครงการ' }, { key: 'supplier', label: 'ผู้ขาย' },
       { key: 'items', label: 'เครื่องที่สั่ง' }, { key: 'received', label: 'รับแล้ว/สั่ง' }, { key: 'due', label: 'กำหนดเข้า' }, { key: 'purchaser', label: 'ผู้จัดซื้อ' }, { key: 'status', label: 'สถานะ' }],
@@ -574,7 +616,7 @@
   });
   var alist = ImodeShell.list(pView, {
     title: 'อุปกรณ์ค้างส่ง (Outstanding Accessories)', subtitle: 'ให้จัดซื้อตามกับ Supplier ไม่บล็อกการตรวจ แตะเพื่อบันทึกการติดตามหรือรับของ',
-    columns: [{ key: 'item', label: 'อุปกรณ์', isKey: true }, { key: 'machine', label: 'เครื่อง' }, { key: 'po', label: 'PO' }, { key: 'supplier', label: 'ผู้ขาย' },
+    columns: [{ key: 'item', label: 'อุปกรณ์', isKey: true }, { key: 'machine', label: 'เครื่อง' },
       { key: 'follow', label: 'ผู้ติดตาม' }, { key: 'due', label: 'กำหนดส่ง' }, { key: 'note', label: 'ติดตามล่าสุด' }, { key: 'status', label: 'สถานะ' }],
     searchKeys: ['item', 'machine', 'po', 'supplier', 'follow', 'status'], rows: [], statusKey: 'status', statusTone: ACC_TONE,
     empty: { title: 'ไม่มีอุปกรณ์ค้างส่ง', text: 'ใส่รายการที่ยังขาดได้ตอนรับเครื่อง หรือจากหน้าประวัติเครื่อง' },
@@ -588,6 +630,7 @@
     if (tableMissing) say('<div class="sh-banner" role="alert">' + icon('alert') + '<span>ยังไม่ได้สร้างตาราง QC ในฐานข้อมูล ให้ผู้ดูแลรันไฟล์ ' + SQL_FILE + ' ใน Supabase SQL Editor หนึ่งครั้ง จึงจะบันทึก QC ได้</span></div>');
     else if (!core) say('<div class="sh-banner" role="alert">' + icon('alert') + '<span>ฐานข้อมูลยังไม่มีส่วน QC ระยะ 1 (รับเครื่อง IMODE S/N รูปบังคับ ส่งมอบ) ให้ผู้ดูแลรันไฟล์ ' + SQL_FILE + ' ใน Supabase SQL Editor หนึ่งครั้ง ระหว่างนี้ใช้ใบ QC แบบเดิมได้</span></div>');
     else if (!appr) say('<div class="sh-banner" role="note">' + icon('alert') + '<span>ฐานข้อมูลยังไม่มีขั้น Head QC อนุมัติ ช่างยังบันทึก "ผ่าน" เองได้ ให้ผู้ดูแลรัน ' + SQL_APPROVAL + ' แล้วหน้านี้จะเปลี่ยนเป็นส่งให้ Head QC อนุมัติเอง</span></div>');
+    else if (!meet) say('<div class="sh-banner" role="note">' + icon('alert') + '<span>ฐานข้อมูลยังไม่ได้อัปเดตตามที่ประชุม QC ให้ผู้ดูแลรัน ' + SQL_MEET + ' หนึ่งครั้ง ระหว่างนี้ฐานข้อมูลยังบังคับรูป 7 มุมก่อนส่งอนุมัติ และยังไม่บันทึกผู้รับเครื่อง / ผู้ส่งมอบ</span></div>');
   }
   try { await loadAll(); }
   catch (e) {
@@ -675,57 +718,250 @@
       db.customers.map(function (c) { return opt(c.id, c.name + (c.branch ? ' · ' + c.branch : ''), c.id === sel); }).join('');
   }
 
+
+  /* ---------- 2026-11-12: searchable picker with "+ add new" (customer, machine) ---------- */
+  function comboHTML(id, label, req, text, ph, full) {
+    return '<div class="qc-f qc-combo' + (full ? ' full' : '') + '"><span>' + esc(label) + (req ? ' <b class="qc-req-' + id + '">*</b>' : '') + '</span>' +
+      '<input type="hidden" id="' + id + '">' +
+      '<input type="text" class="qc-combo-in" id="' + id + 'Txt" value="' + esc(text || '') + '" placeholder="' + esc(ph || 'พิมพ์เพื่อค้นหา') + '" autocomplete="off"' +
+      ' role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="' + id + 'List" aria-label="' + esc(label) + '">' +
+      '<ul class="qc-combo-list" id="' + id + 'List" role="listbox" hidden></ul></div>';
+  }
+  /* o: { items(): [{id, label}], value, onPick(id), addLabel(text) -> string, onAdd(text) } */
+  function bindCombo(root, id, o) {
+    var hid = root.querySelector('#' + id), inp = root.querySelector('#' + id + 'Txt'), ul = root.querySelector('#' + id + 'List');
+    var shown = [], act = -1;
+    function labelOf(v) { var x = o.items().filter(function (i) { return String(i.id) === String(v); })[0]; return x ? x.label : ''; }
+    function set(v, quiet) { hid.value = v || ''; inp.value = labelOf(v); if (!quiet && o.onPick) o.onPick(hid.value); }
+    function close() { ul.hidden = true; inp.setAttribute('aria-expanded', 'false'); act = -1; }
+    function draw() {
+      var q = inp.value.trim().toLowerCase(), all = o.items();
+      var picked = labelOf(hid.value);
+      if (picked && inp.value === picked) q = '';            // showing the current choice: list everything
+      shown = all.filter(function (i) { return !q || i.label.toLowerCase().indexOf(q) >= 0; }).slice(0, 40);
+      var add = o.addLabel ? o.addLabel(inp.value.trim()) : '';
+      ul.innerHTML = shown.map(function (i, k) {
+        return '<li role="option" data-k="' + k + '" aria-selected="' + (String(i.id) === String(hid.value)) + '">' + esc(i.label) + '</li>';
+      }).join('') + (!shown.length ? '<li class="is-empty">ไม่พบรายการที่ตรง</li>' : '') +
+        (add ? '<li role="option" class="is-add" data-add>' + icon('plus') + '<span>' + esc(add) + '</span></li>' : '');
+      ul.hidden = false; inp.setAttribute('aria-expanded', 'true'); act = -1;
+    }
+    function choose(li) {
+      if (!li) return;
+      if (li.hasAttribute('data-add')) { var t = inp.value.trim(); close(); if (labelOf(hid.value) === t) t = ''; o.onAdd(t); return; }
+      if (li.dataset.k == null) return;
+      set(shown[+li.dataset.k].id); close();
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    inp.addEventListener('focus', draw);
+    inp.addEventListener('input', draw);
+    inp.addEventListener('keydown', function (e) {
+      var lis = ul.querySelectorAll('li[role=option]');
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault(); if (ul.hidden) draw(); lis = ul.querySelectorAll('li[role=option]'); if (!lis.length) return;
+        act = (act + (e.key === 'ArrowDown' ? 1 : -1) + lis.length) % lis.length;
+        [].forEach.call(lis, function (l, k) { l.classList.toggle('is-active', k === act); });
+        lis[act].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') { if (!ul.hidden && act >= 0) { e.preventDefault(); choose(lis[act]); } }
+      else if (e.key === 'Escape') { if (!ul.hidden) { e.preventDefault(); e.stopPropagation(); close(); } }
+    });
+    ul.addEventListener('mousedown', function (e) { e.preventDefault(); choose(e.target.closest('li')); });
+    inp.addEventListener('blur', function () {
+      setTimeout(function () {
+        close();
+        if (!inp.value.trim()) { if (hid.value) { set(''); inp.dispatchEvent(new Event('change', { bubbles: true })); } }
+        else inp.value = labelOf(hid.value);                  // typed text that was not picked goes back to the choice
+      }, 120);
+    });
+    set(o.value, true);
+    return { set: set, get: function () { return hid.value; }, refresh: function () { inp.value = labelOf(hid.value); } };
+  }
+
+  /* a second, small dialog on top of a form (quick add) so the form underneath keeps what was typed */
+  var dlg2 = document.createElement('dialog');
+  dlg2.className = 'qc-dlg qc-dlg-sm';
+  dlg2.setAttribute('aria-labelledby', 'qcDlg2Title');
+  document.body.appendChild(dlg2);
+  function show2(title, sub, body, okLabel, onOk) {
+    dlg2.innerHTML = '<div class="qc-dlg-head"><div><h2 id="qcDlg2Title">' + esc(title) + '</h2>' + (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div>' +
+      '<button type="button" class="sh-icon-btn" data-close aria-label="ปิด">' + icon('close') + '</button></div>' +
+      '<div class="qc-dlg-body"><form class="qc-grid qc-grid-2" novalidate>' + body + '</form></div><div class="qc-dlg-foot">' + btn('ยกเลิก', 'data-close') + btn(okLabel, 'data-ok', true) + '</div>';
+    [].forEach.call(dlg2.querySelectorAll('[data-close]'), function (b) { b.addEventListener('click', function () { dlg2.close(); }); });
+    var ok = dlg2.querySelector('[data-ok]');
+    ok.addEventListener('click', async function () {
+      ok.disabled = true; var t = ok.textContent; ok.textContent = 'กำลังบันทึก…';
+      try { if (await onOk(function (s) { return dlg2.querySelector(s).value.trim(); })) dlg2.close(); }
+      finally { ok.disabled = false; ok.textContent = t; }
+    });
+    dlg2.showModal();
+    var f = dlg2.querySelector('input'); if (f) f.focus();
+  }
+  /* new customer, straight into the shared customers table (Service sees it too) */
+  function addCustomer(name, done) {
+    show2('เพิ่มลูกค้าใหม่', 'บันทึกแล้วเลือกให้อัตโนมัติ และเห็นในโมดูล Service ด้วย',
+      field('ncName', 'ชื่อลูกค้า / ร้าน', name, { full: true }, true) + field('ncBranch', 'สาขา', '') + field('ncContact', 'ผู้ติดต่อ', '') +
+      field('ncPhone', 'เบอร์โทร', '', { type: 'tel' }) + field('ncLoc', 'จังหวัด / พื้นที่', ''),
+      'บันทึกลูกค้า', async function (v) {
+        if (!v('#ncName')) { page.toast('ใส่ชื่อลูกค้า'); dlg2.querySelector('#ncName').focus(); return false; }
+        var dup = db.customers.filter(function (c) { return String(c.name).trim().toLowerCase() === v('#ncName').toLowerCase() && String(c.branch || '').trim().toLowerCase() === v('#ncBranch').toLowerCase(); })[0];
+        if (dup && !confirm('มีลูกค้าชื่อนี้แล้ว (' + custLabel(dup) + ') ยังต้องการเพิ่มใหม่หรือไม่?')) return false;
+        var row = { id: 'CUS-QC-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase(),
+          name: v('#ncName'), branch: v('#ncBranch'), contact: v('#ncContact'), phone: v('#ncPhone'), location: v('#ncLoc') };
+        var r = await sb().from('customers').insert(row).select('id,name,branch').single();
+        if (r.error) { page.toast('เพิ่มลูกค้าไม่สำเร็จ: ' + r.error.message); return false; }
+        db.customers.push(r.data);
+        db.customers.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'th'); });
+        page.toast('เพิ่มลูกค้า ' + r.data.name + ' แล้ว');
+        done(r.data.id); return true;
+      });
+  }
+  /* new machine from the QC form: gets the next IMODE S/N at once.
+     For ตรวจรับเข้า / ตรวจก่อนส่งมอบ it is a new machine still in QC (no customer until hand-over, like qc_intake);
+     for the other types it is the customer's machine and shows in Service straight away. */
+  function addMachine(name, customerId, type, done) {
+    var toQc = INTAKE_TYPES.indexOf(type) >= 0;
+    if (!toQc && !customerId) { page.toast('เลือกลูกค้าก่อน แล้วจึงเพิ่มเครื่องของลูกค้า'); return; }
+    show2('เพิ่มเครื่องใหม่', (toQc ? 'เครื่องใหม่เข้า QC' : 'เครื่องของ ' + custName(customerId)) + ' · ระบบออก IMODE S/N ให้ทันที',
+      field('nmNameTh', 'ชื่อเครื่อง (ไทย)', name, null, true) + field('nmNameEn', 'ชื่อเครื่อง (อังกฤษ)', '') +
+      field('nmModel', 'รุ่น (Model)', '', null, true) + field('nmFsn', 'Factory S/N', '', { ph: 'หมายเลขจากป้ายโรงงาน' }),
+      'บันทึกเครื่อง', async function (v) {
+        if (!v('#nmNameTh') || !v('#nmModel')) { page.toast('กรอกชื่อเครื่องและรุ่นให้ครบ'); dlg2.querySelector(!v('#nmNameTh') ? '#nmNameTh' : '#nmModel').focus(); return false; }
+        var fsn = v('#nmFsn'), model = v('#nmModel');
+        if (fsn && db.machines.some(function (m) { return String(m.factorySn || m.serial || '').toLowerCase() === fsn.toLowerCase() && String(m.model || '').toLowerCase() === model.toLowerCase(); })) {
+          page.toast('มีเครื่องรุ่นนี้ Factory S/N นี้ในระบบแล้ว ค้นหาจากช่องเครื่องจักรได้เลย'); return false;
+        }
+        var sn = await sb().rpc('qc_next_imode_sn');
+        if (sn.error || !sn.data) { page.toast('ออก IMODE S/N ไม่สำเร็จ: ' + ((sn.error && sn.error.message) || '')); return false; }
+        var now = new Date().toISOString();
+        var row = { id: 'M-QC-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), customerId: toQc ? null : customerId,
+          name: v('#nmNameTh'), nameTh: v('#nmNameTh'), nameEn: v('#nmNameEn'), model: model, serial: fsn, imodeSn: sn.data, factorySn: fsn || null,
+          lifecycle: toQc ? 'qc' : null, receivedAt: toQc ? todayISO() : null, source: 'QC', createdAt: now, updatedAt: now };
+        var r = await sb().from('machines').insert(row).select(M_CORE).single();
+        if (r.error) { page.toast('เพิ่มเครื่องไม่สำเร็จ: ' + r.error.message); return false; }
+        db.machines.push(Object.assign({}, r.data, { customerId: r.data.customerId || '' }));
+        page.toast('เพิ่มเครื่องแล้ว IMODE S/N ' + sn.data);
+        done(r.data.id); return true;
+      });
+  }
+
+  /* ---------- 2026-11-12: accessories, one row per item, each with its own photos ---------- */
+  function accRowHTML(a, evs) {
+    var ph = evs.filter(function (e) { return e.kind === 'accessories' && e.check_id === 'acc:' + a.key; });
+    return '<div class="qc-acc-row" data-key="' + esc(a.key) + '">' +
+      '<input data-k="name" value="' + esc(a.name || '') + '" placeholder="ชื่ออุปกรณ์ เช่น สายไฟ" aria-label="ชื่ออุปกรณ์">' +
+      '<input data-k="qty" type="number" min="1" inputmode="numeric" value="' + esc(a.qty || 1) + '" aria-label="จำนวน">' +
+      '<label class="sh-btn qc-acc-cam">' + icon('plus') + '<span>ถ่าย / เลือกรูป</span><input type="file" accept="image/*" data-accph aria-label="รูปอุปกรณ์"></label>' +
+      '<button type="button" class="sh-btn" data-accdel aria-label="ลบอุปกรณ์นี้">' + icon('close') + '</button>' +
+      (ph.length ? '<div class="qc-acc-ph">' + ph.map(function (e) {
+        return '<figure><img src="' + esc(evUrl(e)) + '" alt="รูป ' + esc(a.name || 'อุปกรณ์') + '"><button type="button" data-evdel="' + evs.indexOf(e) + '" aria-label="ลบรูป">ลบ</button></figure>';
+      }).join('') + '</div>' : '') + '</div>';
+  }
+  /* st: { rows: [{name, qty, key}], ev: [] evidence (pending or saved), drop(e), dirty() } */
+  function bindAcc(host, st) {
+    function draw() {
+      var legacy = st.ev.filter(function (e) { return e.kind === 'accessories' && !/^acc:/.test(e.check_id || ''); });
+      host.innerHTML = '<div class="qc-acc-head" aria-hidden="true"><span>อุปกรณ์</span><span>จำนวน</span><span>รูป</span></div>' +
+        st.rows.map(function (a) { return accRowHTML(a, st.ev); }).join('') +
+        (!st.rows.length ? '<p class="qc-muted qc-acc-empty">ยังไม่มีรายการ กด "+ เพิ่มอุปกรณ์"</p>' : '') +
+        (legacy.length ? '<div class="qc-acc-legacy"><small>รูปอุปกรณ์ (แบบเดิม รวมทุกชิ้น)</small><div class="qc-acc-ph">' + legacy.map(function (e) {
+          return '<figure><img src="' + esc(evUrl(e)) + '" alt="รูปอุปกรณ์"><button type="button" data-evdel="' + st.ev.indexOf(e) + '" aria-label="ลบรูป">ลบ</button></figure>';
+        }).join('') + '</div></div>' : '') +
+        '<button type="button" class="sh-btn" data-accadd>' + icon('plus') + '<span>เพิ่มอุปกรณ์</span></button>';
+    }
+    function rowOf(el) { var r = el.closest('.qc-acc-row'); return r ? st.rows.filter(function (a) { return a.key === r.dataset.key; })[0] : null; }
+    host.addEventListener('input', function (e) {
+      var a = rowOf(e.target), k = e.target.dataset.k; if (!a || !k) return;
+      a[k] = e.target.value; st.dirty();
+    });
+    host.addEventListener('click', function (e) {
+      if (e.target.closest('[data-accadd]')) {
+        st.rows.push({ name: '', qty: '1', key: accKey() }); draw(); st.dirty();
+        var ins = host.querySelectorAll('.qc-acc-row [data-k=name]'); if (ins.length) ins[ins.length - 1].focus();
+        return;
+      }
+      var d = e.target.closest('[data-evdel]');
+      if (d) { st.drop(st.ev[+d.dataset.evdel]); draw(); st.dirty(); return; }
+      if (e.target.closest('[data-accdel]')) {
+        var a = rowOf(e.target); if (!a) return;
+        var ph = st.ev.filter(function (x) { return x.kind === 'accessories' && x.check_id === 'acc:' + a.key; });
+        if (ph.length && !confirm('ลบ "' + (a.name || 'อุปกรณ์') + '" พร้อมรูป ' + ph.length + ' รูป?')) return;
+        ph.forEach(st.drop);
+        st.rows.splice(st.rows.indexOf(a), 1); draw(); st.dirty();
+      }
+    });
+    host.addEventListener('change', async function (e) {
+      var inp = e.target; if (!inp.matches('[data-accph]')) return;
+      var a = rowOf(inp), f = inp.files && inp.files[0]; inp.value = ''; if (!a || !f) return;
+      if (!/^image\//.test(f.type)) { page.toast('ช่องนี้รับเฉพาะรูปภาพ'); return; }
+      var item = await pendingFile(f, 'accessories', 'acc:' + a.key); if (!item) return;
+      st.ev.push(item); draw(); st.dirty();
+    });
+    draw();
+    return { draw: draw };
+  }
+  /* upload the files picked while the QC was not saved yet; returns how many failed */
+  async function uploadPending(qcId, machineId, pend, label) {
+    var failed = 0, store = sb().storage.from(BUCKET);
+    for (var i = 0; i < pend.length; i++) {
+      var e = pend[i], ext = (String(e.name).match(/\.([a-z0-9]{1,5})$/i) || [])[1] || (e.mime.split('/')[1] || 'bin');
+      var path = qcId + '/' + e.kind + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + '.' + ext.toLowerCase();
+      if (label) label('กำลังอัปโหลดไฟล์ ' + (i + 1) + '/' + pend.length + '…');
+      var up = await store.upload(path, e.blob, { contentType: e.mime, upsert: false });
+      if (up.error) { failed++; continue; }
+      var row = { qc_id: qcId, machine_id: machineId || null, kind: e.kind, path: path, name: e.name || '', mime: e.mime, size: e.size || 0 };
+      if (e.check_id) row.check_id = e.check_id;
+      var ins = await sb().from('qc_evidence').insert(row).select().single();
+      if (ins.error) { failed++; store.remove([path]); continue; }
+      e.pending = false; Object.assign(e, ins.data);
+    }
+    return failed;
+  }
+
   /* ---------- รับเครื่องเข้า QC: new machine + IMODE S/N + QC job, in one server call ---------- */
   function openIntake() {
     if (tableMissing || !core) { warnSql(); page.toast('ต้องรันไฟล์ ' + SQL_FILE + ' ก่อน จึงจะรับเครื่องเข้า QC ได้'); return; }
-    var openPos = poOn ? db.po.filter(function (o) { return o.status === 'Open'; }) : [];
+    // 2026-11-12 meeting: no supplier / PO / project / Stock receipt here any more
     var accRow = function () {
       return '<div class="qn-row is-acc"><input data-k="item" placeholder="อุปกรณ์ที่ขาด" aria-label="อุปกรณ์ที่ขาด"><input data-k="qty" type="number" min="1" value="1" aria-label="จำนวน">' +
         '<input data-k="due" type="date" aria-label="กำหนดส่ง"><input data-k="who" placeholder="ผู้ติดตาม (จัดซื้อ)" aria-label="ผู้ติดตาม"><button type="button" class="sh-btn" data-del aria-label="ลบแถว">' + icon('close') + '</button></div>';
     };
+    var acc = { rows: [], ev: [], drop: function (e) { var i = acc.ev.indexOf(e); if (i >= 0) acc.ev.splice(i, 1); try { URL.revokeObjectURL(e.blobUrl); } catch (x) {} },
+      dirty: function () { dlg.dataset.dirty = '1'; } };
     var body = '<form id="inForm" class="qc-grid" novalidate>' +
-      (poOn ? '<div class="qc-sec"><i>1</i> PO และการรับเข้า Stock <small>STEP 01–02 · บันทึกแทน Stock ใส่ชื่อคนรับจริง</small></div>' +
-        '<label class="qc-f"><span>PO ที่สั่ง</span><select id="iPoSel">' + opt('', 'ไม่มี PO ในระบบ / พิมพ์เอง', true) +
-          openPos.map(function (o) { return opt(o.id, o.po_no + (o.supplier ? ' · ' + o.supplier : ''), false); }).join('') + '</select></label>' +
-        field('sStock', 'คน Stock ที่รับเครื่อง (ตัวจริง)', '', null, true) + field('sAt', 'วันเวลาที่ Stock รับ', nowLocal(), { type: 'datetime-local' }, true) +
-        field('sLoc', 'เก็บไว้ที่', '', { ph: 'เช่น คลัง A ชั้น 2' }) +
-        '<label class="qc-f full"><span>สภาพตอนรับ</span><textarea id="sCond" class="is-short" placeholder="เช่น ลังมีรอยบุบ"></textarea></label>' : '') +
-      '<div class="qc-sec"><i>' + (poOn ? 2 : 1) + '</i> เครื่องจักร <small>IMODE S/N ออกให้อัตโนมัติเมื่อบันทึก</small></div>' +
+      '<div class="qc-sec"><i>1</i> เครื่องจักร <small>IMODE S/N ออกให้อัตโนมัติเมื่อบันทึก</small></div>' +
       field('iNameTh', 'ชื่อเครื่อง (ไทย)', '', null, true) + field('iNameEn', 'ชื่อเครื่อง (อังกฤษ)', '') + field('iModel', 'รุ่น (Model)', '', null, true) +
-      field('iFactorySn', 'Factory S/N', '', { ph: 'หมายเลขจากป้ายโรงงาน' }) + field('iSupplier', 'ผู้ขาย / โรงงาน', '') + (poOn ? '' : field('iReceived', 'วันที่รับเครื่อง', todayISO(), { type: 'date' })) +
-      field('iPo', 'เลขที่ PO', '') + field('iProject', 'เลขที่โครงการ', '') +
-      '<label class="qc-f"><span>ลูกค้าที่จะส่งมอบ (ถ้าทราบ)</span><select id="iCustomer">' + customerOptions('', 'ยังไม่ทราบ') + '</select></label>' +
-      '<div class="qc-sec"><i>' + (poOn ? 3 : 2) + '</i> งาน QC</div>' +
+      field('iFactorySn', 'Factory S/N', '', { ph: 'หมายเลขจากป้ายโรงงาน' }) + field('iReceived', 'วันที่รับเครื่อง', todayISO(), { type: 'date' }) +
+      comboHTML('iCustomer', 'ลูกค้าที่จะส่งมอบ (ถ้าทราบ)', false, '', 'พิมพ์ชื่อลูกค้า หรือเว้นว่าง') +
+      '<div class="qc-sec"><i>2</i> รับเครื่องและงาน QC</div>' +
+      field('iRecvBy', 'ผู้รับเครื่อง', me(), { ph: 'ชื่อคนที่รับเครื่องเข้า' }) + field('iDelivBy', 'ผู้ส่งมอบ', '', { ph: 'ชื่อคนที่เอาเครื่องมาส่ง' }) +
+      '<label class="qc-f"><span>สถานที่ตรวจ <small>พิมพ์หรือเลือก</small></span><input id="iLocation" list="qcLocList" placeholder="เช่น QC Area" autocomplete="off"></label>' + locOptions() +
       '<label class="qc-f"><span>ประเภท QC <b>*</b></span><select id="iType">' + INTAKE_TYPES.map(function (t) { return opt(t, TYPE_TH[t], t === 'Incoming Inspection'); }).join('') + '</select></label>' +
       '<label class="qc-f"><span>ความเร่งด่วน</span><select id="iPriority">' + Object.keys(PRIORITY_TH).map(function (k) { return opt(k, PRIORITY_TH[k], k === 'normal'); }).join('') + '</select></label>' +
       field('iPlanned', 'วันที่นัดตรวจ', todayISO(), { type: 'date' }) +
-      field('iAssigned', 'ผู้รับผิดชอบตรวจ', me()) + field('iLocation', 'สถานที่ตรวจ', '', { ph: 'เช่น คลังสินค้า / หน้างาน' }) +
-      '<div class="qc-sec"><i>' + (poOn ? 4 : 3) + '</i> อุปกรณ์ที่มากับเครื่อง</div>' +
-      '<label class="qc-f full"><span>อุปกรณ์ที่ได้รับ</span><textarea id="iAcc" placeholder="เช่น สายไฟ 1 เส้น, คู่มือ 1 เล่ม"></textarea></label>' +
+      '<div class="qc-sec"><i>3</i> อุปกรณ์ที่มากับเครื่อง <small>ทีละชิ้น แต่ละชิ้นถ่ายรูปแนบได้</small></div>' +
+      '<div class="qc-f full"><div class="qc-acc" id="iAcc"></div></div>' +
       (poOn ? '<div class="qc-f full"><span>อุปกรณ์ที่ยังขาด / ค้างส่ง (จัดซื้อตามทีละชิ้น)</span><div id="iAccRows"></div>' +
           '<button type="button" class="sh-btn" data-addacc>' + icon('plus') + '<span>เพิ่มอุปกรณ์ที่ขาด</span></button></div>'
-        : '<label class="qc-f full"><span>อุปกรณ์ที่ยังขาด / ค้างส่ง</span><textarea id="iAccMiss" placeholder="เว้นว่างถ้าครบ"></textarea></label>') +
-      '<label class="qc-f full"><span>หมายเหตุ</span><textarea id="iNote"></textarea></label>' +
+        : '<label class="qc-f full"><span>อุปกรณ์ที่ยังขาด / ค้างส่ง</span><textarea id="iAccMiss" class="is-short" placeholder="เว้นว่างถ้าครบ"></textarea></label>') +
+      '<label class="qc-f full"><span>หมายเหตุ</span><textarea id="iNote" class="is-short"></textarea></label>' +
       '</form>';
     show('รับเครื่องเข้า QC', 'ลงทะเบียนเครื่องใหม่ ออก IMODE S/N และเปิดงานตรวจในครั้งเดียว', body, btn('ยกเลิก', 'data-cancel') + btn('รับเครื่องและเริ่มตรวจ', 'data-save', true));
     var $ = function (s) { return dlg.querySelector(s); };
+    var cust = bindCombo(dlg, 'iCustomer', {
+      items: function () { return db.customers.map(function (c) { return { id: c.id, label: custLabel(c) }; }); }, value: '',
+      addLabel: function (t) { return t ? '+ เพิ่มลูกค้าใหม่ "' + t + '"' : '+ เพิ่มลูกค้าใหม่'; },
+      onAdd: function (t) { addCustomer(t, function (id) { cust.set(id); dlg.dataset.dirty = '1'; }); }
+    });
+    bindAcc($('#iAcc'), acc);
     $('#inForm').addEventListener('input', function () { dlg.dataset.dirty = '1'; });
     $('[data-cancel]').addEventListener('click', function () { if (dlg.dataset.dirty === '1' && !confirm('ปิดโดยไม่บันทึก?')) return; dlg.close(); });
     if (poOn) {
       $('[data-addacc]').addEventListener('click', function () { $('#iAccRows').insertAdjacentHTML('beforeend', accRow()); $('#iAccRows .qn-row:last-child input').focus(); });
       $('#iAccRows').addEventListener('click', function (e) { var b = e.target.closest('[data-del]'); if (b) b.parentNode.remove(); });
-      $('#iPoSel').addEventListener('change', function () {
-        var o = byId(db.po, this.value); if (!o) return;
-        $('#iPo').value = o.po_no; $('#iProject').value = o.project_no || ''; $('#iSupplier').value = o.supplier || '';
-        var it = (o.items || [])[0];
-        if (it && !$('#iModel').value) $('#iModel').value = it.model || '';
-        if (it && !$('#iNameTh').value) $('#iNameTh').value = it.name || '';
-      });
     }
     $('[data-save]').addEventListener('click', async function () {
       var v = function (s) { return $(s).value.trim(); };
-      var miss = poOn && !v('#sStock') ? '#sStock' : poOn && !v('#sAt') ? '#sAt' : !v('#iNameTh') ? '#iNameTh' : !v('#iModel') ? '#iModel' : '';
-      if (miss && (miss === '#sStock' || miss === '#sAt')) { page.toast('ใส่ชื่อคน Stock ที่รับเครื่องและวันเวลาที่รับ'); $(miss).focus(); return; }
+      var miss = !v('#iNameTh') ? '#iNameTh' : !v('#iModel') ? '#iModel' : '';
       if (miss) { page.toast('กรอกชื่อเครื่องและรุ่นให้ครบ'); $(miss).focus(); return; }
       var fsn = v('#iFactorySn').toLowerCase(), model = v('#iModel').toLowerCase();
       if (fsn && db.machines.some(function (m) { return String(m.factorySn || '').toLowerCase() === fsn && String(m.model || '').toLowerCase() === model; })
@@ -735,20 +971,31 @@
         var g = function (k) { return r.querySelector('[data-k=' + k + ']').value.trim(); };
         return { item: g('item'), qty: Math.max(1, +g('qty') || 1), dueDate: g('due') || null, followName: g('who') };
       }).filter(function (x) { return x.item; }) : [];
-      var r = await call(poOn ? 'qc_receive' : 'qc_intake', { p: {
-        poId: poOn ? $('#iPoSel').value : undefined, outstanding: poOn ? outstanding : undefined,
-        stock: poOn ? { stockName: v('#sStock'), receivedAt: new Date($('#sAt').value).toISOString(), location: v('#sLoc'), conditionNote: v('#sCond') } : undefined,
-        nameTh: v('#iNameTh'), nameEn: v('#iNameEn'), model: v('#iModel'), factorySn: v('#iFactorySn'), supplier: v('#iSupplier'),
-        poNo: v('#iPo'), projectNo: v('#iProject'), customerId: $('#iCustomer').value, receivedAt: poOn ? '' : $('#iReceived').value,
-        type: $('#iType').value, priority: $('#iPriority').value, plannedDate: $('#iPlanned').value, assignedTo: v('#iAssigned'),
-        location: v('#iLocation'), accessories: v('#iAcc'), accessoriesMissing: poOn ? '' : v('#iAccMiss'), note: v('#iNote'),
-        inspector: v('#iAssigned') || me(), targetCompany: INTERNAL } });
+      var recv = v('#iRecvBy'), deliv = v('#iDelivBy');
+      var r = await call('qc_intake', { p: {
+        nameTh: v('#iNameTh'), nameEn: v('#iNameEn'), model: v('#iModel'), factorySn: v('#iFactorySn'),
+        customerId: cust.get(), receivedAt: $('#iReceived').value,
+        type: $('#iType').value, priority: $('#iPriority').value, plannedDate: $('#iPlanned').value, assignedTo: recv || me(),
+        location: v('#iLocation'), accessories: accText(acc.rows), accessoriesMissing: poOn ? '' : v('#iAccMiss'), note: v('#iNote'),
+        inspector: me(), targetCompany: INTERNAL } });
+      if (r.error || !r.data) { b.disabled = false; b.textContent = 'รับเครื่องและเริ่มตรวจ'; page.toast('รับเครื่องไม่สำเร็จ: ' + ((r.error && r.error.message) || 'ไม่มีผลตอบกลับ')); return; }
+      var d = r.data, warn = [];
+      // what qc_intake does not take: receiver / deliverer and the plate switches (09), accessory photos, outstanding items
+      if (meet) {
+        var u = await sb().from('qc_records').update({ received_by: recv, delivered_by: deliv, photo_opts: { factoryPlate: true, imodePlate: true } }).eq('id', d.qc_id);
+        if (u.error) warn.push('ผู้รับ/ผู้ส่งมอบ');
+      }
+      var pend = acc.ev.filter(function (e) { return e.pending; });
+      if (pend.length) { var nf = await uploadPending(d.qc_id, d.machine_id, pend, function (t) { b.textContent = t; }); if (nf) warn.push('รูปอุปกรณ์ ' + nf + ' รูป'); }
+      for (var i = 0; i < outstanding.length; i++) {
+        var a = await call('qc_acc_add', { p: Object.assign({ machineId: d.machine_id }, outstanding[i]) });
+        if (a.error) warn.push('อุปกรณ์ค้าง "' + outstanding[i].item + '"');
+      }
       b.disabled = false; b.textContent = 'รับเครื่องและเริ่มตรวจ';
-      if (r.error || !r.data) { page.toast('รับเครื่องไม่สำเร็จ: ' + ((r.error && r.error.message) || 'ไม่มีผลตอบกลับ')); return; }
       dlg.dataset.dirty = '';
       await loadAll(); refreshList(); mirror();
-      page.toast('รับเครื่องแล้ว IMODE S/N ' + r.data.imode_sn + ' · ' + r.data.qc_no + (r.data.receipt_no ? ' · ใบรับ ' + r.data.receipt_no : ''));
-      var q = byId(db.qc, r.data.qc_id);
+      page.toast('รับเครื่องแล้ว IMODE S/N ' + d.imode_sn + ' · ' + d.qc_no + (warn.length ? ' (บันทึกไม่สำเร็จ: ' + warn.join(', ') + ' ใส่ใหม่ในฟอร์มตรวจ)' : ''));
+      var q = byId(db.qc, d.qc_id);
       if (q) openForm(q); else dlg.close();
     });
   }
@@ -758,7 +1005,8 @@
     var qs = db.qc.filter(function (q) { return q.machineId === m.id; });
     var cu = byId(db.customers, m.customerId);
     var info = [['IMODE S/N', m.imodeSn], ['Factory S/N', m.factorySn || m.serial], ['เครื่อง', machineName(m)], ['รุ่น', m.model], ['ผู้ขาย', m.supplier],
-      ['PO', m.poNo], ['โครงการ', m.projectNo], ['วันที่รับเครื่อง', m.receivedAt ? thDate(m.receivedAt) : ''], ['ลูกค้า', cu && cu.name], ['สถานะเครื่อง', STAGE_TH[m.lifecycle] || 'เครื่องของลูกค้า']];
+      ['PO', m.poNo], ['โครงการ', m.projectNo], ['วันที่รับเครื่อง', m.receivedAt ? thDate(m.receivedAt) : ''], ['ลูกค้า', cu && cu.name], ['สถานะเครื่อง', STAGE_TH[m.lifecycle] || 'เครื่องของลูกค้า']]
+      .filter(function (x) { return x[1] || ['ผู้ขาย', 'PO', 'โครงการ'].indexOf(x[0]) < 0; });   // 2026-11-12: PO etc. only on older machines
     var body = '<dl class="qc-info">' + info.map(function (x) { return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1] || '–') + '</dd></div>'; }).join('') + '</dl>' +
       '<div class="qc-sec qc-sec-block"><i>' + qs.length + '</i> ประวัติ QC</div>' +
       (qs.length ? '<ul class="qc-history">' + qs.map(function (q) {
@@ -842,12 +1090,23 @@
     if (na.length) out.push('ข้อที่เลือก N/A ต้องใส่เหตุผลในหมายเหตุ (ข้อ ' + na.join(', ') + ')');
     var nOpen = ncrOn && d.id ? ncrOf(d.id).filter(ncrOpen).length : 0;
     if (nOpen) out.push('มี NCR ที่ยังไม่ปิด ' + nOpen + ' ใบ');
-    if (core && INTAKE_TYPES.indexOf(d.type) >= 0) {
-      var have = {}; (d.ev || []).forEach(function (e) { have[e.kind] = 1; });
-      var lack = PHOTOS.filter(function (p) { return !have[p.kind]; }).map(function (p) { return p.th; });
-      if (lack.length) out.push('รูปบังคับยังไม่ครบ: ' + lack.join(', '));
+    return out;   // 2026-11-12: photos are no longer required
+  }
+  /* both plate switches off → checklist item "Model / Serial / Nameplate" leaves; back on → it returns in its place */
+  function syncIdentity() {
+    var o = draft.photoOpts || photoOpts(draft), off = !o.factoryPlate && !o.imodePlate, at = -1;
+    draft.checklist.forEach(function (x, i) { if (x.id === 'identity') at = i; });
+    if (off && at >= 0) draft.identityItem = draft.checklist.splice(at, 1)[0];
+    else if (!off && at < 0) {
+      var it = draft.identityItem || freshChecklist()[1], ord = CHECKLIST.map(function (x) { return x.id; });
+      var pos = draft.checklist.filter(function (x) { var k = ord.indexOf(x.id); return k >= 0 && k < 1; }).length;
+      draft.checklist.splice(pos, 0, it); delete draft.identityItem;
     }
-    return out;
+  }
+  /* "ผ่าน" passes at once only for Head QC who did not create or inspect this QC (same rule as qc_pass / qc_decide) */
+  function passDirect() {
+    var ins = dlg.querySelector('#fInspector'), who = String((ins ? ins.value : draft.inspector) || '').trim().toLowerCase();
+    return appr && meet && isHead && !!draft.id && draft.createdBy !== myId() && who !== String(me()).trim().toLowerCase();
   }
 
   /* old: a saved record to edit; preset: fields for a new one; restore: an unsaved draft coming back from preview */
@@ -865,9 +1124,13 @@
       inspector: me(), reviewer: '', targetCompany: INTERNAL,
       checklist: freshChecklist(), findings: '', correctiveAction: '', note: '', media: [],
       assignedTo: me(), plannedDate: '', priority: 'normal', location: '', poNo: (m0 && m0.poNo) || '', projectNo: (m0 && m0.projectNo) || '',
-      supplier: (m0 && m0.supplier) || '', receivedDate: (m0 && m0.receivedAt) || '', accessories: '', accessoriesMissing: '', accessoriesStatus: 'complete'
+      supplier: (m0 && m0.supplier) || '', receivedDate: (m0 && m0.receivedAt) || '', accessories: '', accessoriesMissing: '', accessoriesStatus: 'complete',
+      receivedBy: me(), deliveredBy: '', photoOpts: { factoryPlate: true, imodePlate: true }
     };
     if (!draft.checklist || !draft.checklist.length) draft.checklist = freshChecklist();
+    draft.photoOpts = photoOpts(draft);
+    if (!restore) draft.accRows = accParse(draft.accessories);
+    syncIdentity();
     if (!restore) { draft.ev = draft.id ? evOf(draft.id).slice() : []; draft.evGone = []; }
     if (draft.ev.length) await sign(draft.ev.filter(function (e) { return !e.blobUrl; }));
     var C = core;
@@ -875,7 +1138,7 @@
     var body = (back || (appr && draft.status === 'Returned') ? '<p class="qc-hint tone-red qc-returned">' + icon('alert') + '<span><b>ส่งกลับแก้</b>' +
         (back ? ' โดย ' + esc(back.by_name || 'Head QC') + ' · ' + esc(thTime(back.at)) : '') + ': "' + esc((back && back.comment) || draft.statusNote || '-') + '" แก้แล้วกดส่งให้ Head QC อนุมัติอีกครั้ง</span></p>' : '') +
       '<nav class="qc-steps" aria-label="ขั้นตอน">' +
-      ['ข้อมูลงาน', C ? 'รูปบังคับ' : null, 'Checklist', 'หลักฐาน', 'สรุปผล'].filter(Boolean).map(function (s, i) {
+      ['ข้อมูลงาน', C ? 'รูปเครื่อง' : null, 'Checklist', 'หลักฐาน', 'สรุปผล'].filter(Boolean).map(function (s, i) {
         return '<a href="#qcStep' + (i + 1) + '" data-step="' + (i + 1) + '"><i>' + (i + 1) + '</i><span>' + esc(s) + '</span></a>';
       }).join('') + '</nav>' +
       '<form id="qcForm" class="qc-grid" novalidate>' +
@@ -883,23 +1146,27 @@
       '<label class="qc-f"><span>เลขที่ QC</span><input id="fNo" value="' + esc(draft.qcNo) + '" readonly></label>' +
       '<label class="qc-f"><span>ประเภท QC <b>*</b></span><select id="fType">' + TYPES.map(function (t) { return opt(t, TYPE_TH[t] + ' (' + t + ')', draft.type === t); }).join('') + '</select></label>' +
       '<label class="qc-f"><span>วันที่ตรวจ <b>*</b></span><input id="fDate" type="date" value="' + esc(draft.qcDate) + '" required></label>' +
-      '<label class="qc-f"><span>ลูกค้า <b class="qc-req-cu">*</b></span><select id="fCustomer">' + customerOptions(draft.customerId) + '</select></label>' +
-      '<label class="qc-f"><span>เครื่องจักร <b>*</b></span><select id="fMachine"></select></label>' +
+      comboHTML('fCustomer', 'ลูกค้า', true, '', 'พิมพ์ชื่อลูกค้าเพื่อค้นหา') +
+      comboHTML('fMachine', 'เครื่องจักร', true, '', 'พิมพ์ IMODE S/N, ชื่อ, รุ่น หรือ S/N') +
       '<label class="qc-f"><span>Service Case</span><select id="fCase"></select></label>' +
       '<label class="qc-f"><span>ผู้ตรวจ QC <b>*</b></span><input id="fInspector" value="' + esc(draft.inspector) + '" autocomplete="off"></label>' +
       (appr ? '<label class="qc-f"><span>ผู้อนุมัติ (Head QC)</span><input id="fReviewer" value="' + esc(draft.approverName || draft.reviewer) + '" readonly placeholder="ระบบใส่ให้เมื่อ Head QC อนุมัติ"></label>'
         : '<label class="qc-f"><span>ผู้อนุมัติ</span><input id="fReviewer" value="' + esc(draft.reviewer) + '" autocomplete="off"></label>') +
       '<label class="qc-f"><span>QC เพื่อส่งให้บริษัท</span><input id="fTarget" value="' + esc(draft.targetCompany) + '" placeholder="เช่น ' + INTERNAL + '"></label>' +
-      (C ? field('fAssigned', 'ผู้รับผิดชอบตรวจ', draft.assignedTo) + field('fPlanned', 'วันที่นัดตรวจ', draft.plannedDate, { type: 'date' }) +
+      (C ? (meet ? field('fRecvBy', 'ผู้รับเครื่อง', draft.receivedBy, { ph: 'ชื่อคนที่รับเครื่องเข้า' }) + field('fDelivBy', 'ผู้ส่งมอบ', draft.deliveredBy, { ph: 'ชื่อคนที่เอาเครื่องมาส่ง' }) : '') +
+        field('fPlanned', 'วันที่นัดตรวจ', draft.plannedDate, { type: 'date' }) +
         '<label class="qc-f"><span>ความเร่งด่วน</span><select id="fPriority">' + Object.keys(PRIORITY_TH).map(function (k) { return opt(k, PRIORITY_TH[k], draft.priority === k); }).join('') + '</select></label>' +
-        field('fLocation', 'สถานที่ตรวจ', draft.location) + field('fPo', 'เลขที่ PO', draft.poNo) + field('fProject', 'เลขที่โครงการ', draft.projectNo) +
-        field('fSupplier', 'ผู้ขาย / โรงงาน', draft.supplier) + field('fReceived', 'วันที่รับเครื่อง', draft.receivedDate, { type: 'date' }) +
+        '<label class="qc-f"><span>สถานที่ตรวจ <small>พิมพ์หรือเลือก</small></span><input id="fLocation" list="qcLocList" value="' + esc(draft.location) + '" placeholder="เช่น QC Area" autocomplete="off"></label>' + locOptions() +
+        field('fReceived', 'วันที่รับเครื่อง', draft.receivedDate, { type: 'date' }) +
         '<div class="qc-f qc-f-note" id="fSnBox"></div>' +
-        '<label class="qc-f full"><span>อุปกรณ์ที่ได้รับ</span><textarea id="fAcc" class="is-short">' + esc(draft.accessories) + '</textarea></label>' +
+        '<div class="qc-f full"><span>อุปกรณ์ที่มากับเครื่อง <small>ทีละชิ้น แต่ละชิ้นถ่ายรูปแนบได้</small></span><div class="qc-acc" id="fAccList"></div></div>' +
         '<label class="qc-f full"><span>อุปกรณ์ที่ยังขาด / ค้างส่ง <small>เว้นว่างถ้าครบ</small></span><textarea id="fAccMiss" class="is-short">' + esc(draft.accessoriesMissing) + '</textarea></label>' : '') +
-      (C ? '<div class="qc-sec" id="qcStep2"><i>2</i> รูปบังคับ 7 มุม <small>จำเป็นสำหรับตรวจรับเข้าและตรวจก่อนส่งมอบ แตะช่องเพื่อถ่ายหรือเลือกรูป</small></div>' +
-        '<div class="qc-f full"><div class="qc-photos" id="fPhotos"></div></div>' : '') +
-      '<div class="qc-sec" id="qcStep' + (C ? 3 : 2) + '"><i>' + (C ? 3 : 2) + '</i> รายการตรวจสอบ <small>เลือกผลแล้วระบบจะบันทึกชื่อผู้ตรวจและเวลาให้ N/A ต้องใส่เหตุผล</small></div>' +
+      (C ? '<div class="qc-sec" id="qcStep2"><i>2</i> รูปเครื่อง <small>ไม่บังคับ แตะช่องเพื่อถ่ายหรือเลือกรูป</small></div>' +
+        '<div class="qc-f full"><div class="qc-sw-row" role="group" aria-label="รูปป้าย S/N">' + PLATES.map(function (k) {
+          return '<label class="qc-sw"><input type="checkbox" data-popt="' + k + '"' + (draft.photoOpts[k] ? ' checked' : '') + '><i aria-hidden="true"></i><span>รูป' + esc(KIND_TH[k]) + '</span></label>';
+        }).join('') + '<small>ปิดทั้งสองอัน ข้อ "ตรวจ Model / Serial / Nameplate" จะไม่อยู่ใน Checklist</small></div>' +
+        '<div class="qc-photos" id="fPhotos"></div></div>' : '') +
+      '<div class="qc-sec" id="qcStep' + (C ? 3 : 2) + '"><i>' + (C ? 3 : 2) + '</i> รายการตรวจสอบ <small>เลือกผลแล้วระบบจะบันทึกชื่อผู้ตรวจและเวลาให้ N/A ต้องใส่เหตุผลในหมายเหตุ</small></div>' +
       '<div class="qc-f full"><div class="qc-sum" id="fSum" aria-live="polite"></div><div class="qc-checks" id="fChecks"></div></div>' +
       '<div class="qc-sec" id="qcStep' + (C ? 4 : 3) + '"><i>' + (C ? 4 : 3) + '</i> สิ่งที่พบและหลักฐานเพิ่มเติม <small>รูปพิมพ์ลงเอกสารหน้า 2 วิดีโอและ PDF ไม่พิมพ์</small></div>' +
       '<label class="qc-f full"><span>สิ่งที่พบ / รายละเอียดปัญหา</span><textarea id="fFindings">' + esc(draft.findings) + '</textarea></label>' +
@@ -911,9 +1178,9 @@
       '<label class="qc-f full"><span>การแก้ไข / แนวทางดำเนินการ</span><textarea id="fCorrective">' + esc(draft.correctiveAction) + '</textarea></label>' +
       '<div class="qc-sec" id="qcStep' + (C ? 5 : 4) + '"><i>' + (C ? 5 : 4) + '</i> สรุปผล QC</div>' +
       '<label class="qc-f"><span>' + (appr ? 'สถานะ' : 'ผล QC') + '</span><select id="fStatus">' +
-        (appr ? (draft.status === 'Returned' ? ['Returned', 'In Progress', 'Fail'] : ['Draft', 'In Progress', 'Fail']) : ['Draft', 'In Progress', 'Pass', 'Conditional', 'Fail'])
+        (appr ? (draft.status === 'Returned' ? ['Returned', 'In Progress', 'Pass', 'Fail'] : ['Draft', 'In Progress', 'Pass', 'Fail']) : ['Draft', 'In Progress', 'Pass', 'Conditional', 'Fail'])
           .map(function (s) { return opt(s, STATUS_TH[s], draft.status === s); }).join('') + '</select>' +
-        (appr ? '<small class="qc-f-help">ไม่มีตัวเลือก "ผ่าน" แล้ว ผ่านได้ด้วยการอนุมัติของ Head QC เท่านั้น</small>' : '') + '</label>' +
+        (appr ? '<small class="qc-f-help">' + (passDirect() ? 'เลือก "ผ่าน" แล้วกดบันทึก ใบจะผ่านทันที (คุณเป็น Head QC)' : 'เลือก "ผ่าน" แล้วกดบันทึก ใบจะถูกส่งให้ Head QC อนุมัติ') + '</small>' : '') + '</label>' +
       '<div class="qc-f qc-f-wide"><div class="qc-gate" id="fGate" aria-live="polite"></div></div>' +
       '<label class="qc-f full"><span>หมายเหตุ / Release Note</span><textarea id="fNote">' + esc(draft.note) + '</textarea></label>' +
       '</form>';
@@ -922,14 +1189,32 @@
       (appr ? btn('ส่งให้ Head QC อนุมัติ', 'data-submit', true) : ''));
 
     var $ = function (s) { return dlg.querySelector(s); };
-    function fillMachines() {
+    // machines still in QC have no customer yet, so they stay listed whatever customer is chosen
+    function machineList() {
       var cid = $('#fCustomer').value;
-      // machines still in QC have no customer yet, so they stay listed whatever customer is chosen
-      var ms = db.machines.filter(function (m) { return !cid || String(m.customerId) === String(cid) || inQc(m) || String(m.id) === String(draft.machineId); });
-      $('#fMachine').innerHTML = '<option value="">เลือกเครื่อง</option>' + ms.map(function (m) {
-        return opt(m.id, (m.imodeSn ? m.imodeSn + ' · ' : '') + machineName(m) + ' · ' + (m.model || '-') + ' · S/N ' + (m.factorySn || m.serial || '-') + (inQc(m) ? ' (ใน QC)' : ''), String(m.id) === String(draft.machineId));
-      }).join('');
-      if (!ms.some(function (m) { return String(m.id) === String(draft.machineId); })) draft.machineId = '';
+      return db.machines.filter(function (m) { return !cid || String(m.customerId) === String(cid) || inQc(m) || String(m.id) === String(draft.machineId); });
+    }
+    var cuCombo = bindCombo(dlg, 'fCustomer', {
+      items: function () { return db.customers.map(function (c) { return { id: c.id, label: custLabel(c) }; }); }, value: draft.customerId,
+      onPick: function (id) { draft.customerId = id; fillMachines(); },
+      addLabel: function (t) { return t ? '+ เพิ่มลูกค้าใหม่ "' + t + '"' : '+ เพิ่มลูกค้าใหม่'; },
+      onAdd: function (t) { addCustomer(t, function (id) { cuCombo.set(id); dlg.dataset.dirty = '1'; }); }
+    });
+    var mCombo = bindCombo(dlg, 'fMachine', {
+      items: function () { return machineList().map(function (m) { return { id: m.id, label: machLabel(m) }; }); }, value: draft.machineId,
+      onPick: function (id) { pickMachine(id); },
+      addLabel: function (t) { return t ? '+ เพิ่มเครื่องใหม่ "' + t + '"' : '+ เพิ่มเครื่องใหม่'; },
+      onAdd: function (t) { addMachine(t, $('#fCustomer').value, $('#fType').value, function (id) { mCombo.set(id); dlg.dataset.dirty = '1'; }); }
+    });
+    function fillMachines() {
+      if (!machineList().some(function (m) { return String(m.id) === String(draft.machineId); })) { draft.machineId = ''; mCombo.set('', true); }
+      fillCases(); drawSn();
+    }
+    function pickMachine(id) {
+      draft.machineId = id;
+      var m = byId(db.machines, id);
+      if (m && m.customerId && !$('#fCustomer').value) { cuCombo.set(m.customerId, true); draft.customerId = m.customerId; }
+      if (m && C && $('#fReceived') && !$('#fReceived').value && m.receivedAt) $('#fReceived').value = m.receivedAt;
       fillCases(); drawSn();
     }
     function fillCases() {
@@ -943,22 +1228,23 @@
       var box = $('#fSnBox'); if (!box) return;
       var m = byId(db.machines, $('#fMachine').value);
       box.innerHTML = m && (m.imodeSn || m.factorySn) ? '<span>เครื่องที่เลือก</span><div class="qc-sn"><b>' + esc(m.imodeSn || '–') + '</b><small>Factory S/N ' + esc(m.factorySn || m.serial || '–') + '</small></div>' : '';
-      var cuStar = $('.qc-req-cu'); if (cuStar) cuStar.hidden = !!(m && inQc(m));
+      var cuStar = $('.qc-req-fCustomer'); if (cuStar) cuStar.hidden = !!(m && inQc(m));
     }
-    $('#fCustomer').addEventListener('change', function () { draft.customerId = this.value; fillMachines(); });
-    $('#fMachine').addEventListener('change', function () {
-      draft.machineId = this.value;
-      var m = byId(db.machines, this.value);
-      if (m && m.customerId && !$('#fCustomer').value) { $('#fCustomer').value = m.customerId; draft.customerId = m.customerId; fillMachines(); }
-      if (m && C) {   // fill job fields from the machine record when still empty
-        [['#fPo', 'poNo'], ['#fProject', 'projectNo'], ['#fSupplier', 'supplier'], ['#fReceived', 'receivedAt']].forEach(function (x) { if (!$(x[0]).value && m[x[1]]) $(x[0]).value = m[x[1]]; });
-      }
-      fillCases(); drawSn();
-    });
     $('#fCase').addEventListener('change', function () { draft.caseId = this.value; });
     $('#fType').addEventListener('change', function () { draft.type = this.value; drawGate(); });
     $('#fStatus').addEventListener('change', function () { draft.status = this.value; drawGate(); });
+    $('#fInspector').addEventListener('input', drawGate);
     fillMachines();
+    if ($('#fAccList')) bindAcc($('#fAccList'), { rows: draft.accRows, ev: draft.ev, drop: dropEv, dirty: function () { dlg.dataset.dirty = '1'; } });
+    [].forEach.call(dlg.querySelectorAll('[data-popt]'), function (cb) {
+      cb.addEventListener('change', function () {
+        var k = cb.dataset.popt, had = (draft.ev || []).filter(function (x) { return x.kind === k; });
+        if (!cb.checked && had.length && !confirm('ปิดรูป' + KIND_TH[k] + ' และลบรูปที่ถ่ายไว้ ' + had.length + ' รูป?')) { cb.checked = true; return; }
+        if (!cb.checked) had.forEach(dropEv);
+        draft.photoOpts[k] = cb.checked; syncIdentity();
+        dlg.dataset.dirty = '1'; drawPhotos(); drawChecks(); drawGate();
+      });
+    });
     drawPhotos(); drawChecks(); drawMedia(); drawGate();
     $('#qcForm').addEventListener('input', function () { dlg.dataset.dirty = '1'; });
     $('#qcForm').addEventListener('change', function () { dlg.dataset.dirty = '1'; });
@@ -984,13 +1270,27 @@
     var steps = dlg.querySelectorAll('.qc-steps a');
     if (steps.length) {   // tick the steps that are complete
       var have = {}; (draft.ev || []).forEach(function (e) { have[e.kind] = 1; });
-      var photosOk = PHOTOS.every(function (p) { return have[p.kind]; }), s = stats(draft);
+      var photosOk = PHOTOS.some(function (p) { return have[p.kind]; }), s = stats(draft);   // optional: ticked once any photo is in
       var fnd = dlg.querySelector('#fFindings'), extra = !!((fnd && fnd.value.trim()) || draft.media.length || (draft.ev || []).some(function (e) { return e.kind === 'extra' || e.kind === 'test'; }));
       var done = core ? [!!draft.machineId, photosOk, s.done === s.total, extra, st !== 'Draft'] : [!!draft.machineId, s.done === s.total, extra, st !== 'Draft'];
       [].forEach.call(steps, function (a, i) { a.classList.toggle('is-done', !!done[i]); });
     }
     var sub = dlg.querySelector('[data-submit]');
     if (appr) {
+      var sv = dlg.querySelector('[data-save]'), help = dlg.querySelector('#fStatus + .qc-f-help'), direct = passDirect();
+      if (help) help.textContent = direct ? 'เลือก "ผ่าน" แล้วกดบันทึก ใบจะผ่านทันที (คุณเป็น Head QC และไม่ใช่ผู้ตรวจใบนี้)' : 'เลือก "ผ่าน" แล้วกดบันทึก ใบจะถูกส่งให้ Head QC อนุมัติ';
+      if (sub) sub.style.display = st === 'Pass' ? 'none' : '';
+      if (sv && !sv.dataset.idle) sv.dataset.idle = sv.textContent;
+      if (sv && sv.textContent.indexOf('กำลัง') < 0) sv.textContent = st === 'Pass' ? (direct ? 'บันทึกผล "ผ่าน"' : 'บันทึกและส่ง Head QC') : sv.dataset.idle;
+      if (sv) sv.classList.toggle('is-primary', st === 'Pass');
+      if (st === 'Pass') {
+        if (sv) { sv.disabled = !!probs.length; sv.title = probs.length ? 'ยังผ่านไม่ได้: ' + probs.join(' · ') : ''; }
+        host.innerHTML = probs.length ? '<p class="qc-hint tone-orange">' + icon('alert') + '<span>ยังเลือก "ผ่าน" ไม่ได้: ' + esc(probs.join(' · ')) + '</span></p>'
+          : '<p class="qc-hint tone-green">' + icon('check') + '<span>' + (direct ? 'ครบเงื่อนไขแล้ว กดบันทึก ใบนี้จะผ่าน QC ทันที เครื่องเปลี่ยนเป็น "ผ่าน QC รอส่งมอบ"'
+            : 'ครบเงื่อนไขแล้ว กดบันทึก ใบนี้จะถูกส่งให้ Head QC อนุมัติ (ผู้ตรวจหรือผู้สร้างใบอนุมัติเองไม่ได้)') + '</span></p>';
+        return;
+      }
+      if (sv) { sv.disabled = false; sv.title = ''; }
       if (sub) { sub.disabled = !!probs.length || st === 'Fail'; sub.title = probs.length ? 'ยังส่งไม่ได้: ' + probs.join(' · ') : st === 'Fail' ? 'สถานะ "ไม่ผ่าน" ส่งอนุมัติไม่ได้' : ''; }
       host.innerHTML = st === 'Fail' ? '<p class="qc-hint tone-red">' + icon('alert') + '<span>บันทึกเป็น "ไม่ผ่าน" ระบุสิ่งที่พบและแนวทางแก้ไข เมื่อแก้แล้วเปลี่ยนเป็น "กำลังตรวจ" และส่งอนุมัติใหม่</span></p>'
         : probs.length ? '<p class="qc-hint tone-orange">' + icon('alert') + '<span>ยังส่งอนุมัติไม่ได้: ' + esc(probs.join(' · ')) + '</span></p>'
@@ -1006,12 +1306,13 @@
   /* the seven required photo slots */
   function drawPhotos() {
     var host = dlg.querySelector('#fPhotos'); if (!host) return;
-    host.innerHTML = PHOTOS.map(function (p) {
+    var o = draft.photoOpts || photoOpts(draft);
+    host.innerHTML = PHOTOS.filter(function (p) { return o[p.kind] !== false; }).map(function (p) {
       var e = (draft.ev || []).filter(function (x) { return x.kind === p.kind; }).slice(-1)[0], url = e && evUrl(e);
       return '<div class="qc-photo' + (e ? ' has-file' : '') + '">' +
         '<label>' + (url ? '<img src="' + esc(url) + '" alt="' + esc(p.th) + '">' : '<span class="qc-photo-empty">' + icon('plus') + '<em>ถ่าย / เลือกรูป</em></span>') +
-        '<input type="file" accept="image/*" capture="environment" data-kind="' + p.kind + '" aria-label="รูป' + esc(p.th) + '"></label>' +
-        '<div class="qc-photo-cap"><span>' + esc(p.th) + '</span>' + (e ? '<button type="button" data-drop="' + p.kind + '">ลบ</button>' : '<b>ต้องมี</b>') + '</div></div>';
+        '<input type="file" accept="image/*" data-kind="' + p.kind + '" aria-label="รูป' + esc(p.th) + '"></label>' +
+        '<div class="qc-photo-cap"><span>' + esc(p.th) + '</span>' + (e ? '<button type="button" data-drop="' + p.kind + '">ลบ</button>' : '') + '</div></div>';
     }).join('');
     host.onchange = async function (e) {
       var inp = e.target; if (!inp.matches('input[data-kind]')) return;
@@ -1029,16 +1330,16 @@
     };
   }
   function dropEv(e) {
-    draft.ev = draft.ev.filter(function (x) { return x !== e; });
+    var i = draft.ev.indexOf(e); if (i >= 0) draft.ev.splice(i, 1);
     if (e.pending) { try { URL.revokeObjectURL(e.blobUrl); } catch (x) {} } else draft.evGone.push(e);
   }
   /* a picked file becomes a pending evidence item; it is uploaded when the QC is saved */
-  async function pendingFile(f, kind) {
+  async function pendingFile(f, kind, checkId) {
     try {
       var blob = f, mime = f.type || 'application/octet-stream';
       if (/^image\//.test(mime)) { var s = await shrink(f); blob = dataUrlBlob(s.data); mime = blob.type; }
       if (blob.size > MAX_FILE_MB * 1024 * 1024) { page.toast('ไฟล์ ' + f.name + ' ใหญ่เกิน ' + MAX_FILE_MB + ' MB'); return null; }
-      return { pending: true, kind: kind, blob: blob, name: f.name, mime: mime, size: blob.size, blobUrl: URL.createObjectURL(blob) };
+      return { pending: true, kind: kind, check_id: checkId || null, blob: blob, name: f.name, mime: mime, size: blob.size, blobUrl: URL.createObjectURL(blob) };
     } catch (err) { page.toast('อ่านไฟล์ ' + f.name + ' ไม่ได้'); return null; }
   }
   function dataUrlBlob(u) {
@@ -1059,9 +1360,7 @@
         '<div class="qc-pills" role="group" aria-label="ผลข้อ ' + (i + 1) + '">' + P.map(function (p) {
           return '<button type="button" class="' + p[2] + '" data-r="' + p[0] + '" aria-pressed="' + (it.result === p[0]) + '">' + p[1] + '</button>';
         }).join('') + '</div>' +
-        '<div class="qc-check-v">' +
-          '<input data-k="measured" placeholder="ค่าที่วัดได้" value="' + esc(it.measured || '') + '" aria-label="ค่าที่วัดได้ ข้อ ' + (i + 1) + '">' +
-          '<input data-k="standard" placeholder="ค่ามาตรฐาน" value="' + esc(it.standard || '') + '" aria-label="ค่ามาตรฐาน ข้อ ' + (i + 1) + '">' +
+        '<div class="qc-check-v is-note">' +
           '<input data-k="remark" placeholder="' + (it.result === 'N/A' ? 'เหตุผลที่ N/A (จำเป็น)' : 'หมายเหตุ') + '" value="' + esc(it.remark || '') + '"' + (naMiss ? ' aria-invalid="true"' : '') + ' aria-label="หมายเหตุข้อ ' + (i + 1) + '">' +
         '</div>' + (ncrOn ? '<div class="qc-check-ncr">' + ncrSlot(it) + '</div>' : '') + '</div>';
     }).join('');
@@ -1178,10 +1477,11 @@
     draft.machineId = $('#fMachine').value; draft.caseId = $('#fCase').value; draft.inspector = v('#fInspector');
     draft.reviewer = v('#fReviewer'); draft.status = $('#fStatus').value; draft.targetCompany = v('#fTarget');
     draft.findings = v('#fFindings'); draft.correctiveAction = v('#fCorrective'); draft.note = v('#fNote');
-    if ($('#fAssigned')) {
-      draft.assignedTo = v('#fAssigned'); draft.plannedDate = v('#fPlanned'); draft.priority = $('#fPriority').value; draft.location = v('#fLocation');
-      draft.poNo = v('#fPo'); draft.projectNo = v('#fProject'); draft.supplier = v('#fSupplier'); draft.receivedDate = v('#fReceived');
-      draft.accessories = v('#fAcc'); draft.accessoriesMissing = v('#fAccMiss');
+    if ($('#fPlanned')) {
+      draft.plannedDate = v('#fPlanned'); draft.priority = $('#fPriority').value; draft.location = v('#fLocation');
+      draft.receivedDate = v('#fReceived'); draft.accessoriesMissing = v('#fAccMiss');
+      if ($('#fRecvBy')) { draft.receivedBy = v('#fRecvBy'); draft.deliveredBy = v('#fDelivBy'); }
+      if (draft.accRows) draft.accessories = accText(draft.accRows);
     }
   }
 
@@ -1200,12 +1500,19 @@
       if (draft.status === 'Fail') sp.unshift('สถานะ "ไม่ผ่าน" ส่งอนุมัติไม่ได้ เปลี่ยนเป็น "กำลังตรวจ" หลังแก้ไขแล้ว');
       if (sp.length) { page.toast('ยังส่งอนุมัติไม่ได้: ' + sp[0]); drawGate(); dlg.querySelector('#fGate').scrollIntoView({ block: 'nearest' }); return; }
     }
+    var wantPass = appr && draft.status === 'Pass';
+    if (wantPass) {
+      var pp = passProblems(draft);
+      if (pp.length) { page.toast('ยังผ่านไม่ได้: ' + pp[0]); drawGate(); dlg.querySelector('#fGate').scrollIntoView({ block: 'nearest' }); return; }
+      draft.status = 'In Progress'; submit = false;   // the server sets ผ่าน (qc_pass) or sends it to Head QC
+    }
     if (draft.status === 'Pass' && !appr) {
       var probs = passProblems(draft);
       if (probs.length) { page.toast('ยังบันทึกเป็นผ่านไม่ได้: ' + probs[0]); drawGate(); dlg.querySelector('#fGate').scrollIntoView({ block: 'nearest' }); return; }
     }
     if (draft.status === 'Draft' && stats(draft).done > 0) draft.status = 'In Progress';
     var b = dlg.querySelector(submit ? '[data-submit]' : '[data-save]'), idle = b.textContent, label = function (t) { b.textContent = t; };
+    if (wantPass) idle = b.dataset.idle || idle;
     [].forEach.call(dlg.querySelectorAll('.qc-dlg-foot button'), function (x) { x.disabled = true; });
     var done = function () { [].forEach.call(dlg.querySelectorAll('.qc-dlg-foot button'), function (x) { x.disabled = false; }); label(idle); drawGate(); };
     label('กำลังบันทึก…');
@@ -1221,17 +1528,8 @@
     }
     if (r.error) { done(); if (isNew) draft.id = ''; page.toast('บันทึกไม่สำเร็จ: ' + r.error.message); return; }
 
-    var failed = 0, store = sb().storage.from(BUCKET);
-    for (var i = 0; i < pend.length; i++) {
-      var e = pend[i], ext = (String(e.name).match(/\.([a-z0-9]{1,5})$/i) || [])[1] || (e.mime.split('/')[1] || 'bin');
-      var path = draft.id + '/' + e.kind + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + '.' + ext.toLowerCase();
-      label('กำลังอัปโหลดไฟล์ ' + (i + 1) + '/' + pend.length + '…');
-      var up = await store.upload(path, e.blob, { contentType: e.mime, upsert: false });
-      if (up.error) { failed++; continue; }
-      var ins = await sb().from('qc_evidence').insert({ qc_id: draft.id, machine_id: draft.machineId || null, kind: e.kind, path: path, name: e.name || '', mime: e.mime, size: e.size || 0 }).select().single();
-      if (ins.error) { failed++; store.remove([path]); continue; }
-      e.pending = false; Object.assign(e, ins.data);
-    }
+    var store = sb().storage.from(BUCKET);
+    var failed = await uploadPending(draft.id, draft.machineId, pend, label);
     for (var j = 0; j < (draft.evGone || []).length; j++) {
       var g = draft.evGone[j];
       var del = await sb().from('qc_evidence').delete().eq('id', g.id);
@@ -1241,10 +1539,15 @@
     if (first && !failed) r = await upsertDraft();
     if (r.error) { done(); page.toast('บันทึกผลไม่สำเร็จ: ' + r.error.message); return; }
 
-    var sent = null;
+    var sent = null, passed = false;
     if (submit && !failed) {
       label('กำลังส่งให้ Head QC…');
       sent = await sb().rpc('qc_submit', { p_qc_id: draft.id });
+    }
+    if (wantPass && !failed) {
+      label('กำลังบันทึกผล…');
+      sent = meet ? await call('qc_pass', { p_qc_id: draft.id }) : await sb().rpc('qc_submit', { p_qc_id: draft.id });
+      passed = !!(meet && sent && !sent.error && sent.data && sent.data.passed);
     }
     done();
     await loadAll(); refreshList(); mirror();
@@ -1256,22 +1559,35 @@
     }
     if (sent && sent.error) {   // saved, but the server gate said no: stay on the form
       dlg.dataset.dirty = '';
-      page.toast('บันทึกแล้ว แต่ส่งอนุมัติไม่สำเร็จ: ' + sent.error.message.replace(/^ยังส่งอนุมัติไม่ได้:\s*/, ''));
+      page.toast('บันทึกแล้ว แต่' + (wantPass ? 'ตั้งผ่านไม่สำเร็จ: ' : 'ส่งอนุมัติไม่สำเร็จ: ') + sent.error.message.replace(/^(ยังส่งอนุมัติไม่ได้|ยังผ่านไม่ได้):\s*/, ''));
       openForm(saved);
       return;
     }
     dlg.dataset.dirty = ''; dlg.close();
-    page.toast(sent ? 'ส่ง ' + saved.qcNo + ' ให้ Head QC อนุมัติแล้ว' : 'บันทึก ' + saved.qcNo + ' แล้ว');
+    page.toast(passed ? saved.qcNo + ' ผ่าน QC แล้ว เครื่องพร้อมส่งมอบ' : sent ? 'ส่ง ' + saved.qcNo + ' ให้ Head QC อนุมัติแล้ว' : 'บันทึก ' + saved.qcNo + ' แล้ว');
   }
 
   /* ---------- the two-page Thai document (Service js/05 qcDocHTML layout) ---------- */
   function docHTML(q, evs) {
     var m = byId(db.machines, q.machineId) || {}, cu = byId(db.customers, q.customerId || m.customerId) || {}, c = byId(db.cases, q.caseId), st = stats(q), S = db.settings || {};
-    var order = {}; PHOTOS.forEach(function (p, i) { order[p.kind] = i; });
-    var evPics = (evs || []).filter(function (e) { return /^image\//.test(e.mime || '') && evUrl(e); })
-      .sort(function (a, b) { return (a.kind in order ? order[a.kind] : 99) - (b.kind in order ? order[b.kind] : 99); })
-      .map(function (e) { return { src: evUrl(e), name: (KIND_TH[e.kind] || '') + (e.kind === 'extra' || e.kind === 'test' ? ' · ' + (e.name || '') : '') }; });
-    var pics = evPics.concat((q.media || []).filter(function (x) { return /^image\//.test(String(x.type || '')); }).map(function (x) { return { src: x.data, name: x.name || 'รูปประกอบ QC' }; }));
+    /* 2026-11-12: small thumbnails, four to a row, under headings */
+    var accRows = accParse(q.accessories), accName = {}; accRows.forEach(function (a) { accName['acc:' + a.key] = a.name; });
+    var imgs = (evs || []).filter(function (e) { return /^image\//.test(e.mime || '') && evUrl(e); });
+    var GROUPS = [['รูปรอบเครื่อง', ['front', 'back', 'left', 'right']], ['ป้าย S/N', ['factoryPlate', 'imodePlate']], ['อุปกรณ์ที่มากับเครื่อง', ['accessories']]];
+    var used = {}, groups = GROUPS.map(function (g) {
+      var list = [];
+      g[1].forEach(function (k) { imgs.filter(function (e) { return e.kind === k; }).forEach(function (e) { used[imgs.indexOf(e)] = 1; list.push({ src: evUrl(e), name: k === 'accessories' ? accName[e.check_id] || 'อุปกรณ์' : KIND_TH[k] }); }); });
+      return [g[0], list];
+    });
+    var extra = imgs.filter(function (e, i) { return !used[i]; }).map(function (e) { return { src: evUrl(e), name: (KIND_TH[e.kind] || 'รูปเพิ่มเติม') + (e.name && (e.kind === 'extra' || e.kind === 'test') ? ' · ' + e.name : '') }; })
+      .concat((q.media || []).filter(function (x) { return /^image\//.test(String(x.type || '')); }).map(function (x) { return { src: x.data, name: x.name || 'รูปประกอบ QC' }; }));
+    groups.push(['หลักฐานเพิ่มเติม', extra]);
+    var photoHTML = groups.filter(function (g) { return g[1].length; }).map(function (g) {
+      return '<div class="qc-doc-section-title">' + esc(g[0]) + ' <small>(' + g[1].length + ' รูป)</small></div><div class="qc-pgrid">' + g[1].map(function (x) {
+        return '<figure><div class="ph"><img src="' + esc(x.src) + '" alt="' + esc(x.name) + '"></div><figcaption>' + esc(x.name) + '</figcaption></figure>';
+      }).join('') + '</div>';
+    }).join('') || '<div class="qc-doc-section-title">รูปภาพประกอบ</div><p class="qc-pgrid-empty">ไม่มีรูปประกอบ</p>';
+    var hasVals = (q.checklist || []).some(function (it) { return it.measured || it.standard; });   // older QC still print their values
     var rows = (q.checklist || []).map(function (it, i) {
       var val = [it.measured ? 'วัดได้ ' + it.measured : '', it.standard ? 'มาตรฐาน ' + it.standard : '', it.remark || ''].filter(Boolean).join(' · ');
       return '<tr><td class="n">' + (i + 1) + '</td><td>' + esc(it.labelTh || it.labelEn || it.id) + '</td><td class="result">' + esc(STATUS_TH[it.result] || it.result || '-') + '</td><td class="remark">' + esc(val || '-') + '</td></tr>';
@@ -1281,21 +1597,19 @@
     var imodeSn = m.imodeSn ? '<br><b>IMODE S/N:</b> ' + esc(m.imodeSn) : '', po = q.poNo ? '<br><b>PO / ผู้ขาย:</b> ' + esc(q.poNo) + (q.supplier ? ' / ' + esc(q.supplier) : '') : '';
     var ticket = esc((c && c.ticket) || '-'), type = esc(TYPE_TH[q.type] || q.type || '-'), result = esc(STATUS_TH[q.status] || q.status);
     if (q.status === 'Conditional') result += ' (ยังไม่นับเป็นผ่าน)';
-    var n = pics.length > 6 ? 8 : 6;
-    var slots = Array.apply(null, Array(n)).map(function (_, i) {
-      var x = pics[i];
-      return '<div class="qc-photo-slot"><div class="photo-stage">' + (x ? '<img src="' + esc(x.src) + '" alt="รูปประกอบ QC ' + (i + 1) + '">' : '<div class="photo-empty">ช่องรูปภาพ ' + (i + 1) + '<br>ปัญหา / ความเสียหาย / อุปกรณ์ไม่ครบ</div>') +
-        '</div><div class="photo-caption">' + (x ? 'รูปที่ ' + (i + 1) + ' · ' + esc(x.name) : 'รูปที่ ' + (i + 1) + ' · ยังไม่มีรูป') + '</div></div>';
-    }).join('');
+
     var head = function (title, pageName, sub) {
       return '<div class="qc-doc-page-head"><img src="' + esc(DOC_LOGO) + '" alt="I-MODE"><div><h1>' + title + '</h1><div class="page-name">' + pageName + '</div><div class="qc-doc-company"><b>' + company + '</b><br>' + sub + '</div></div></div>';
     };
     return '<div class="qc-doc-stack" id="qcPrintDoc">' +
       '<section class="qc-doc-page qc-doc-page-1">' + head('ใบตรวจสอบคุณภาพเครื่องจักร (QC)', 'หน้าที่ 1 / 2 — รายการตรวจสอบ', address + '<br>โทร. ' + phone + ' · ' + email) +
-        '<div class="qc-doc-info"><div><b>เลขที่ QC:</b> ' + esc(q.qcNo || '-') + '<br><b>ประเภทการตรวจ:</b> ' + type + '<br><b>วันที่ตรวจ:</b> ' + thDate(q.qcDate) + '<br><b>เลขที่งานบริการ:</b> ' + ticket + po + '</div>' +
+        '<div class="qc-doc-info"><div><b>เลขที่ QC:</b> ' + esc(q.qcNo || '-') + '<br><b>ประเภทการตรวจ:</b> ' + type + '<br><b>วันที่ตรวจ:</b> ' + thDate(q.qcDate) + '<br><b>เลขที่งานบริการ:</b> ' + ticket + po +
+          (q.location ? '<br><b>สถานที่ตรวจ:</b> ' + esc(q.location) : '') +
+          (q.receivedBy || q.deliveredBy ? '<br><b>ผู้รับเครื่อง / ผู้ส่งมอบ:</b> ' + esc(q.receivedBy || '-') + ' / ' + esc(q.deliveredBy || '-') : '') + '</div>' +
         '<div><b>ลูกค้า:</b> ' + customer + '<br><b>เอกสารส่งให้:</b> ' + target + '<br><b>เครื่องจักร:</b> ' + mName + '<br><b>รุ่น / หมายเลขเครื่อง:</b> ' + model + ' / ' + serial + imodeSn + '</div></div>' +
-        '<table class="qc-doc-table"><thead><tr><th class="n">ลำดับ</th><th>รายการตรวจสอบ</th><th class="result">ผลการตรวจ</th><th class="remark">ค่าที่วัด / หมายเหตุ</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<table class="qc-doc-table"><thead><tr><th class="n">ลำดับ</th><th>รายการตรวจสอบ</th><th class="result">ผลการตรวจ</th><th class="remark">' + (hasVals ? 'ค่าที่วัด / หมายเหตุ' : 'หมายเหตุ') + '</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div class="qc-doc-summary"><div><b>สรุปรายการตรวจ:</b> ตรวจแล้ว ' + st.done + '/' + st.total + ' รายการ · ผ่าน ' + st.pass + ' รายการ · ไม่ผ่าน ' + st.fail + ' รายการ' +
+          (accRows.length ? '<br><b>อุปกรณ์ที่มากับเครื่อง:</b> ' + esc(accLabel(q.accessories)) : '') +
           (q.accessoriesMissing ? '<br><b>อุปกรณ์ค้างส่ง:</b> ' + esc(q.accessoriesMissing) : '') + '</div>' +
         '<div><b>ผล QC:</b> ' + result + '<br><b>ผู้ตรวจ:</b> ' + esc(q.inspector || '-') + '<br><b>ผู้อนุมัติ:</b> ' + esc(q.approverName || q.reviewer || '-') + (q.approvedAt ? ' · ' + thDate(q.approvedAt) : '') + '</div></div>' +
         '<div class="qc-doc-sign"><div><b>ผู้ตรวจ QC</b><div>วันที่ ....................</div></div><div><b>ฝ่ายบริการ / เทคนิค</b><div>วันที่ ....................</div></div><div><b>ผู้อนุมัติ / ผู้รับมอบ</b><div>วันที่ ....................</div></div></div>' +
@@ -1304,8 +1618,7 @@
         '<div class="qc-doc-info"><div><b>ลูกค้า:</b> ' + customer + '<br><b>วันที่ตรวจ:</b> ' + thDate(q.qcDate) + '<br><b>ประเภทการตรวจ:</b> ' + type + '</div>' +
         '<div><b>ผู้ตรวจ:</b> ' + esc(q.inspector || '-') + '<br><b>ผล QC:</b> ' + result + '<br><b>เลขที่งานบริการ:</b> ' + ticket + '</div></div>' +
         '<div class="qc-doc-note-grid"><div class="qc-doc-note-box"><b>สิ่งที่พบ / รายละเอียดปัญหา</b>' + esc(q.findings || '-') + '</div><div class="qc-doc-note-box"><b>การแก้ไข / แนวทางดำเนินการ</b>' + esc(q.correctiveAction || '-') + '</div><div class="qc-doc-note-box full"><b>หมายเหตุเพิ่มเติม</b>' + esc(q.note || '-') + '</div></div>' +
-        '<div class="qc-doc-section-title">รูปภาพประกอบ</div><div class="qc-photo-sheet' + (n === 8 ? ' is-8' : '') + '">' + slots + '</div>' +
-        (pics.length > n ? '<div class="qc-photo-extra">มีรูปเพิ่มเติมในข้อมูล QC อีก ' + (pics.length - n) + ' รูป</div>' : '') +
+        photoHTML +
       '</section></div>';
   }
 
@@ -1637,7 +1950,7 @@
         ['ผู้ตรวจ', q.inspector], ['Checklist', 'ผ่าน ' + st.pass + ' · ไม่ผ่าน ' + st.fail + ' · N/A ' + na + ' จาก ' + st.total], ['Revision', String(q.revision || 0)]]
         .map(function (x) { return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1] || '–') + '</dd></div>'; }).join('') + '</dl>' +
       '<div class="qa-sec"><h3>ด่านตรวจก่อนอนุมัติ (ระบบตรวจให้)</h3><ul class="qa-gate" id="qaGate"><li>กำลังตรวจ…</li></ul></div>' +
-      '<div class="qa-sec"><h3>รูปบังคับ</h3><div class="qa-photos" id="qaPhotos"></div></div>' +
+      '<div class="qa-sec"><h3>รูปประกอบ</h3><div id="qaPhotos"></div></div>' +
       (q.findings || q.note ? '<div class="qa-sec"><h3>สิ่งที่พบ / หมายเหตุ</h3><p class="qa-text">' + esc([q.findings, q.note].filter(Boolean).join(' · ')) + '</p></div>' : '') +
       '<div class="qa-sec"><h3>ประวัติ</h3>' + historyHTML(q) + '</div>' +
       '<div class="qa-decide">' + (isHead && !own ?
@@ -1660,20 +1973,15 @@
       await loadAll(); refreshList(); mirror();
       page.toast(d === 'approve' ? 'อนุมัติ ' + q.qcNo + ' แล้ว เครื่องพร้อมส่งมอบ' : d === 'return' ? 'ส่งกลับ ' + q.qcNo + ' ให้แก้ไขแล้ว' : 'บันทึกไม่อนุมัติ ' + q.qcNo + ' แล้ว');
     };
-    var req = INTAKE_TYPES.indexOf(q.type) >= 0;
     await sign(evs.filter(function (e) { return /^image\//.test(e.mime || ''); }));
     if (pick !== q.id) return;
     var ph = det.querySelector('#qaPhotos');
-    ph.innerHTML = req ? PHOTOS.map(function (p) {
-      var e = evs.filter(function (x) { return x.kind === p.kind; }).slice(-1)[0], url = e && evUrl(e);
-      return '<figure class="qa-ph' + (e ? '' : ' is-missing') + '">' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener"><img src="' + esc(url) + '" alt="' + esc(p.th) + '"></a>' : '') +
-        '<figcaption>' + esc(p.th) + (e ? '' : ' · ไม่มี') + '</figcaption></figure>';
-    }).join('') : '<p class="qc-muted">ประเภทนี้ไม่บังคับรูป 7 มุม (มีไฟล์แนบ ' + evs.length + ' ไฟล์)</p>';
+    ph.innerHTML = evGrid(evs.filter(function (e) { return /^image\//.test(e.mime || ''); }));
     var g = gateCache[q.id] || (await sb().rpc('qc_gate', { p_qc_id: q.id })).data || { ok: false, problems: ['ตรวจด่านไม่สำเร็จ'] };
     gateCache[q.id] = g;
     if (pick !== q.id) return;
     var lines = (g.problems || []).map(function (t) { return '<li><span class="n">✕</span>' + esc(t) + '</li>'; });
-    if (g.ok) lines = ['ตรวจครบ ' + st.total + ' ข้อ ไม่มีข้อไม่ผ่าน ข้อ N/A มีเหตุผล', req ? 'รูปบังคับครบ 7 รูป' : 'ประเภทนี้ไม่บังคับรูป 7 มุม', 'มีผู้ตรวจ เครื่อง และ IMODE S/N']
+    if (g.ok) lines = ['ตรวจครบ ' + st.total + ' ข้อ ไม่มีข้อไม่ผ่าน ข้อ N/A มีเหตุผล', 'ไม่มี NCR ค้าง', 'มีผู้ตรวจ เครื่อง และ IMODE S/N']
       .map(function (t) { return '<li><span class="y">✓</span>' + esc(t) + '</li>'; });
     lines.push(own ? '<li><span class="n">✕</span>คุณเป็นผู้ตรวจหรือผู้ส่ง อนุมัติเองไม่ได้</li>' : '<li><span class="y">✓</span>ผู้อนุมัติไม่ใช่ผู้ตรวจหรือผู้ส่ง</li>');
     det.querySelector('#qaGate').innerHTML = lines.join('');
