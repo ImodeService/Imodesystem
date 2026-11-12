@@ -322,3 +322,16 @@ html[data-theme="dark"] .qc-warn{background:#3a2f17;border-color:#6b5520;color:#
 html[data-theme="dark"] .qc-warn.is-bad{background:#3d1d20;border-color:#7a2f35;color:#ffb3b8}
 .qc-lines.is-locked{opacity:.55;pointer-events:none}
 
+
+/* 2026-11-13 owner: ดูตัวอย่างเอกสาร (A4) — the sheets in a layer over the page (js/quote-common.js preview()) */
+.qc-prev{position:fixed;inset:0;z-index:70;background:#5b6475;display:flex;flex-direction:column}
+.qc-prev-bar{flex:none;display:flex;align-items:center;gap:10px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));padding-top:calc(10px + env(safe-area-inset-top,0px));background:#0c225e;color:#fff}
+.qc-prev-bar b{font-size:15px;min-width:0;overflow-wrap:anywhere}
+.qc-prev-bar span{flex:1;font-size:12px;opacity:.8}
+.qc-prev-bar button{flex:none;min-height:40px;border-radius:8px;border:1px solid rgba(255,255,255,.55);background:transparent;color:#fff;font:inherit;font-weight:700;padding:0 14px;cursor:pointer}
+.qc-prev-bar .qc-prev-p{background:#c25e00;border-color:#c25e00}
+.qc-prev-bar button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.qc-prev-f{flex:1;width:100%;border:0;background:#5b6475}
+body.qc-prev-open{overflow:hidden}
+@media (max-width:640px){.qc-prev-bar span{display:none}.qc-prev-bar b{flex:1;font-size:13.5px}}
+.qc-mbar [data-proxy="qcPreview"]{margin-left:auto}

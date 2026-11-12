@@ -222,9 +222,43 @@
  /* the creator's own mobile: their account, else their technician record */
  function myMobile(name){
   var u=user(),v=String(u.mobile||u.phone||u.tel||'').trim();if(v)return v;
-  name=String(name||userName()).trim();if(!name)return '';
-  var t=(readJ(K.tech,[])||[]).filter(function(x){return x&&String(x.name||'').trim()===name})[0];
-  return t?String(t.phone||t.mobile||'').trim():'';
+  name=String(name||userName()).trim();
+  var tid=String(u.technicianId||'');
+  var t=(readJ(K.tech,[])||[]).filter(function(x){return x&&((tid&&String(x.id)===tid)||(name&&String(x.name||'').trim()===name))})[0];
+  if(t&&String(t.phone||t.mobile||'').trim())return String(t.phone||t.mobile).trim();
+  return lastMobileLocal(name);
+ }
+ /* 2026-11-13 (checklist B6): office accounts have no phone anywhere (profiles has no column), so
+    the number this person put on their own latest quotation is used — the device's copy first,
+    the server's (lastMobileCloud) when it answers. */
+ function lastMobileLocal(name){
+  if(!name)return '';
+  var best=null;
+  quotes().forEach(function(q){
+   var mo=mobileOf(q);
+   if(!mo||String(q.preparedBy||'').trim()!==name)return;
+   if(!best||String(q.updatedAt||q.createdAt||'')>String(best.at))best={mo:mo,at:q.updatedAt||q.createdAt||''};
+  });
+  return best?best.mo:'';
+ }
+ function lastMobileCloud(name){
+  var c=db();if(!c||!name)return Promise.resolve('');
+  return withTimeout(c.from('quotations').select('parts,updated_at').eq('prepared_by',name).order('updated_at',{ascending:false}).limit(10)).then(function(r){
+   var rows=(r&&!r.error&&r.data)||[];
+   for(var i=0;i<rows.length;i++){var mo=mobileOf({parts:rows[i].parts});if(mo)return mo}
+   return '';
+  },function(){return ''});
+ }
+ /* who is signed in when this device has no Service session copy (a fresh iPad, a full storage):
+    the shared platform session names the account, profiles gives the full name */
+ function platformUser(){
+  try{
+   var C=window.IMODE_CONFIG||{},k=C.storageKey;if(!k)return null;
+   var raw=null;try{raw=localStorage.getItem(k)}catch(e){}
+   if(!raw){try{raw=sessionStorage.getItem(k)}catch(e){}}
+   var s=raw&&JSON.parse(raw),u=s&&(s.user||(s.currentSession&&s.currentSession.user));
+   return u&&u.id?{id:u.id,username:String(u.email||'').split('@')[0]}:null;
+  }catch(e){return null}
  }
 
  /* --------------------------------------------------------------- the model ---- */
@@ -419,6 +453,9 @@
     if(r&&r.error)return {ok:true,cloud:false,id:rec.id,rec:rec,first:first,message:'บันทึกในเครื่องแล้ว แต่ส่งขึ้น Cloud ไม่สำเร็จ: '+r.error.message};
     /* 2026-11-08: photos / files ride in quotations.attachments (supabase/19-quote-attachments.sql),
        written in a second update exactly like js/157 so a database without the column still saves */
+    /* 2026-11-13: an attachment cleared from this device ({offloaded} without data, apps/launcher/storage.js)
+       is never written back over the server's file */
+    if((rec.attachments||[]).some(function(x){return x&&x.offloaded&&!x.data}))return {ok:true,cloud:true,id:rec.id,rec:rec,first:first,message:'บันทึก '+rec.id+' แล้ว (ไฟล์แนบบน server ไม่ถูกแก้)'};
     return withTimeout(c.from('quotations').update({attachments:rec.attachments||[]}).eq('id',rec.id)).then(function(a){
      if(a&&a.error){
       try{console.warn('quotation attachments not on the server (run supabase/19-quote-attachments.sql):',a.error.message)}catch(e){}
@@ -587,12 +624,58 @@
    +'</div>';
  }
  var PRINT_CSS='body{font-family:Arial,Tahoma,sans-serif;padding:18px;color:#1d232f}.quote-doc.official{max-width:1020px;margin:auto;border:1px solid #dadce8;padding:18px 22px;background:#fff}.quote-paper-header{display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start;padding-bottom:10px;border-bottom:2px solid #1748a5}.quote-paper-logo{width:210px;height:92px;object-fit:contain}.quote-paper-company{font-size:12px;line-height:1.5;color:#222}.quote-paper-company b{font-size:14px;color:#000}.quote-paper-title{text-align:center;font-size:22px;font-weight:800;margin:6px 0 10px;color:#111}.quote-paper-meta{display:grid;grid-template-columns:1.2fr .9fr;gap:18px;margin-bottom:8px}.quote-paper-block .row{display:grid;grid-template-columns:140px 1fr;gap:8px;margin-bottom:6px;font-size:13px}.quote-paper-block .label{font-weight:700;color:#21306e}.quote-paper-table table{width:100%;border-collapse:collapse;border:1px solid #444}.quote-paper-table th,.quote-paper-table td{border:1px solid #444;padding:7px 8px;font-size:12px;vertical-align:top}.quote-paper-table th{background:#f7f7fb;text-align:center}.quote-paper-table td.right{text-align:right}.quote-paper-remark{display:grid;grid-template-columns:90px 1fr;border:1px solid #444;border-top:0}.quote-paper-remark div{padding:8px;font-size:12px}.quote-paper-remark .label{font-weight:700;color:#21306e;border-right:1px solid #444}.quote-paper-summary{margin-left:auto;width:340px;border:1px solid #444;border-top:0}.quote-paper-summary .sum-row{display:grid;grid-template-columns:1fr 140px}.quote-paper-summary .sum-row>div{padding:6px 8px;border-top:1px solid #444;font-size:12px}.quote-paper-summary .sum-row b{text-align:right;display:block}.quote-paper-summary .sum-row.total{font-weight:800;color:#21306e}.quote-paper-sign{display:grid;grid-template-columns:1.1fr .9fr .9fr .9fr;border:1px solid #444;margin-top:12px}.quote-paper-sign>div{min-height:122px;padding:10px;border-right:1px solid #444;font-size:12px}.quote-paper-sign>div:last-child{border-right:0}.quote-paper-sign .sign-line{text-align:center;font-weight:700}.quote-paper-footer{margin-top:8px;font-size:11px;line-height:1.55;color:#333}@media print{body{padding:0}.quote-doc.official{border:0;max-width:none;margin:0}}';
+ /* 2026-11-13 owner: always A4 (210 × 297 mm) — on screen, printed and as PDF. Without a page size
+    Chrome printed on Letter (measured). Attachments always start a new sheet. */
+ var A4_CSS='@page{size:A4;margin:10mm 12mm}html{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+  +'.quote-attach-page{break-before:page;page-break-before:always}.quote-attach-page figure{break-inside:avoid;page-break-inside:avoid}'
+  +'@media screen{html,body{background:#5b6475}body{padding:16px 0 40px;display:flex;flex-direction:column;align-items:center;gap:14px}'
+  +'.a4-w{flex:none}.a4{width:210mm;min-height:297mm;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.35);padding:10mm 12mm;box-sizing:border-box;transform-origin:top left}'
+  +'.a4 .quote-doc.official{border:0;max-width:none;margin:0;padding:0}'
+  +'.a4 .quote-attach-page{margin:0!important;padding:0!important;border:0!important}'
+  +'.a4-n{color:#d6dceb;font:12px Arial,Tahoma,sans-serif;margin-top:-6px}}'
+  +'@media print{body{padding:0;background:#fff;display:block}.a4-w{width:auto!important;height:auto!important}.a4{width:auto;min-height:0;padding:0;box-shadow:none;transform:none!important}.a4-n{display:none}}';
+ /* the paper as A4 sheets: the quotation, then the attachments on a sheet of their own */
+ function sheetsHTML(q,logo){
+  var html=paperHTML(q,logo),att='',cut=html.indexOf('<div class="quote-attach-page"');
+  if(cut>=0){att=html.slice(cut);att=att.slice(0,att.lastIndexOf('</div>'));html=html.slice(0,cut)+'</div>'}
+  var n=att?2:1;
+  return '<div class="a4-w"><div class="a4">'+html+'</div></div><div class="a4-n">หน้า 1 / '+n+'</div>'
+   +(att?'<div class="a4-w"><div class="a4"><div class="quote-doc official">'+att+'</div></div></div><div class="a4-n">หน้า 2 / 2 · เอกสารแนบ</div>':'');
+ }
+ function a4Doc(q,logo,tail){
+  return '<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(q.id||'Quotation')+'</title><style>'+PRINT_CSS+A4_CSS+'</style></head><body>'
+   +sheetsHTML(q,logo)+(tail||'')+'</body></html>';
+ }
+ /* ดูตัวอย่างเอกสาร (A4): the sheets in the page itself, scaled to fit a phone */
+ function preview(q,title){
+  var old=document.getElementById('qcPrev');if(old)old.remove();
+  var logo=new URL('./assets/imode-document-logo.webp',location.href).href;
+  var d=document.createElement('div');d.id='qcPrev';d.className='qc-prev';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label','ตัวอย่างเอกสาร');
+  d.innerHTML='<div class="qc-prev-bar"><b>'+esc(title||('ตัวอย่างเอกสาร · '+(q.id||'')))+'</b><span>กระดาษ A4 (210 × 297 มม.) เหมือนตอนพิมพ์ / PDF</span>'
+   +'<button type="button" class="qc-prev-x" data-prev="close">ปิด</button><button type="button" class="qc-prev-p" data-prev="print">🖨 พิมพ์ / PDF</button></div>'
+   +'<iframe class="qc-prev-f" title="ตัวอย่างเอกสาร A4"></iframe>';
+  document.body.appendChild(d);document.body.classList.add('qc-prev-open');
+  var f=d.querySelector('iframe'),doc=f.contentDocument;
+  doc.open();doc.write(a4Doc(q,logo));doc.close();
+  /* scaled with a transform (WebKit ignores zoom here); each sheet's box is sized to the scaled sheet */
+  function fit(){try{var z=Math.min(1,(d.clientWidth-24)/794);[].forEach.call(doc.querySelectorAll('.a4-w'),function(w){var a=w.firstChild;a.style.transform=z<1?'scale('+z+')':'';w.style.width=Math.ceil(a.offsetWidth*z)+'px';w.style.height=Math.ceil(a.offsetHeight*z)+'px'})}catch(e){}}
+  fit();window.addEventListener('resize',fit);f.addEventListener('load',fit);[].forEach.call(doc.images,function(i){i.addEventListener('load',fit)});
+  function close(){d.remove();document.body.classList.remove('qc-prev-open');window.removeEventListener('resize',fit);document.removeEventListener('keydown',key,true);try{($('qcPreview')||{}).focus&&$('qcPreview').focus()}catch(e){}}
+  function key(e){if(e.key==='Escape'){e.preventDefault();close()}}
+  document.addEventListener('keydown',key,true);
+  d.addEventListener('click',function(e){
+   var b=e.target.closest('[data-prev]');if(!b)return;
+   if(b.getAttribute('data-prev')==='close')close();
+   else if(!print(q))toast('เปิดหน้าพิมพ์ไม่ได้ กรุณาอนุญาต Pop-up');
+  });
+  try{d.querySelector('.qc-prev-x').focus()}catch(e){}
+  return d;
+ }
  function print(q){
   var logo=new URL('./assets/imode-document-logo.webp',location.href).href;
   var w=window.open('','_blank','width=1100,height=860');
   if(!w)return false;
-  w.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><title>'+esc(q.id||'Quotation')+'</title><style>'+PRINT_CSS+'</style></head><body>'
-   +paperHTML(q,logo)+'<script>window.onload=function(){window.print()}<\/script></body></html>');
+  w.document.write(a4Doc(q,logo,'<script>window.onload=function(){window.print()}<\/script>'));
   w.document.close();
   return true;
  }
@@ -1036,7 +1119,8 @@
   function head(){
    var el=$('qcNo');
    if(m.id){el.textContent=m.id+' · '+(m.status||'ร่าง')+(m.revOf?' · แก้ไขจาก '+m.revOf:'');el.classList.add('is-saved');document.title=m.id+' · '+TYPES[type].label+' · I-MODE'}
-   else if(m.revOf){el.textContent='ฉบับแก้ของ '+m.revOf+' · ได้เลข '+revBase(m.revOf)+'-REVxx เมื่อบันทึก';el.classList.remove('is-saved')}
+   /* 2026-11-13 owner: the revision shows its number from the start; it is fixed when saved */
+   else if(m.revOf){el.textContent=(m.revNext||revBase(m.revOf)+'-REV..')+' · ฉบับแก้ไขจาก '+m.revOf+' · ยังไม่บันทึก';el.classList.remove('is-saved');if(m.revNext)document.title=m.revNext+' · '+TYPES[type].label+' · I-MODE'}
    else{el.textContent='ใบใหม่ · ยังไม่มีเลขที่';el.classList.remove('is-saved')}
    var c=$('qcChat');if(c)c.hidden=!(m.id&&m.caseId);
   }
@@ -1085,17 +1169,30 @@
    save(m).then(function(r){
     saving=false;b.disabled=false;b.innerHTML=label;
     if(!r.ok){toast(r.message);return}
-    dirty=false;lastRec=r.rec;head();
+    var want=m.revNext;dirty=false;lastRec=r.rec;m.revNext='';head();
     try{history.replaceState(null,'','?id='+encodeURIComponent(r.id))}catch(e){}
-    toast(r.message,r.cloud?2800:5000);
+    if(r.first&&want&&r.id!==want)toast('เลข '+want+' มีคนใช้ไปก่อนแล้ว ใบนี้ได้เลข '+r.id,6000);
+    else toast(r.message,r.cloud?2800:5000);
     addExpenseOptions(m.expenses.map(function(x){return x.name})).then(function(n){if(n&&o.onOptions)o.onOptions()});
     if(r.first&&m.caseId)chatDialog(r.rec);
    },function(){saving=false;b.disabled=false;b.innerHTML=label;toast('บันทึกไม่สำเร็จ')});
   });
   $('qcPrint').addEventListener('click',function(){
    if(!m.customerId){toast('กรุณาเลือกลูกค้าก่อน');return}
-   var rec=toRecord(m);if(!m.id)rec.id='DRAFT';
+   var rec=toRecord(m);if(!m.id)rec.id=m.revNext||'DRAFT';
    if(!print(rec))toast('เปิดหน้าพิมพ์ไม่ได้ กรุณาอนุญาต Pop-up');
+  });
+  /* 2026-11-13 owner: ดูตัวอย่างเอกสาร (A4) — in the summary and in the phone's bottom bar */
+  (function(){
+   var acts=$('qcSave')&&$('qcSave').parentNode;
+   if(acts&&!$('qcPreview'))acts.insertAdjacentHTML('afterbegin','<button type="button" class="qc-btn" id="qcPreview">👁 ดูตัวอย่างเอกสาร (A4)</button>');
+   var bar=document.querySelector('.qc-mbar [data-proxy="qcSave"]');
+   if(bar&&!document.querySelector('.qc-mbar [data-proxy="qcPreview"]'))bar.insertAdjacentHTML('beforebegin','<button type="button" class="qc-btn" data-proxy="qcPreview">👁 ตัวอย่าง</button>');
+  })();
+  $('qcPreview').addEventListener('click',function(){
+   if(!m.customerId){toast('กรุณาเลือกลูกค้าก่อน');return}
+   var rec=toRecord(m);if(!m.id)rec.id=m.revNext||'DRAFT';
+   preview(rec,'ตัวอย่างเอกสาร · '+rec.id+(m.id?'':' (ยังไม่บันทึก)'));
   });
   if($('qcChat'))$('qcChat').addEventListener('click',function(){chatDialog(lastRec||toRecord(m))});
   $('qcNew').addEventListener('click',function(){
@@ -1105,13 +1202,46 @@
   window.addEventListener('beforeunload',function(e){if(dirty){e.preventDefault();e.returnValue=''}});
   typeBar($('qcTypes'),type,function(){return {id:m.id,caseId:m.caseId,customerId:m.customerId,dirty:dirty}});
 
+  var startCase='',mobileTyped=false;
+  if($('qcMobile'))$('qcMobile').addEventListener('input',function(){mobileTyped=true});
   function start(){
-   pick=picker($('qcPicker'),m,function(what,c){if(o.onPick)o.onPick(what,c,m,api);touch(true);head()});
+   pick=picker($('qcPicker'),m,function(what,c){if(o.onPick)o.onPick(what,c,m,api);touch(true);head();fillRef()});
    att=attachEditor($('qcAttach'),m,touch);
    if(o.init)o.init(m,api);
    fillAll();
-   refresh().then(function(ok){if(ok){if(pick)pick.refill();if(o.onRefresh)o.onRefresh(m,api)}});
-   settingsFresh().then(function(s){if(s&&o.onSettings)o.onSettings(m,api);if(s)sums()});
+   var setP=settingsFresh().then(function(s){if(s&&o.onSettings)o.onSettings(m,api);if(s)sums();return s},function(){return null});
+   Promise.all([refresh(),setP]).then(function(rs){
+    var ok=rs[0];
+    if(!ok)return;
+    /* 2026-11-13 (checklist B5): a device that did not hold the case yet (a fresh iPad, a full
+       storage) opened ทำใบเสนอราคา with an empty customer, machine and Ref; the case arrives now */
+    var cs=startCase&&caseById(startCase);
+    if(cs&&!m.customerId&&!dirty){
+     m.customerId=cs.customerId||'';if(!m.contact)m.contact=cs.contact||'';
+     var x=customer(m.customerId);if(x)m.location=x.address||[x.branch,x.location].filter(Boolean).join(' / ')||m.location;
+     if(o.blank&&type!=='parts'&&!(m.machines||[]).length)o.blank(m,cs);
+     fillAll();dirty=false;
+    }
+    if(pick)pick.refill();fillRef();if(o.onRefresh)o.onRefresh(m,api);
+   });
+   /* who is signed in, when this device has no copy of the Service session */
+   if(!userName()){
+    var pu=platformUser();
+    if(pu)staff().then(function(list){
+     var me=(list||[]).filter(function(p){return p.id===pu.id})[0];
+     if(me&&!m.preparedBy){m.preparedBy=me.name;if($('qcPrepared'))staffSelect($('qcPrepared'),m.preparedBy)}
+     whoMobile();
+    });
+   }else whoMobile();
+   if(m.revOf&&!m.id)revNumber(m.revOf).then(function(n){m.revNext=n.id;head()});
+  }
+  /* B6: the mobile this person used on their latest quotation, when nothing else gave one */
+  function whoMobile(){
+   if(m.mobile||m.id&&!m.revOf)return;
+   var name=String(m.preparedBy||userName()).trim();
+   var v=myMobile(name);
+   if(v){if(!mobileTyped){m.mobile=v;fillRef()}return}
+   lastMobileCloud(name).then(function(mo){if(mo&&!mobileTyped&&!m.mobile){m.mobile=mo;fillRef()}});
   }
   var id=param('id'),rev=param('revise');
   if(rev&&!id){
@@ -1136,7 +1266,7 @@
    });
   }else{
    var cid=param('caseId'),cu=param('customerId'),rid=param('requestId'),from=caseById(cid);
-   if(cid){var c=caseById(cid);m.caseId=cid;if(c){m.customerId=c.customerId||'';m.contact=c.contact||''}}
+   if(cid){var c=caseById(cid);m.caseId=cid;startCase=cid;if(c){m.customerId=c.customerId||'';m.contact=c.contact||''}}
    /* 2026-11-09: คำขอจากลูกค้า → ทำใบเสนอราคา (js/159) arrives here with the request's customer,
       machine, service and contact — what js/03 prepareService/WarrantyQuoteFromRequest filled in */
    if(rid&&!cid){
