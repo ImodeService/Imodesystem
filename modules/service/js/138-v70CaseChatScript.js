@@ -336,6 +336,13 @@
    '.cc-day::before,.cc-day::after{content:"";flex:1;height:1px;background:var(--line,#e2ecfb)}',
    '.cc-msg{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:7px 6px;border-radius:12px;position:relative}',
    '.cc-msg:hover{background:#f7faff}',
+   /* 2026-11-13: dark theme — the hover row (and the tagged / picker / delete backgrounds) were light
+      colours with no dark value, so a hovered message became a white box under white text */
+   ':is(html[data-theme="dark"],html[data-ui="flat-dark"]) .cc-msg:hover{background:rgba(255,255,255,.06)}',
+   ':is(html[data-theme="dark"],html[data-ui="flat-dark"]) .cc-msg.is-tagged{background:#33291a}',
+   ':is(html[data-theme="dark"],html[data-ui="flat-dark"]) .cc-x:hover,:is(html[data-theme="dark"],html[data-ui="flat-dark"]) .cc-pick button:hover,:is(html[data-theme="dark"],html[data-ui="flat-dark"]) .cc-pick button[aria-selected="true"]{background:rgba(255,255,255,.1)}',
+   ':is(html[data-theme="dark"],html[data-ui="flat-dark"]) .cc-del{background:#2e2e2e}',
+   ':is(html[data-theme="dark"],html[data-ui="flat-dark"]) .cc-msg.is-auto .cc-body,:is(html[data-theme="dark"],html[data-ui="flat-dark"]) .cc-photos button{background:rgba(255,255,255,.06);color:inherit}',
    '.cc-msg.is-mine .cc-name{color:var(--imode-blue,#0b63e5)}',
    '.cc-av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}',
    '.cc-top{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}',
