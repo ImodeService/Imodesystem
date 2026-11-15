@@ -335,3 +335,11 @@ html[data-theme="dark"] .qc-warn.is-bad{background:#3d1d20;border-color:#7a2f35;
 body.qc-prev-open{overflow:hidden}
 @media (max-width:640px){.qc-prev-bar span{display:none}.qc-prev-bar b{flex:1;font-size:13.5px}}
 .qc-mbar [data-proxy="qcPreview"]{margin-left:auto}
+
+/* 2026-11-14: B6 switch row and the N2 "files stay on this device" warning */
+.qc-mob-sw .qc-switch{margin-top:26px}
+@media (max-width:640px){.qc-mob-sw .qc-switch{margin-top:4px}}
+.qc-att-warn{margin:0 0 10px;padding:10px 12px;border-radius:8px;border:1px solid #f3d7a6;background:#fff8ec;color:#5c3b00;font-size:13px;line-height:1.55}
+.qc-att-warn b{display:block;color:#3d2600}
+html[data-theme="dark"] .qc-att-warn{background:#33291a;border-color:#6b4f1f;color:#f0d7a8}
+html[data-theme="dark"] .qc-att-warn b{color:#ffe3b0}

@@ -144,7 +144,13 @@
   var c=db();
   if(!c)return Promise.resolve(local);
   return withTimeout(c.from('quotations').select('*').eq('id',id).maybeSingle()).then(function(r){
-   if(r&&!r.error&&r.data)return fromQuotationDb(r.data);
+   if(r&&!r.error&&r.data){
+    var q=fromQuotationDb(r.data);
+    /* 2026-11-14 (N2): a server without quotations.attachments (supabase/19) returns the row with no
+       files; the files this device saved with it are kept instead of silently dropped */
+    if(!Array.isArray(q.attachments)&&local&&Array.isArray(local.attachments)&&local.attachments.length)q.attachments=local.attachments.slice();
+    return q;
+   }
    return local;
   },function(){return local});
  }
@@ -218,7 +224,10 @@
  function revOf(q){var m=metaOf(q);return String((m&&m.revOf)||(q&&q.revOf)||'')}
  /* Ref on the paper: what the person typed, else the case number (owner 2026-11-11) */
  function refOf(q){var m=metaOf(q);if(m&&typeof m.ref==='string')return m.ref;return String(q&&q.caseTicket||'')}
- function mobileOf(q){var m=metaOf(q);return String((m&&m.mobile)||'')}
+ /* 2026-11-14 owner (B6): the Mobile line prints only when its switch is on (off by default); a quotation
+    saved before the switch existed and carrying a number keeps printing it */
+ function mobileOf(q){var m=metaOf(q);return (m&&m.showMobile===false)?'':String((m&&m.mobile)||'')}
+ function rawMobile(q){var m=metaOf(q);return String((m&&m.mobile)||'')}
  /* the creator's own mobile: their account, else their technician record */
  function myMobile(name){
   var u=user(),v=String(u.mobile||u.phone||u.tel||'').trim();if(v)return v;
@@ -235,7 +244,7 @@
   if(!name)return '';
   var best=null;
   quotes().forEach(function(q){
-   var mo=mobileOf(q);
+   var mo=rawMobile(q);
    if(!mo||String(q.preparedBy||'').trim()!==name)return;
    if(!best||String(q.updatedAt||q.createdAt||'')>String(best.at))best={mo:mo,at:q.updatedAt||q.createdAt||''};
   });
@@ -245,7 +254,7 @@
   var c=db();if(!c||!name)return Promise.resolve('');
   return withTimeout(c.from('quotations').select('parts,updated_at').eq('prepared_by',name).order('updated_at',{ascending:false}).limit(10)).then(function(r){
    var rows=(r&&!r.error&&r.data)||[];
-   for(var i=0;i<rows.length;i++){var mo=mobileOf({parts:rows[i].parts});if(mo)return mo}
+   for(var i=0;i<rows.length;i++){var mo=rawMobile({parts:rows[i].parts});if(mo)return mo}
    return '';
   },function(){return ''});
  }
@@ -297,7 +306,7 @@
    /* 2026-11-09 owner: the Service page does everything the old page did (js/03 calcQuote) */
    pickupMode:0,coverage:'none',extraHours:0,extraTechs:0,diagnosis:0,purchaserName:'',purchaserDate:'',
    /* 2026-11-11: Ref (null = the case number), the contact mobile on the paper, the quotation this revises */
-   ref:null,mobile:myMobile(),revOf:''};
+   ref:null,mobile:myMobile(),showMobile:false,revOf:''};
  }
  /* the old page's rules (js/03 calcQuote), shared by the Service page and totals() */
  var URGENCY={normal:['ปกติ 0%',0],urgent:['เร่งด่วน','urgentPct'],emergency:['ฉุกเฉิน','emergencyPct'],critical:['Critical • เสนอราคาเป็นกรณี',0]};
@@ -337,7 +346,7 @@
   m.parts=(q.parts||[]).map(function(p){return normPart(p,c)}).filter(Boolean);
   m.attachments=Array.isArray(q.attachments)?q.attachments.slice():[];
   m.purchaserName=q.purchaserName||'';m.purchaserDate=q.purchaserDate||'';
-  m.ref=typeof meta.ref==='string'?meta.ref:null;m.mobile=typeof meta.mobile==='string'?meta.mobile:'';m.revOf=revOf(q);
+  m.ref=typeof meta.ref==='string'?meta.ref:null;m.mobile=typeof meta.mobile==='string'?meta.mobile:'';m.showMobile=typeof meta.showMobile==='boolean'?meta.showMobile:!!String(meta.mobile||'').trim();m.revOf=revOf(q);
   if(metaOf(q)){
    m.expenses=(meta.expenses||[]).map(function(e){return {name:e.name||'',amount:num(e.amount)}});
    m.discount=num(meta.discount);m.travel=num(meta.travel);m.labor=num(meta.labor);
@@ -414,7 +423,7 @@
    travel:t.travel,labor:t.labor,warrantyType:m.type==='warranty'?m.warrantyType:'',
    emergency:t.emergency,pickup:t.pickup,pickupMode:num(m.pickupMode),coverage:m.coverage||'none',
    extraHours:num(m.extraHours),extraTechs:num(m.extraTechs),diagnosis:t.diagnosis,
-   ref:m.ref==null?(cs.ticket||''):String(m.ref),mobile:String(m.mobile||'').trim(),revOf:m.revOf||''});
+   ref:m.ref==null?(cs.ticket||''):String(m.ref),mobile:String(m.mobile||'').trim(),showMobile:!!m.showMobile,revOf:m.revOf||''});
   return {id:m.id,caseId:m.caseId||'',caseTicket:cs.ticket||'',customerId:m.customerId||'',customer:cu.name||'',
    contact:m.contact||'',location:m.location||'',service:m.service,
    warrantyMode:m.type==='warranty'?'extend':(covered(m)?m.coverage:'none'),warrantyMonths:num(m.warrantyMonths)||12,
@@ -633,7 +642,7 @@
   +'.a4 .quote-doc.official{border:0;max-width:none;margin:0;padding:0}'
   +'.a4 .quote-attach-page{margin:0!important;padding:0!important;border:0!important}'
   +'.a4-n{color:#d6dceb;font:12px Arial,Tahoma,sans-serif;margin-top:-6px}}'
-  +'@media print{body{padding:0;background:#fff;display:block}.a4-w{width:auto!important;height:auto!important}.a4{width:auto;min-height:0;padding:0;box-shadow:none;transform:none!important}.a4-n{display:none}}';
+  +'@media print{.quote-attach-page{border-top:0!important;margin-top:0!important;padding-top:0!important}body{padding:0;background:#fff;display:block}.a4-w{width:auto!important;height:auto!important}.a4{width:auto;min-height:0;padding:0;box-shadow:none;transform:none!important}.a4-n{display:none}}';
  /* the paper as A4 sheets: the quotation, then the attachments on a sheet of their own */
  function sheetsHTML(q,logo){
   var html=paperHTML(q,logo),att='',cut=html.indexOf('<div class="quote-attach-page"');
@@ -675,7 +684,11 @@
   var logo=new URL('./assets/imode-document-logo.webp',location.href).href;
   var w=window.open('','_blank','width=1100,height=860');
   if(!w)return false;
-  w.document.write(a4Doc(q,logo,'<script>window.onload=function(){window.print()}<\/script>'));
+  /* print only once every picture (logo, photos, attachments) has loaded — a window written with
+     document.write can report "loaded" before its images on some browsers (2026-11-14, N2) */
+  w.document.write(a4Doc(q,logo,'<script>window.onload=function(){var done=0,p=function(){if(done)return;done=1;window.print()};'
+   +'var l=[].slice.call(document.images).filter(function(i){return !i.complete}),n=l.length;if(!n){p();return}'
+   +'l.forEach(function(i){var f=function(){if(--n<=0)setTimeout(p,50)};i.addEventListener("load",f);i.addEventListener("error",f)});setTimeout(p,8000)}<\/script>'));
   w.document.close();
   return true;
  }
@@ -893,6 +906,16 @@
    setTimeout(function(){URL.revokeObjectURL(url)},60000);
   }catch(e){toast('เปิดไฟล์ไม่ได้')}
  }
+ /* 2026-11-14 (N2): can the server keep quotation files? null = not known yet */
+ var ATT_SERVER=null;
+ function probeAttachColumn(){
+  var c=db();if(!c)return Promise.resolve(null);
+  return withTimeout(c.from('quotations').select('id,attachments').limit(1)).then(function(r){
+   if(r&&r.error&&/attachments/i.test(String(r.error.message||'')))ATT_SERVER=false;
+   else if(r&&!r.error)ATT_SERVER=true;
+   return ATT_SERVER;
+  },function(){return null});
+ }
  function attachEditor(el,m,onChange){
   if(!el)return {render:function(){}};
   function by(){return userName()}
@@ -909,6 +932,7 @@
       +'<input data-att-cap="'+esc(a.id)+'" maxlength="80" placeholder="คำอธิบายไฟล์ (ถ้ามี)" value="'+esc(a.caption||'')+'" aria-label="คำอธิบายไฟล์"></div>'
       +'<small>'+sizeLabel(a.size)+'</small><button type="button" class="qc-att-x2" data-att-rm="'+esc(a.id)+'" aria-label="เอาไฟล์ออก">✕</button></div>';
     }).join('')+'</div>':'')
+    +(ATT_SERVER===false?'<div class="qc-att-warn" role="status"><b>⚠ ไฟล์แนบยังไม่ขึ้น server</b>ระบบฐานข้อมูลยังเก็บไฟล์แนบของใบเสนอราคาไม่ได้ ไฟล์จะอยู่แค่ในเครื่องนี้ เปิดจากเครื่องอื่นจะไม่เห็น · แจ้งผู้ดูแลระบบให้รัน supabase/19-quote-attachments.sql</div>':'')
     +(list.length?'':'<div class="qc-empty">ยังไม่มีไฟล์แนบ</div>')
     +'<label class="qc-btn is-add qc-addrow qc-att-add'+(list.length>=ATT_MAX?' is-off':'')+'">📎 เพิ่มรูป / ไฟล์'
     +'<input type="file" class="qc-att-input" multiple hidden accept="image/*,application/pdf,.pdf,.xls,.xlsx,.csv,.doc,.docx"'+(list.length>=ATT_MAX?' disabled':'')+'></label>'
@@ -1136,23 +1160,39 @@
    if($('qcAuthorized'))staffSelect($('qcAuthorized'),m.authorizedBy);
    fillRef();
   }
-  /* 2026-11-11 owner: Ref (อ้างอิง) and the contact mobile, both printed on the paper and editable */
+  /* 2026-11-11 owner: Ref (อ้างอิง) and the contact mobile, both printed on the paper and editable.
+     2026-11-14 (B6): in a card of their own, ข้อมูลหัวเอกสาร, right under ลูกค้าและเคส, with a switch for
+     the Mobile line (off by default) — the team could not find the field at the bottom of the form */
   (function(){
-   var note=$('qcNote'),f=note&&note.closest('.qc-field');if(!f||$('qcRef'))return;
-   f.insertAdjacentHTML('beforebegin','<div class="qc-field"><label for="qcRef">Ref (อ้างอิง)</label><input id="qcRef" maxlength="80" autocomplete="off">'
+   if($('qcRef'))return;
+   var first=$('qcPicker')&&$('qcPicker').closest('.qc-card');if(!first)return;
+   var card=document.createElement('section');card.className='qc-card';card.id='qcHeadCard';card.setAttribute('aria-labelledby','hHead');
+   card.innerHTML='<header><div><h3 id="hHead">ข้อมูลหัวเอกสาร</h3><p>พิมพ์ที่มุมขวาบนของใบเสนอราคา (No · Date · Ref · Tel)</p></div></header>'
+    +'<div class="qc-body"><div class="qc-grid">'
+    +'<div class="qc-field"><label for="qcRef">Ref (อ้างอิง)</label><input id="qcRef" maxlength="80" autocomplete="off">'
     +'<small class="qc-help">ว่างไว้ = ใช้เลขเคส · พิมพ์แก้เองได้ เช่น เลข PO ของลูกค้า</small></div>'
-    +'<div class="qc-field"><label for="qcMobile">เบอร์มือถือผู้ติดต่อ (บนใบ)</label><input id="qcMobile" type="tel" maxlength="40" autocomplete="off">'
-    +'<small class="qc-help">ดึงจากบัญชีคนทำใบ แก้ได้ · ว่างไว้ = ไม่พิมพ์บรรทัดนี้</small></div>');
+    +'<div class="qc-field qc-mob-sw"><label class="qc-switch"><input type="checkbox" id="qcShowMobile"><span class="trk" aria-hidden="true"></span>แสดงเบอร์มือถือผู้ติดต่อในเอกสาร</label>'
+    +'<small class="qc-help" id="qcShowMobileHelp">ปิดอยู่ · เอกสารไม่มีบรรทัด Mobile</small></div>'
+    +'<div class="qc-field" id="qcMobileField" hidden><label for="qcMobile">เบอร์มือถือผู้ติดต่อ (พนักงาน I-MODE)</label><input id="qcMobile" type="tel" maxlength="40" autocomplete="off" placeholder="เช่น 08x-xxx-xxxx">'
+    +'<small class="qc-help">ดึงจากบัญชีคนทำใบ / ใบล่าสุดของคุณ · แก้ได้ · พิมพ์ใต้ Tel</small></div>'
+    +'</div></div>';
+   first.parentNode.insertBefore(card,first.nextSibling);
   })();
   function caseRef(){var cs=caseById(m.caseId);return (cs&&cs.ticket)||''}
   function fillRef(){
-   var r=$('qcRef'),mo=$('qcMobile');if(!r)return;
+   var r=$('qcRef'),mo=$('qcMobile'),sw=$('qcShowMobile');if(!r)return;
    r.value=m.ref==null?caseRef():m.ref;r.placeholder=caseRef()||'—';
    mo.value=m.mobile||'';
+   sw.checked=!!m.showMobile;$('qcMobileField').hidden=!m.showMobile;
+   $('qcShowMobileHelp').textContent=m.showMobile?'เปิดอยู่ · พิมพ์บรรทัด Mobile ใต้ Tel':'ปิดอยู่ · เอกสารไม่มีบรรทัด Mobile';
   }
   if($('qcRef')){
    $('qcRef').addEventListener('input',function(){var v=this.value.trim();m.ref=(!v||v===caseRef())?null:v;touch(true)});
    $('qcMobile').addEventListener('input',function(){m.mobile=this.value;touch(true)});
+   $('qcShowMobile').addEventListener('change',function(){
+    m.showMobile=this.checked;touch(true);fillRef();
+    if(m.showMobile){if(!String(m.mobile||'').trim())whoMobile(true);try{$('qcMobile').focus()}catch(e){}}
+   });
   }
   $('qcDiscount').addEventListener('input',function(){m.discount=Math.max(0,num(this.value));touch()});
   $('qcNote').addEventListener('input',function(){m.note=this.value;touch(true)});
@@ -1234,10 +1274,11 @@
     });
    }else whoMobile();
    if(m.revOf&&!m.id)revNumber(m.revOf).then(function(n){m.revNext=n.id;head()});
+   probeAttachColumn().then(function(ok){if(ok===false&&att)att.render()});
   }
   /* B6: the mobile this person used on their latest quotation, when nothing else gave one */
-  function whoMobile(){
-   if(m.mobile||m.id&&!m.revOf)return;
+  function whoMobile(force){
+   if(m.mobile||(m.id&&!m.revOf&&!force))return;
    var name=String(m.preparedBy||userName()).trim();
    var v=myMobile(name);
    if(v){if(!mobileTyped){m.mobile=v;fillRef()}return}
