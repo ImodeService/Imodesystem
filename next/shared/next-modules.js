@@ -3,7 +3,7 @@
    href ว่าง = ยังไม่ได้ทำในระบบใหม่ (แสดงจาง) ; old = ลิงก์ไปของเดิมระหว่างรอ */
 window.NEXT_MODULES = [
   { id: 'dashboard', name: 'Dashboard',          ab: 'DB', color: '#0F7C8C', perm: 'dashboard.view', href: '' },
-  { id: 'service',   name: 'Service',            ab: 'SV', color: '#3B6FB6', perm: 'service.view',   href: '', old: 'modules/service/index.html' },
+  { id: 'service',   name: 'Service',            ab: 'SV', color: '#3B6FB6', perm: 'service.view',   href: 'next/service/index.html' },
   { id: 'qc',        name: 'QC',                 ab: 'QC', color: '#2E7D4F', perm: 'qc.view',        href: '', old: 'modules/qc-rnd/index.html' },
   { id: 'demo',      name: 'Demo',               ab: 'DM', color: '#6B4FA0', perm: 'demo.view',      href: '' },
   { id: 'modify',    name: 'Modify',             ab: 'MD', color: '#7A3E6E', perm: 'modify.view',    href: '' },

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>เคส Service · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261119">
+<link rel="stylesheet" href="service.css?v=20261119">
+<script src="../shared/next-shell.js?v=20261119"></script>
+</head>
+<body>
+<main class="nx-main sv-main">
+  <div class="sv-head">
+    <h1>เคส Service</h1>
+    <label class="sv-search"><span class="vh">ค้นหา</span><input id="q" type="search" placeholder="ค้นหาเลขเคส ลูกค้า เครื่อง"></label>
+  </div>
+  <div class="sv-filters" role="group" aria-label="ตัวกรอง">
+    <div id="types" class="sv-chips"></div>
+    <label class="sv-toggle"><input type="checkbox" id="showClosed"> แสดงเคสที่ปิดแล้ว</label>
+  </div>
+  <div id="err"></div>
+  <div id="board" class="sv-board" aria-live="polite"></div>
+  <div id="days" class="sv-days" aria-live="polite"></div>
+</main>
+
+<dialog id="delDlg" class="sv-dlg">
+  <form method="dialog">
+    <h2>ย้ายเคสไปถังขยะ</h2>
+    <p id="delWhat" class="sv-mut"></p>
+    <label>เหตุผล (ต้องใส่)<textarea id="delReason" rows="3" required></textarea></label>
+    <div class="sv-dlg-btns"><button value="cancel" class="nx-btn" formnovalidate>ยกเลิก</button><button value="ok" class="nx-btn primary">ย้ายไปถังขยะ</button></div>
+  </form>
+</dialog>
+
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261119"></script>
+<script src="service.js?v=20261119"></script>
+</body>
+</html>
