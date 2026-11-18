@@ -1,0 +1,56 @@
+/* I-MODE System (ระบบใหม่) · ธีมสว่าง/มืด + โครงหน้า + skeleton
+   ฟอนต์ใช้ตัวเดิมของระบบ (ไม่เปลี่ยน) ผ่าน --font */
+:root{
+  --font: 'IBM Plex Sans Thai', 'Anuphan', system-ui, sans-serif;
+  --bg:#F4F5F7; --card:#FFFFFF; --fg:#1B2333; --mut:#5B6474; --line:#E2E5EA; --line2:#EEF0F3;
+  --navy:#1F3A68; --navy-fg:#FFFFFF; --soft:#E9EEF6; --orange:#D9730D; --green:#1E8E4E;
+  --hold-bg:#FFF4E5; --hold-fg:#8A4B08; --ok-bg:#E7F4EC; --ok-fg:#1F5C38; --bad-bg:#FDECEC; --bad-fg:#9B1C1C;
+  --sk1:#E6E9EE; --sk2:#F2F4F7; --shadow:0 14px 40px rgba(20,30,50,.18);
+}
+:root[data-theme="dark"]{
+  --bg:#12161D; --card:#181D26; --fg:#E6E9EF; --mut:#8E97A8; --line:#262D39; --line2:#222935;
+  --navy:#9DB8E8; --navy-fg:#12161D; --soft:#2E3A50; --orange:#F0943F; --green:#3FB97A;
+  --hold-bg:#3A2A10; --hold-fg:#FFC98A; --ok-bg:#123526; --ok-fg:#8EE0B5; --bad-bg:#3A1717; --bad-fg:#FFB3B3;
+  --sk1:#232A36; --sk2:#2E3644; --shadow:0 18px 48px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font)}
+button{font:inherit;cursor:pointer}
+a{color:var(--navy)}
+.nx-top{height:60px;position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;padding:0 max(16px,env(safe-area-inset-left))}
+.nx-top .nx-title{font-weight:700;font-size:17px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nx-icon-btn{width:40px;height:40px;border-radius:20px;border:none;background:var(--soft);color:var(--navy);
+  display:inline-flex;align-items:center;justify-content:center}
+.nx-avatar{width:40px;height:40px;border-radius:20px;border:none;background:var(--navy);color:var(--navy-fg);font-weight:600}
+.nx-main{padding:20px max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left));max-width:1400px;margin:0 auto}
+.nx-card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+.nx-btn{height:40px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+.nx-btn.primary{background:var(--navy);color:var(--navy-fg);border-color:var(--navy);font-weight:600}
+.nx-btn.edit{background:var(--orange);color:#fff;border-color:var(--orange);font-weight:600}
+.nx-btn.approve{background:var(--green);color:#fff;border-color:var(--green);font-weight:600}
+.nx-badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:600;background:var(--soft);color:var(--navy)}
+.nx-badge.hold{background:var(--hold-bg);color:var(--hold-fg)}
+.nx-badge.ok{background:var(--ok-bg);color:var(--ok-fg)}
+.nx-badge.bad{background:var(--bad-bg);color:var(--bad-fg)}
+.nx-empty{padding:40px 16px;text-align:center;color:var(--mut)}
+.nx-err{padding:12px 14px;border-radius:10px;background:var(--bad-bg);color:var(--bad-fg);margin-bottom:12px}
+/* skeleton shimmer */
+@keyframes nx-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.sk{background:linear-gradient(90deg,var(--sk1) 0px,var(--sk2) 160px,var(--sk1) 320px);background-size:800px 100%;
+  animation:nx-shimmer 1.4s linear infinite;border-radius:6px;min-height:14px}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+/* 9-dot module switcher */
+.nx-sw{position:fixed;top:66px;right:max(12px,env(safe-area-inset-right));width:min(380px,calc(100vw - 24px));max-height:calc(100vh - 80px);overflow:auto;
+  background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:10px;z-index:30}
+.nx-sw[hidden]{display:none}
+.nx-sw .fav{background:var(--bg);border-radius:16px;padding:12px 12px 8px}
+.nx-sw .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-weight:600}
+.nx-sw .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.nx-sw .lab{padding:8px 12px 4px;font-size:13px;color:var(--mut)}
+.nx-sw a,.nx-sw button.tile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:12px;
+  text-decoration:none;color:var(--fg);background:none;border:none;font-size:13px;text-align:center;position:relative}
+.nx-sw a:hover,.nx-sw button.tile:hover{background:var(--soft)}
+.nx-sw .ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff}
+.nx-sw .soon{opacity:.5}
+.nx-sw .star{position:absolute;top:4px;right:8px;font-size:15px;color:var(--orange)}

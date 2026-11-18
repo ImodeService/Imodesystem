@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>ถังขยะ · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261119">
+<script src="../shared/next-shell.js?v=20261119"></script>
+<style>
+.tr-row{display:grid;grid-template-columns:110px minmax(0,1.4fr) minmax(0,1fr) minmax(0,1.2fr) 120px 110px;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--line2);font-size:14px}
+.tr-head{font-size:13px;color:var(--mut);font-weight:600;border-top:none;background:var(--bg)}
+.tr-filters{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.tr-filters button[aria-pressed="true"]{background:var(--navy);color:var(--navy-fg);border-color:var(--navy);font-weight:600}
+@media (max-width:760px){
+  .tr-head{display:none}
+  .tr-row{grid-template-columns:1fr auto;gap:4px 12px}
+  .tr-row > :nth-child(1){grid-column:1/-1}
+  .tr-row > :nth-child(3),.tr-row > :nth-child(4),.tr-row > :nth-child(5){grid-column:1;color:var(--mut);font-size:13px}
+  .tr-row > :nth-child(6){grid-column:2;grid-row:2/5}
+}
+</style>
+</head>
+<body>
+<main class="nx-main">
+  <h1 style="margin:0;font-size:22px">ถังขยะ</h1>
+  <p style="margin:4px 0 0;color:var(--mut);font-size:14px">ของที่ลบจะอยู่ที่นี่ 30 วันแล้วระบบลบถาวรเอง ยกเว้นเคส Service ที่ไม่ลบอัตโนมัติ เห็นเฉพาะโมดุลที่คุณมีสิทธิ์ลบ</p>
+  <div class="tr-filters" id="filters" role="group" aria-label="กรองตามโมดุล"></div>
+  <div id="err"></div>
+  <section class="nx-card" style="overflow:hidden" aria-live="polite">
+    <div class="tr-row tr-head"><span>โมดุล</span><span>รายการ</span><span>ลบโดย</span><span>เหตุผล</span><span>ลบถาวร</span><span></span></div>
+    <div id="rows"></div>
+  </section>
+</main>
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261119"></script>
+<script>
+(async function () {
+  'use strict';
+  var NAMES = { service: 'Service', quote: 'ใบเสนอราคา', qc: 'QC', machine: 'เครื่องจักร', customer: 'ลูกค้า' };
+  var rowsEl = document.getElementById('rows'), errEl = document.getElementById('err'), filEl = document.getElementById('filters');
+  var esc = window.NextShell.esc, items = [], filter = '';
+  function skeleton() {
+    var h = '';
+    for (var i = 0; i < 5; i++) h += '<div class="tr-row"><span class="sk" style="width:70px"></span><span class="sk" style="width:' + (140 + i * 23 % 90) + 'px"></span><span class="sk" style="width:90px"></span><span class="sk" style="width:120px"></span><span class="sk" style="width:80px"></span><span class="sk" style="width:80px;height:32px;border-radius:8px"></span></div>';
+    rowsEl.innerHTML = h;
+  }
+  function when(t) { return t ? new Date(t).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : ''; }
+  function showErr(m) { errEl.innerHTML = m ? '<div class="nx-err" role="alert">' + esc(m) + '</div>' : ''; }
+  function render() {
+    var mods = Array.from(new Set(items.map(function (x) { return x.module; })));
+    filEl.innerHTML = ['<button class="nx-btn" data-f="" aria-pressed="' + (filter === '') + '">ทั้งหมด ' + items.length + '</button>']
+      .concat(mods.map(function (m) {
+        var n = items.filter(function (x) { return x.module === m; }).length;
+        return '<button class="nx-btn" data-f="' + esc(m) + '" aria-pressed="' + (filter === m) + '">' + esc(NAMES[m] || m) + ' ' + n + '</button>';
+      })).join('');
+    var list = items.filter(function (x) { return !filter || x.module === filter; });
+    rowsEl.innerHTML = list.length ? list.map(function (x) {
+      return '<div class="tr-row"><span><span class="nx-badge">' + esc(NAMES[x.module] || x.module) + '</span></span>' +
+        '<span style="font-weight:600">' + esc(x.title || x.id) + '</span>' +
+        '<span>' + esc(x.deleted_by_name || '-') + ' · ' + esc(when(x.deleted_at)) + '</span>' +
+        '<span>' + esc(x.deleted_reason || '') + '</span>' +
+        '<span>' + (x.purge_at ? esc(when(x.purge_at)) : '<span class="nx-badge hold">ไม่ลบเอง</span>') + '</span>' +
+        '<span><button class="nx-btn primary" data-restore="' + esc(x.tbl) + '|' + esc(x.id) + '">กู้คืน</button></span></div>';
+    }).join('') : '<div class="nx-empty">ถังขยะว่าง</div>';
+  }
+  async function load(api) {
+    skeleton();
+    var res = await api.sb.rpc('app_trash');
+    if (res.error) { rowsEl.innerHTML = ''; showErr('โหลดถังขยะไม่ได้: ' + res.error.message); return; }
+    showErr(''); items = res.data || []; render();
+  }
+  skeleton();
+  var api;
+  try { api = await window.NextShell.start({ title: 'ถังขยะ', moduleId: 'trash' }); }
+  catch (e) { rowsEl.innerHTML = ''; showErr(e.message); return; }
+  filEl.addEventListener('click', function (e) { var b = e.target.closest('[data-f]'); if (b) { filter = b.getAttribute('data-f'); render(); } });
+  rowsEl.addEventListener('click', async function (e) {
+    var b = e.target.closest('[data-restore]'); if (!b) return;
+    var p = b.getAttribute('data-restore').split('|');
+    b.disabled = true; b.textContent = 'กำลังกู้คืน…';
+    var res = await api.sb.rpc('app_restore', { p_table: p[0], p_id: p[1] });
+    if (res.error) { showErr('กู้คืนไม่สำเร็จ: ' + res.error.message); b.disabled = false; b.textContent = 'กู้คืน'; return; }
+    await load(api);
+  });
+  await load(api);
+})();
+</script>
+</body>
+</html>
