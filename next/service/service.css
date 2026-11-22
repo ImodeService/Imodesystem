@@ -45,3 +45,6 @@
 .sv-dlg label{display:flex;flex-direction:column;gap:6px;font-size:14px;margin-top:10px}
 .sv-dlg textarea{border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);font:inherit;padding:8px 10px}
 .sv-dlg-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.sv-card,.sv-mcard{cursor:pointer}
+.sv-card:hover{border-color:var(--navy)}
+#newCase[hidden]{display:none!important}

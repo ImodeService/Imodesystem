@@ -8,7 +8,7 @@ window.NEXT_MODULES = [
   { id: 'demo',      name: 'Demo',               ab: 'DM', color: '#6B4FA0', perm: 'demo.view',      href: '' },
   { id: 'modify',    name: 'Modify',             ab: 'MD', color: '#7A3E6E', perm: 'modify.view',    href: '' },
   { id: 'warranty',  name: 'ประกัน + PM',         ab: 'ปก', color: '#8A5A12', perm: 'warranty.view',  href: '' },
-  { id: 'calendar',  name: 'ปฏิทินงาน',            ab: 'ปท', color: '#C2620A', perm: 'calendar.view',  href: '' },
+  { id: 'calendar',  name: 'ปฏิทินงาน',            ab: 'ปท', color: '#C2620A', perm: 'calendar.view',  href: 'next/calendar/index.html' },
   { id: 'quote',     name: 'ใบเสนอราคา',           ab: 'บส', color: '#5B4DB1', perm: 'quote.view',     href: '' },
   { id: 'docs',      name: 'เอกสารเครื่องจักร',     ab: 'อก', color: '#475569', perm: 'machine.view',   href: '' },
   { id: 'install',   name: 'ติดตั้งเครื่องจักร',     ab: 'ตต', color: '#0B5E6A', perm: 'install.view',   href: '' },

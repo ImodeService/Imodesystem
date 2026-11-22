@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>ปฏิทินงาน · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261119">
+<link rel="stylesheet" href="calendar.css?v=20261120">
+<script src="../shared/next-shell.js?v=20261119"></script>
+</head>
+<body>
+<main class="nx-main cl-main">
+  <div id="err"></div>
+  <div class="cl-grid">
+    <aside class="cl-side">
+      <section class="nx-card cl-box">
+        <div class="cl-mhead"><button type="button" class="nx-icon-btn" id="mPrev" aria-label="เดือนก่อน">‹</button><b id="mTitle"></b><button type="button" class="nx-icon-btn" id="mNext" aria-label="เดือนถัดไป">›</button></div>
+        <div class="cl-month" id="month" role="grid" aria-label="เลือกวัน"></div>
+      </section>
+      <section class="nx-card cl-box"><h2>ช่างวันนี้</h2><div id="techSum"></div></section>
+      <section class="nx-card cl-box"><h2>ตั้งค่าข้อความ LINE</h2>
+        <label class="cl-f">แจ้งถึง (บรรทัดแรก ไม่ใส่ก็ได้)<input id="notify" placeholder="@ชื่อหัวหน้า" autocomplete="off"></label>
+        <label class="cl-f">ลงท้าย<select id="polite"><option>ค่ะ</option><option>ครับ</option></select></label>
+      </section>
+    </aside>
+    <section class="cl-day">
+      <div class="cl-dhead">
+        <button type="button" class="nx-icon-btn" id="dPrev" aria-label="วันก่อน">‹</button>
+        <button type="button" class="nx-icon-btn" id="dNext" aria-label="วันถัดไป">›</button>
+        <h1 id="dTitle"></h1>
+        <div class="sp"></div>
+        <button type="button" class="nx-btn" id="today">วันนี้</button>
+        <button type="button" class="nx-btn" id="addJob" hidden>+ เพิ่มงาน</button>
+        <button type="button" class="nx-btn" id="saveImg">บันทึกเป็นรูป</button>
+        <button type="button" class="nx-btn primary" id="copy">คัดลอกข้อความไป LINE</button>
+      </div>
+      <div class="cl-two">
+        <div class="nx-card cl-sheet" id="sheet" aria-live="polite"><div class="sk" style="height:220px;border-radius:10px"></div></div>
+        <div class="nx-card cl-line"><div class="cl-lh">ข้อความที่จะคัดลอกไป LINE</div><textarea id="lineText" readonly rows="14" aria-label="ข้อความ LINE"></textarea>
+          <p class="mut" style="font-size:12px;margin:8px 0 0">สร้างจากเคสที่นัดวันนี้ + งานที่เพิ่มในปฏิทิน กดคัดลอกแล้ววางในกลุ่มได้เลย</p></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<dialog id="jobDlg" class="cl-dlg">
+  <form method="dialog" id="jobForm">
+    <h2 id="jobTitle">เพิ่มงาน</h2>
+    <div class="cl-2"><label class="cl-f">วันที่<input id="jDay" type="date" required></label><label class="cl-f">เวลา<input id="jTime" placeholder="9:30-11:30 น." autocomplete="off"></label></div>
+    <label class="cl-f">ลูกค้า / สถานที่<input id="jCust" autocomplete="off"></label>
+    <label class="cl-f">รายละเอียดงาน (ต้องใส่)<input id="jTask" required autocomplete="off"></label>
+    <label class="cl-f">เครื่อง<input id="jMach" autocomplete="off"></label>
+    <div class="cl-f">ช่าง</div><div class="cl-techs" id="jTechs"></div>
+    <div class="cl-dbtn"><button type="button" class="nx-btn" id="jDel" hidden style="color:var(--bad-fg);margin-right:auto">ลบงานนี้</button>
+      <button value="cancel" class="nx-btn" formnovalidate>ยกเลิก</button><button value="ok" class="nx-btn primary">บันทึก</button></div>
+  </form>
+</dialog>
+
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261120"></script>
+<script src="../service/cases-common.js?v=20261120"></script>
+<script src="calendar.js?v=20261120"></script>
+</body>
+</html>

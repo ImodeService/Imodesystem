@@ -92,7 +92,7 @@
         var nextBtn = !api.can('service.edit') || st === 'closed' ? '' : held
           ? '<button class="nx-btn edit" data-unhold="' + esc(c.id) + '">ลูกค้าตอบแล้ว</button>'
           : '<button class="nx-btn primary" data-next="' + esc(c.id) + '">' + esc(NEXT_LABEL[st] || 'ขั้นต่อไป') + '</button>';
-        return '<article class="sv-mcard' + (held ? ' hold' : '') + '"><div class="sv-card" style="border:none;padding:0;background:none;cursor:default">' +
+        return '<article class="sv-mcard' + (held ? ' hold' : '') + '" data-id="' + esc(c.id) + '"><div class="sv-card" style="border:none;padding:0;background:none;cursor:default">' +
           '<div class="t"><span>' + esc(c.ticket || c.id) + ' · ' + esc(typeName(c.service_type)) + '</span><span class="nx-badge' + (held ? ' hold' : '') + '">' + esc(held ? 'Hold ' + holdDays(c) + ' วัน' : (STAGES.filter(function (s) { return s.id === st; })[0] || {}).name) + '</span></div>' +
           '<div class="c">' + esc(c.customer || '-') + '</div><div class="m">' + esc([c.machine, c.model].filter(Boolean).join(' ') || '-') + '</div></div>' +
           stepBar(c) + '<div class="btns">' + (api.can('service.edit') && !held && st !== 'closed' ? '<button class="nx-btn" data-hold="' + esc(c.id) + '">พัก Hold</button>' : '') + nextBtn + '</div></article>';
@@ -137,6 +137,16 @@
   skeleton();
   try { api = await window.NextShell.start({ title: 'Service', moduleId: 'service' }); }
   catch (e) { boardEl.innerHTML = daysEl.innerHTML = ''; showErr(e.message); return; }
+
+  if (api.can('service.edit')) $('newCase').hidden = false;
+  // กดการ์ด (ที่ไม่ใช่ปุ่ม/เมนู) เปิดหน้ารายละเอียดเคส
+  function openCase(e) {
+    if (e.target.closest('select,button,a,label,input')) return;
+    var card = e.target.closest('[data-id]'); if (!card) return;
+    location.href = 'case.html?id=' + encodeURIComponent(card.getAttribute('data-id'));
+  }
+  boardEl.addEventListener('click', openCase);
+  daysEl.addEventListener('click', openCase);
 
   $('q').addEventListener('input', function (e) { q = e.target.value; render(); });
   $('showClosed').addEventListener('change', function (e) { showClosed = e.target.checked; render(); });

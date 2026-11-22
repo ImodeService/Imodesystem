@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>เปิดเคสใหม่ · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261119">
+<link rel="stylesheet" href="service.css?v=20261120">
+<script src="../shared/next-shell.js?v=20261119"></script>
+<link rel="stylesheet" href="case.css?v=20261120">
+</head>
+<body>
+<main class="nx-main cs-main">
+  <a href="index.html" class="cs-back">← กลับไปบอร์ดเคส</a>
+  <form id="f" novalidate>
+    <div class="cs-head"><h1>เปิดเคสใหม่</h1><div class="sp"></div>
+      <div class="acts"><a class="nx-btn" href="index.html" style="display:inline-flex;align-items:center;text-decoration:none">ยกเลิก</a><button class="nx-btn primary" type="submit" id="save">บันทึกเคส</button></div></div>
+    <div id="err"></div>
+    <div class="nc-grid">
+      <div class="col">
+        <section class="nx-card cs-box"><h2>1. ประเภทงาน</h2>
+          <div class="nc-chips" id="types" role="group" aria-label="ประเภทงาน"></div>
+          <div class="nc-chips" id="prios" role="group" aria-label="ความเร่งด่วน" style="margin-top:12px;align-items:center"><span class="mut" style="font-size:14px">ความเร่งด่วน</span></div>
+        </section>
+        <section class="nx-card cs-box"><h2>2. ลูกค้า</h2>
+          <div id="custBox"></div>
+          <div class="nc-two">
+            <label class="nc-f">ผู้ติดต่อ<input id="contact" autocomplete="off"></label>
+            <label class="nc-f">เบอร์โทร<input id="phone" inputmode="tel" autocomplete="off"></label>
+          </div>
+          <label class="nc-f">ที่อยู่ / สถานที่<input id="location" autocomplete="off"></label>
+          <label class="nc-f">ลิงก์แผนที่ (ถ้ามี)<input id="map_url" type="url" autocomplete="off" placeholder="https://maps.google.com/..."></label>
+        </section>
+        <section class="nx-card cs-box"><h2>3. เครื่อง</h2><div id="machBox" class="nc-pick"><div class="mut" style="font-size:14px">เลือกลูกค้าก่อน</div></div></section>
+      </div>
+      <div class="col">
+        <section class="nx-card cs-box"><h2>4. อาการ</h2>
+          <label class="nc-f"><span>อาการที่ลูกค้าแจ้ง (ต้องใส่)</span><textarea id="issue" rows="4" required></textarea></label>
+          <label class="nc-f">หมายเหตุภายใน<textarea id="note" rows="2"></textarea></label>
+          <div class="nc-f">รูป (เลือกทีเดียวได้หลายรูป ระบบย่อขนาดให้)</div>
+          <div class="nc-thumbs" id="thumbs"></div>
+        </section>
+        <section class="nx-card cs-box"><h2>5. นัดหมายและช่าง</h2>
+          <div class="nc-two">
+            <label class="nc-f">วันที่รับเครื่อง / นัด<input id="appointment" type="datetime-local"></label>
+            <label class="nc-f">ช่องทางที่แจ้ง<select id="channel"></select></label>
+          </div>
+          <div class="nc-f">ช่าง (เลือกได้หลายคน)</div>
+          <div class="nc-techs" id="techs"></div>
+          <div id="techWarn"></div>
+        </section>
+        <section class="nx-card cs-box" style="background:var(--bg)"><h2>หลังบันทึก</h2>
+          <div style="font-size:14px;color:var(--mut);line-height:1.8">• ได้เลขเคส SRV-ปีเดือนวัน-ลำดับ อัตโนมัติ<br>• เคสไปอยู่คอลัมน์ "รับเรื่อง" บนบอร์ด และเห็นในระบบเดิมด้วย<br>• ลูกค้าใหม่ถูกเพิ่มในรายชื่อลูกค้าให้เอง</div>
+        </section>
+      </div>
+    </div>
+  </form>
+</main>
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261120"></script>
+<script src="cases-common.js?v=20261120"></script>
+<script src="new.js?v=20261120"></script>
+</body>
+</html>
