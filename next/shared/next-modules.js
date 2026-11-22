@@ -2,7 +2,7 @@
    perm = สิทธิ์ที่ต้องมีถึงจะเห็น (ตาราง app_role_perms ในฐานข้อมูล)
    href ว่าง = ยังไม่ได้ทำในระบบใหม่ (แสดงจาง) ; old = ลิงก์ไปของเดิมระหว่างรอ */
 window.NEXT_MODULES = [
-  { id: 'dashboard', name: 'Dashboard',          ab: 'DB', color: '#0F7C8C', perm: 'dashboard.view', href: '' },
+  { id: 'dashboard', name: 'Dashboard',          ab: 'DB', color: '#0F7C8C', perm: 'dashboard.view', href: 'next/dashboard/index.html' },
   { id: 'service',   name: 'Service',            ab: 'SV', color: '#3B6FB6', perm: 'service.view',   href: 'next/service/index.html' },
   { id: 'qc',        name: 'QC',                 ab: 'QC', color: '#2E7D4F', perm: 'qc.view',        href: '', old: 'modules/qc-rnd/index.html' },
   { id: 'demo',      name: 'Demo',               ab: 'DM', color: '#6B4FA0', perm: 'demo.view',      href: '' },
@@ -20,3 +20,24 @@ window.NEXT_MODULES = [
   { id: 'settings',  name: 'ตั้งค่า',               ab: 'ตค', color: '#6B7280', perm: 'settings.view',  href: '' },
   { id: 'trash',     name: 'ถังขยะ',               ab: 'ขย', color: '#7B8794', perm: '',               href: 'next/trash/index.html' }
 ];
+
+/* 2026-11-22: แถบเมนูซ้ายของแต่ละโมดุล (แบบ Service เดิม) · href นับจาก root ของเว็บ
+   match = ส่วนของที่อยู่หน้าที่ถือว่าอยู่เมนูนั้น (ทำไฮไลท์) · หน้าที่ยังไม่ได้ทำใหม่ลิงก์ไปหน้าเดิมใน Service
+   ไม่มี "หน้างานช่าง": ช่างใช้แอปมือถือเท่านั้น แอดมินไม่ต้องเห็น (เจ้าของ 2026-11-22) */
+window.NEXT_SIDE = {
+  service: [
+    { ic: '📋', label: 'เคสงานบริการ', href: 'next/service/index.html', match: ['/next/service/'] },
+    { ic: '👨‍🔧', label: 'ทีมงาน', href: 'modules/service/index.html?page=technicians' },
+    { ic: '🔔', label: 'แจ้งเตือน', href: 'next/notifications/index.html', match: ['/next/notifications/'] },
+    { ic: '📊', label: 'รายงาน', href: 'modules/service/index.html?page=reports' },
+    { ic: '⚙️', label: 'ตั้งค่า', href: 'modules/service/index.html?page=settings' }
+  ],
+  // Dashboard แยกหน้าตามหมวด (match ลงท้าย $ = ต้องตรงตัว)
+  dashboard: [
+    { ic: '🏠', label: 'ภาพรวม', href: 'next/dashboard/index.html', match: ['/next/dashboard/$'] },
+    { ic: '📋', label: 'งานบริการ', href: 'next/dashboard/cases.html', match: ['/next/dashboard/cases.html'] },
+    { ic: '👥', label: 'ทีมงาน', href: 'next/dashboard/team.html', match: ['/next/dashboard/team.html'] },
+    { ic: '🧾', label: 'ใบเสนอราคา', href: 'next/dashboard/quotes.html', match: ['/next/dashboard/quotes.html'] },
+    { ic: '✅', label: 'QC', href: 'next/dashboard/qc.html', match: ['/next/dashboard/qc.html'] }
+  ]
+};

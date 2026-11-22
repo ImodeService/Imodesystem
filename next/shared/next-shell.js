@@ -6,14 +6,24 @@
    ต้องโหลด ../../shared/vendor/supabase.min.js, ../../shared/config.js, ../../shared/auth.js, ./next-modules.js ก่อน start() */
 (function () {
   'use strict';
-  var THEME_KEY = 'imode.next.theme';
-  function savedTheme() { try { return localStorage.getItem(THEME_KEY) || ''; } catch (e) { return ''; } }
+  /* 2026-11-22: ใช้ธีมเดียวกับทั้งระบบ (imode.theme ของ shared/theme-pref.js: flat-light / flat-dark)
+     เปลี่ยนที่นี่ ทุกโมดุลเปลี่ยนตาม และกลับกัน */
+  var THEME_KEY = 'imode.theme', THEME_AT = 'imode.theme.at';
+  function savedTheme() {
+    var v = ''; try { v = localStorage.getItem(THEME_KEY) || ''; } catch (e) {}
+    if (v === 'auto') return (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    return v === 'flat-dark' ? 'dark' : 'light';
+  }
   function applyTheme(t) {
-    if (!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    t = t === 'dark' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', t);
     return t;
   }
+  function saveTheme(t) {
+    try { localStorage.setItem(THEME_KEY, t === 'dark' ? 'flat-dark' : 'flat-light'); localStorage.setItem(THEME_AT, String(Date.now())); } catch (e) {}
+  }
   applyTheme(savedTheme()); // ก่อนหน้าแสดง กันจอกระพริบ
+  window.addEventListener('storage', function (e) { if (e.key === THEME_KEY) { applyTheme(savedTheme()); if (window.__nxPaintTheme) window.__nxPaintTheme(); } });
 
   /* root ของเว็บ (โฟลเดอร์ที่มี next/ และ shared/) คิดจากที่อยู่ไฟล์นี้ */
   var me = document.currentScript && document.currentScript.src;
@@ -57,14 +67,43 @@
         (rest.length ? '<div class="lab">โมดุลอื่น</div><div class="grid">' + rest.map(function (m) { return tile(m); }).join('') + '</div>' : '');
   }
 
+  /* โลโก้: สีปกติตอนสว่าง สีขาวตอนมืด (ไฟล์ .png พื้นโปร่งใส; .webp เดิมมีพื้นขาวเลยเป็นกล่องขาวในโหมดมืด) */
+  function logo(cls) {
+    return '<img class="nx-logo-l' + (cls ? ' ' + cls : '') + '" src="' + esc(ROOT + 'assets/brand/imode-logo.png') + '" alt="I-MODE">' +
+      '<img class="nx-logo-d' + (cls ? ' ' + cls : '') + '" src="' + esc(ROOT + 'assets/brand/imode-logo-white.png') + '" alt="">';
+  }
+  /* 2026-11-22: แถบเมนูซ้ายแบบ Service เดิม (เฉพาะโมดุลที่มีใน NEXT_SIDE) ตัดหน้าที่ย้ายไปเป็นโมดุลของตัวเองแล้ว */
+  function buildSide(items, opts) {
+    var here = location.pathname.replace(/\/index\.html$/, '/');
+    var aside = document.createElement('aside');
+    aside.className = 'nx-side'; aside.id = 'nx-side';
+    aside.innerHTML =
+      '<a href="' + esc(ROOT + 'apps/launcher/index.html') + '" class="nx-side-logo" aria-label="หน้าเลือกโมดุล"><img src="' + esc(ROOT + 'assets/brand/imode-logo-white.png') + '" alt="I-MODE"></a>' +
+      '<nav aria-label="เมนู ' + esc(opts.title || '') + '"><ul>' + items.map(function (it) {
+        var href = ROOT + it.href, on = it.match ? it.match.some(function (m) { return m.slice(-1) === '$' ? here.slice(-(m.length - 1)) === m.slice(0, -1) : here.indexOf(m) >= 0; }) : false;
+        return '<li><a href="' + esc(href) + '"' + (on ? ' class="on" aria-current="page"' : '') + '><span class="ic" aria-hidden="true">' + it.ic + '</span><span>' + esc(it.label) + '</span></a></li>';
+      }).join('') + '</ul></nav>';
+    var back = document.createElement('div');
+    back.className = 'nx-side-back'; back.hidden = true;
+    document.body.insertBefore(back, document.body.firstChild);
+    document.body.insertBefore(aside, document.body.firstChild);
+    document.body.classList.add('nx-with-side');
+    return { aside: aside, back: back };
+  }
+
   function buildTop(opts) {
+    var sideItems = (window.NEXT_SIDE || {})[opts.moduleId], side = sideItems && sideItems.length ? buildSide(sideItems, opts) : null;
     var top = document.createElement('header');
     top.className = 'nx-top';
     var initials = (state.user && (state.user.name || state.user.username) || '?').trim().slice(0, 2);
     top.innerHTML =
-      '<a href="' + esc(ROOT + 'apps/launcher/index.html') + '" aria-label="หน้าเลือกโมดุล" style="display:flex"><img src="' + esc(ROOT + 'assets/brand/imode-logo.webp') + '" alt="" style="height:30px" onerror="this.remove()"></a>' +
+      (side ? '<button type="button" class="nx-icon-btn nx-menu-btn" data-menu-btn aria-label="เมนู" aria-expanded="false" aria-controls="nx-side"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>' : '') +
+      '<a href="' + esc(ROOT + 'apps/launcher/index.html') + '" class="nx-logo" aria-label="หน้าเลือกโมดุล">' + logo() + '</a>' +
       '<span class="nx-title">' + esc(opts.title || '') + '</span>' +
       '<button type="button" class="nx-icon-btn" data-theme-btn aria-label="สลับธีม สว่าง/มืด"></button>' +
+      '<span class="nx-bell-wrap" hidden><button type="button" class="nx-icon-btn" data-bell aria-label="แจ้งเตือน" aria-expanded="false" aria-controls="nx-bell">' +
+      '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>' +
+      '<span class="nx-badge" hidden></span></button></span>' +
       '<button type="button" class="nx-icon-btn" data-sw-btn aria-label="โมดุลทั้งหมด" aria-expanded="false" aria-controls="nx-sw">' +
       '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg></button>' +
       '<button type="button" class="nx-avatar" data-acct aria-label="บัญชีของฉัน" title="' + esc(state.user ? state.user.name + ' · ' + state.user.role : '') + '">' + esc(initials) + '</button>';
@@ -82,11 +121,31 @@
         : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
     }
     paintThemeBtn();
+    window.__nxPaintTheme = paintThemeBtn;
     themeBtn.addEventListener('click', function () {
       var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      applyTheme(t); try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+      applyTheme(t); saveTheme(t);
       paintThemeBtn();
     });
+
+    if (side) {
+      var menuBtn = top.querySelector('[data-menu-btn]');
+      /* จอใหญ่: ปุ่มนี้ซ่อน/แสดงแถบเมนู (จำไว้ในเครื่อง) · จอเล็ก: เปิดเป็นลิ้นชักทับหน้า */
+      var SIDE_KEY = 'imode.next.sideClosed';
+      var wide = function () { return !window.matchMedia || matchMedia('(min-width: 901px)').matches; };
+      var setMenu = function (v) { side.aside.classList.toggle('open', v); side.back.hidden = !v; menuBtn.setAttribute('aria-expanded', String(v)); };
+      var setClosed = function (v) { document.body.classList.toggle('nx-side-closed', v); menuBtn.setAttribute('aria-expanded', String(!v)); try { localStorage.setItem(SIDE_KEY, v ? '1' : '0'); } catch (e) {} };
+      var was = false; try { was = localStorage.getItem(SIDE_KEY) === '1'; } catch (e) {}
+      document.body.classList.toggle('nx-side-closed', was);
+      menuBtn.setAttribute('aria-expanded', String(wide() ? !was : false));
+      menuBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (wide()) setClosed(!document.body.classList.contains('nx-side-closed'));
+        else setMenu(!side.aside.classList.contains('open'));
+      });
+      side.back.addEventListener('click', function () { setMenu(false); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && side.aside.classList.contains('open')) { setMenu(false); menuBtn.focus(); } });
+    }
 
     var swBtn = top.querySelector('[data-sw-btn]');
     var editing = false;
@@ -113,6 +172,95 @@
     });
   }
 
+  /* ---------- แจ้งเตือน (ตาราง app_notifications จาก SQL 04) ----------
+     กระดิ่งบนแถบบน: ตัวเลขที่ยังไม่อ่าน, กดดู 15 รายการล่าสุด, กดรายการ = เปิดเคส + อ่านแล้ว
+     แจ้งเตือนใหม่เด้งทันทีผ่าน realtime และขึ้นที่มุมจอ (ถ้าเปิดอนุญาตไว้ ขึ้นแจ้งเตือนของเครื่องด้วยตอนอยู่แท็บอื่น) */
+  var KIND_IC = { new_case: '🆕', assigned: '🧑‍🔧', stage: '➡️', hold: '⏸️', message: '💬' };
+  function ago(t) {
+    var s = Math.max(0, (Date.now() - new Date(t)) / 1000);
+    if (s < 60) return 'เมื่อสักครู่';
+    if (s < 3600) return Math.floor(s / 60) + ' นาทีที่แล้ว';
+    if (s < 86400) return Math.floor(s / 3600) + ' ชม.ที่แล้ว';
+    if (s < 172800) return 'เมื่อวาน';
+    return new Date(t).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+  }
+  function notifHref(n) { return n.case_id ? ROOT + 'next/service/case.html?id=' + encodeURIComponent(n.case_id) : ROOT + 'next/notifications/index.html'; }
+  function notifRow(n) {
+    return '<a class="nx-nrow' + (n.read_at ? '' : ' unread') + '" href="' + esc(notifHref(n)) + '" data-nid="' + esc(n.id) + '">' +
+      '<span class="nx-nic" aria-hidden="true">' + (KIND_IC[n.kind] || '🔔') + '</span>' +
+      '<span class="nx-ntx"><b>' + esc(n.title) + '</b>' + (n.body ? '<span>' + esc(n.body) + '</span>' : '') +
+      '<small>' + esc((n.actor_name ? n.actor_name + ' · ' : '') + ago(n.created_at)) + '</small></span></a>';
+  }
+  var notif = { unread: 0, list: [], ok: false };
+  async function markRead(ids) {
+    if (!ids.length) return;
+    var stamp = new Date().toISOString();
+    await window.ImodeAuth.client().from('app_notifications').update({ read_at: stamp }).in('id', ids);
+    notif.list.forEach(function (n) { if (ids.indexOf(n.id) >= 0 && !n.read_at) { n.read_at = stamp; notif.unread = Math.max(0, notif.unread - 1); } });
+  }
+  async function markAllRead() {
+    var stamp = new Date().toISOString();
+    await window.ImodeAuth.client().from('app_notifications').update({ read_at: stamp }).eq('user_id', state.user.id).is('read_at', null);
+    notif.list.forEach(function (n) { if (!n.read_at) n.read_at = stamp; });
+    notif.unread = 0;
+  }
+  function toast(n) {
+    var t = document.createElement('a');
+    t.className = 'nx-toast'; t.href = notifHref(n);
+    t.innerHTML = '<span class="nx-nic" aria-hidden="true">' + (KIND_IC[n.kind] || '🔔') + '</span><span class="nx-ntx"><b>' + esc(n.title) + '</b>' + (n.body ? '<span>' + esc(n.body) + '</span>' : '') + '</span>';
+    t.setAttribute('role', 'status');
+    document.body.appendChild(t);
+    setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 300); }, 6000);
+    try {
+      if (document.hidden && window.Notification && Notification.permission === 'granted') {
+        var sys = new Notification(n.title, { body: n.body || '', tag: n.id });
+        sys.onclick = function () { window.focus(); location.href = notifHref(n); };
+      }
+    } catch (e) {}
+  }
+  async function setupBell(top) {
+    var sb = window.ImodeAuth.client();
+    var res = await sb.from('app_notifications').select('id,kind,title,body,case_id,actor_name,created_at,read_at')
+      .eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(15);
+    if (res.error) return; // ยังไม่ได้รัน SQL 04 → ไม่แสดงกระดิ่ง
+    var cnt = await sb.from('app_notifications').select('id', { count: 'exact', head: true }).eq('user_id', state.user.id).is('read_at', null);
+    notif.ok = true; notif.list = res.data || []; notif.unread = cnt.count || notif.list.filter(function (n) { return !n.read_at; }).length;
+    var wrap = top.querySelector('.nx-bell-wrap'), btn = top.querySelector('[data-bell]'), badge = top.querySelector('.nx-badge');
+    wrap.hidden = false;
+    var panel = document.createElement('div');
+    panel.className = 'nx-bell'; panel.id = 'nx-bell'; panel.hidden = true;
+    panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'แจ้งเตือน');
+    document.body.appendChild(panel);
+    function paint() {
+      badge.hidden = !notif.unread; badge.textContent = notif.unread > 99 ? '99+' : String(notif.unread);
+      btn.setAttribute('aria-label', 'แจ้งเตือน' + (notif.unread ? ' ยังไม่อ่าน ' + notif.unread : ''));
+      if (panel.hidden) return;
+      panel.innerHTML = '<div class="nx-bell-head"><b>แจ้งเตือน</b>' + (notif.unread ? '<button type="button" class="nx-link" data-allread>อ่านทั้งหมดแล้ว</button>' : '') + '</div>' +
+        (notif.list.length ? '<div class="nx-bell-list">' + notif.list.map(notifRow).join('') + '</div>' : '<div class="nx-empty" style="padding:28px 16px">ยังไม่มีแจ้งเตือน</div>') +
+        '<a class="nx-bell-all" href="' + esc(ROOT + 'next/notifications/index.html') + '">ดูทั้งหมด</a>';
+    }
+    window.NextShell.notif = { paint: paint, markRead: markRead, markAllRead: markAllRead, row: notifRow, state: notif };
+    paint();
+    btn.addEventListener('click', function (e) { e.stopPropagation(); panel.hidden = !panel.hidden; btn.setAttribute('aria-expanded', String(!panel.hidden)); paint(); });
+    panel.addEventListener('click', async function (e) {
+      e.stopPropagation();
+      if (e.target.closest('[data-allread]')) { await markAllRead(); paint(); return; }
+      var a = e.target.closest('[data-nid]');
+      if (a) { e.preventDefault(); await markRead([a.getAttribute('data-nid')]); location.href = a.href; }
+    });
+    document.addEventListener('click', function () { if (!panel.hidden) { panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) { panel.hidden = true; btn.focus(); } });
+    try {
+      sb.channel('notif-' + state.user.id)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'app_notifications', filter: 'user_id=eq.' + state.user.id }, function (p) {
+          var n = p.new; if (!n || notif.list.some(function (x) { return x.id === n.id; })) return;
+          notif.list.unshift(n); notif.list = notif.list.slice(0, 15); notif.unread++;
+          paint(); toast(n);
+          try { window.dispatchEvent(new CustomEvent('nx-notif', { detail: n })); } catch (e) {}
+        }).subscribe();
+    } catch (e) {}
+  }
+
   async function loadPerms() {
     var roles = [state.user.role].concat(state.user.extraRoles || []).filter(Boolean);
     var res = await window.ImodeAuth.client().from('app_role_perms').select('perm').in('role', roles);
@@ -128,6 +276,7 @@
     try { await loadPerms(); } catch (e) { permErr = e; }
     buildTop(opts);
     if (permErr) throw permErr;
+    setupBell(document.querySelector('.nx-top')).catch(function () {});
     var mod = (window.NEXT_MODULES || []).filter(function (m) { return m.id === opts.moduleId; })[0];
     if (mod && mod.perm && !can(mod.perm)) throw new Error('บัญชีนี้ไม่มีสิทธิ์เข้าโมดุลนี้');
     return { user: state.user, can: can, sb: window.ImodeAuth.client(), root: ROOT, esc: esc };

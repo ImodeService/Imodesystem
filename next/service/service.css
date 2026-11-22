@@ -12,7 +12,7 @@
 /* board */
 .sv-board{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;align-items:flex-start;min-height:60vh}
 .sv-col{flex:0 0 260px;background:var(--bg);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;max-height:calc(100vh - 210px)}
-.sv-col.hold{background:var(--hold-bg);border-color:var(--orange)}
+/* 2026-11-22: คอลัมน์ Hold ไม่ต้องไฮไลท์ (เจ้าของสั่ง) */
 .sv-col.drop{outline:2px dashed var(--navy);outline-offset:-4px}
 .sv-col-h{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:600;font-size:14px;border-bottom:1px solid var(--line)}
 .sv-col-h .n{margin-left:auto;font-size:12px;color:var(--mut);font-weight:500}
@@ -34,7 +34,7 @@
 .sv-steps span.on{background:var(--navy)}
 .sv-steps span.hold{background:var(--orange)}
 .sv-mcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-.sv-mcard.hold{background:var(--hold-bg);border-color:var(--orange)}
+
 .sv-mcard .btns{display:flex;gap:8px;margin-top:10px}
 .sv-mcard .btns button{flex:1;height:44px;border-radius:10px;font-size:14px}
 @media (max-width:760px){.sv-board{display:none}.sv-days{display:flex}}

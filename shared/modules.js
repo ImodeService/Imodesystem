@@ -6,7 +6,7 @@
    `href` stays empty until the module exists. Which modules each person sees will come
    from the Accounts module (enforced by RLS). Used by the launcher and the module shell. */
 window.IMODE_MODULES = [
-  { id: 'dashboard', hidden: true, name: 'แดชบอร์ด', group: 'report', href: '',
+  { id: 'dashboard', name: 'แดชบอร์ด', group: 'report', href: 'next/dashboard/index.html',
     icon: '<rect x="8" y="24" width="8" height="16" rx="2" fill="#0b63e5"/><rect x="20" y="14" width="8" height="26" rx="2" fill="#f79009"/><rect x="32" y="8" width="8" height="32" rx="2" fill="#0c225e"/>' },
   /* 2026-11-22: ระบบใหม่ + แยกโมดุลที่เคยอยู่ใน Service ออกมา (ระหว่างทำใหม่ เปิดหน้าเดิมใน Service) */
   { id: 'service', name: 'Service', fullName: 'เคสงานบริการ', group: 'ops', href: 'next/service/index.html',

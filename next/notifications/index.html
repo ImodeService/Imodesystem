@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>แจ้งเตือน · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261122">
+<script src="../shared/next-shell.js?v=20261122"></script>
+<style>
+/* 2026-11-22: หน้าแจ้งเตือน (ตาราง app_notifications, SQL 04) */
+.nt-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.nt-head h1{margin:0;font-size:22px;flex:1}
+.nt-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.nt-bar .sp{flex:1}
+.nt-bar button[aria-pressed="true"]{background:var(--navy);color:var(--navy-fg);border-color:var(--navy);font-weight:600}
+.nt-day{margin:18px 0 8px;font-size:13px;font-weight:600;color:var(--mut)}
+.nt-list{overflow:hidden}
+.nt-list .nx-nrow:first-child{border-top:none}
+.nt-list .nx-nrow{padding:14px 16px}
+.nt-push{display:flex;gap:12px;align-items:center;padding:12px 16px;margin-top:12px;font-size:14px}
+.nt-push p{margin:0;flex:1;color:var(--mut)}
+</style>
+</head>
+<body>
+<main class="nx-main" style="max-width:860px">
+  <div class="nt-head">
+    <h1>แจ้งเตือน</h1>
+    <button type="button" class="nx-btn" id="allRead" hidden>อ่านทั้งหมดแล้ว</button>
+  </div>
+  <div class="nt-push nx-card" id="push" hidden>
+    <p>ให้เครื่องนี้เด้งแจ้งเตือนตอนเปิดระบบค้างไว้ในแท็บอื่น</p>
+    <button type="button" class="nx-btn primary" id="pushBtn">เปิดแจ้งเตือนบนเครื่องนี้</button>
+  </div>
+  <div class="nt-bar" role="group" aria-label="ตัวกรอง">
+    <button type="button" class="nx-btn" data-f="all" aria-pressed="true">ทั้งหมด</button>
+    <button type="button" class="nx-btn" data-f="unread" aria-pressed="false">ยังไม่อ่าน</button>
+    <button type="button" class="nx-btn" data-f="message" aria-pressed="false">ข้อความ</button>
+    <button type="button" class="nx-btn" data-f="case" aria-pressed="false">เคส / มอบหมาย</button>
+  </div>
+  <div id="err"></div>
+  <div id="list" aria-live="polite"></div>
+</main>
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261122"></script>
+<script>
+(async function () {
+  'use strict';
+  var listEl = document.getElementById('list'), errEl = document.getElementById('err');
+  var filter = 'all', items = [], api;
+  function showErr(m) { errEl.innerHTML = m ? '<div class="nx-card" style="padding:14px 16px;margin-bottom:12px;color:var(--bad-fg);background:var(--bad-bg)">' + api.esc(m) + '</div>' : ''; }
+  function dayLabel(t) {
+    var d = new Date(t), today = new Date(); today.setHours(0, 0, 0, 0);
+    var diff = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+    if (diff <= 0) return 'วันนี้';
+    if (diff === 1) return 'เมื่อวาน';
+    return d.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  function render() {
+    var N = window.NextShell.notif;
+    var rows = items.filter(function (n) {
+      if (filter === 'unread') return !n.read_at;
+      if (filter === 'message') return n.kind === 'message';
+      if (filter === 'case') return n.kind !== 'message';
+      return true;
+    });
+    document.getElementById('allRead').hidden = !items.some(function (n) { return !n.read_at; });
+    document.querySelectorAll('[data-f]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-f') === filter)); });
+    if (!rows.length) { listEl.innerHTML = '<div class="nx-card nx-empty" style="padding:40px 16px;text-align:center;color:var(--mut)">' + (filter === 'unread' ? 'อ่านครบทุกรายการแล้ว' : 'ยังไม่มีแจ้งเตือน') + '</div>'; return; }
+    var html = '', cur = '';
+    rows.forEach(function (n) {
+      var d = dayLabel(n.created_at);
+      if (d !== cur) { html += (cur ? '</div>' : '') + '<div class="nt-day">' + api.esc(d) + '</div><div class="nx-card nt-list">'; cur = d; }
+      html += N.row(n);
+    });
+    listEl.innerHTML = html + '</div>';
+  }
+  async function load() {
+    var res = await api.sb.from('app_notifications').select('id,kind,title,body,case_id,actor_name,created_at,read_at')
+      .eq('user_id', api.user.id).order('created_at', { ascending: false }).limit(200);
+    if (res.error) { showErr('ยังเปิดแจ้งเตือนไม่ได้ ต้องรัน SQL 04-notifications ก่อน (' + res.error.message + ')'); listEl.innerHTML = ''; return; }
+    items = res.data || []; render();
+  }
+  listEl.innerHTML = '<div class="nx-card" style="height:220px" aria-hidden="true"></div>';
+  try { api = await window.NextShell.start({ title: 'Service', moduleId: 'service' }); }
+  catch (e) { listEl.innerHTML = ''; errEl.textContent = e.message; return; }
+  // รอให้กระดิ่งพร้อม (ใช้ฟังก์ชันอ่านแล้ว/แถวรายการร่วมกัน)
+  for (var i = 0; i < 40 && !(window.NextShell.notif); i++) await new Promise(function (r) { setTimeout(r, 100); });
+  if (!window.NextShell.notif) { showErr('ยังเปิดแจ้งเตือนไม่ได้ ต้องรัน SQL 04-notifications ก่อน'); listEl.innerHTML = ''; return; }
+  await load();
+
+  document.querySelector('.nt-bar').addEventListener('click', function (e) { var b = e.target.closest('[data-f]'); if (b) { filter = b.getAttribute('data-f'); render(); } });
+  document.getElementById('allRead').addEventListener('click', async function () {
+    await window.NextShell.notif.markAllRead();
+    items.forEach(function (n) { if (!n.read_at) n.read_at = new Date().toISOString(); });
+    window.NextShell.notif.paint(); render();
+  });
+  listEl.addEventListener('click', async function (e) {
+    var a = e.target.closest('[data-nid]'); if (!a) return;
+    e.preventDefault();
+    var id = a.getAttribute('data-nid');
+    await window.NextShell.notif.markRead([id]);
+    items.forEach(function (n) { if (n.id === id && !n.read_at) n.read_at = new Date().toISOString(); });
+    location.href = a.href;
+  });
+  window.addEventListener('nx-notif', function (e) { items.unshift(e.detail); render(); });
+
+  // แจ้งเตือนของเครื่อง (ต้องกดอนุญาตเอง)
+  if (window.Notification && Notification.permission === 'default') {
+    document.getElementById('push').hidden = false;
+    document.getElementById('pushBtn').addEventListener('click', async function () {
+      try { await Notification.requestPermission(); } catch (e) {}
+      document.getElementById('push').hidden = true;
+    });
+  }
+})();
+</script>
+</body>
+</html>

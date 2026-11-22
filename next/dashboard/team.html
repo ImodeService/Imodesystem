@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>ทีมงาน · Dashboard · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261122">
+<link rel="stylesheet" href="dash.css?v=20261122">
+<script src="../shared/next-shell.js?v=20261122"></script>
+</head>
+<body data-page="team">
+<main class="nx-main">
+  <div class="db-head">
+    <h1>ทีมงาน</h1>
+    <label><span style="position:absolute;left:-9999px">ปี</span><select id="year" aria-label="เลือกปี"></select></label>
+  </div>
+  <p class="db-sub" id="sub" data-base="ใครเปิด ปิด และรับเคสมากที่สุด">ใครเปิด ปิด และรับเคสมากที่สุด</p>
+  <div id="err"></div>
+  <div class="db-grid3">
+    <section class="nx-card db-card"><h2>เปิดเคสมากที่สุด</h2><p class="note">คนที่เปิดเคสในปีนี้</p><ol class="db-rank" id="rOpen"></ol></section>
+    <section class="nx-card db-card"><h2>ปิดเคสมากที่สุด</h2><p class="note">คนที่ย้ายเคสไป "ปิดเคส" ในปีนี้</p><ol class="db-rank" id="rClose"></ol></section>
+    <section class="nx-card db-card"><h2>ช่างที่รับเคสมากที่สุด</h2><p class="note">เคสที่เปิดในปีนี้ที่มีชื่อช่าง</p><ol class="db-rank" id="rTech"></ol></section>
+  </div>
+</main>
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261122"></script>
+<script src="../service/cases-common.js?v=20261122"></script>
+<script src="dash.js?v=20261122"></script>
+</body>
+</html>
