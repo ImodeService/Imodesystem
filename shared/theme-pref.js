@@ -12,6 +12,12 @@
    Customer pages (Service QR / serial / machine portal) keep imode.customerTheme on each device
    and are never touched here.
 
+   2026-11-22: owner "ตั้งค่าธีมให้เหลือแต่สี แบบ Dark กับ light แล้วก็ ตั้งค่า Icon พอ":
+   the picker now has only two colours (สว่าง / มืด) and the icon style. ตามระบบ / กระจก, the presets
+   and the sidebar colour / movement are gone. Old choices are moved over once: auto → whichever
+   colour the device is showing now, classic → สว่าง, sidebar → กรมท่า + ปกติ (Service follows,
+   because it reads the same localStorage keys).
+
    Load in <head> on every staff page. Sets html[data-theme="light|dark"] and swaps
    <img data-dark-src> to that picture in dark. ImodeTheme.open() shows the picker (same layout as
    Service's); <body data-theme-fab> adds a round theme button at the bottom right;
@@ -19,30 +25,36 @@
 (function () {
   'use strict';
   if (window.ImodeTheme) return;
+  var SVK = { icons: 'imode.serviceIcons', side: 'imode.serviceSidebar', motion: 'imode.serviceSidebarMotion', custom: 'imode.servicePresetCustom' };
   var KEY = 'imode.theme', AT = 'imode.theme.at', LEGACY = 'imode.serviceTheme', DEF = 'flat-light';
   var THEMES = [
     { id: 'flat-light', name: 'สว่าง', desc: 'พื้นสีอ่อน เรียบ อ่านง่าย', bg: '#f3f3f3', side: '#0c225e', card: '#ffffff', line: '#e1e1e1', bar: '#c25e00' },
     { id: 'flat-dark', name: 'มืด', desc: 'พื้นสีเข้ม ถนอมสายตาตอนกลางคืน', bg: '#1b1b1b', side: '#111111', card: '#262626', line: '#3a3a3a', bar: '#e07a1f' },
-    { id: 'auto', name: 'ตามระบบ', desc: 'สว่างหรือมืดตามที่ตั้งไว้ในเครื่อง', bg: 'linear-gradient(90deg,#f3f3f3 50%,#1b1b1b 50%)', side: '#0c225e', card: 'transparent', line: '#8a8a8a', bar: '#c25e00' },
-    { id: 'classic', name: 'กระจก (Glass)', desc: 'หน้าตาเดิมของ Service โมดูลอื่นแสดงแบบสว่าง', bg: '#f6f8fc', side: '#0e3ba6', card: '#ffffff', line: '#e3e8f2', bar: '#ff5b14' }
   ];
   function valid(v) { return THEMES.some(function (t) { return t.id === v; }); }
+  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  /* choices that no longer exist → the nearest colour */
+  function fold(v) {
+    if (v === 'auto') return mq && mq.matches ? 'flat-dark' : 'flat-light';
+    if (v === 'classic') return 'flat-light';
+    return v;
+  }
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
   function get() {
-    var v = lsGet(KEY);
-    if (valid(v)) return v;
-    v = lsGet(LEGACY); // Service's own key before 2026-10-14
+    var raw = lsGet(KEY), v = fold(raw);
+    if (valid(v)) { if (v !== raw) lsSet(KEY, v); return v; }
+    v = fold(lsGet(LEGACY)); // Service's own key before 2026-10-14
     if (valid(v)) { lsSet(KEY, v); return v; }
     return DEF;
   }
-  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   function mode(v) {
-    v = v || get();
-    if (v === 'auto') return mq && mq.matches ? 'dark' : 'light';
-    return v === 'flat-dark' ? 'dark' : 'light';
+    return (v || get()) === 'flat-dark' ? 'dark' : 'light';
   }
+  /* sidebar colour / movement and the presets are gone (Service js/131, js/133 deleted):
+     drop what was saved for them, so every page shows the standard navy bar */
+  [SVK.side, SVK.motion, SVK.custom].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
 
   function swapLogos(m) {
     if (!document.querySelectorAll) return;
@@ -103,7 +115,7 @@
       var u = r && r.data && r.data.user;
       if (!u) return;
       var md = u.user_metadata || {};
-      var v = md.imode_theme, at = Number(md.imode_theme_at) || 0, localAt = Number(lsGet(AT)) || 0;
+      var v = fold(md.imode_theme), at = Number(md.imode_theme_at) || 0, localAt = Number(lsGet(AT)) || 0;
       if (valid(v) && at > localAt) {
         // changed on another device since this one last saw it
         lsSet(KEY, v); lsSet(AT, String(at)); apply();
@@ -127,28 +139,11 @@
      then the icon style, sidebar colours and sidebar movement (Service's own settings, kept on
      this device; Service picks them up at once through the storage event), and the separate
      screen-theme cards behind กำหนดเอง. */
-  var SV = { icons: 'imode.serviceIcons', side: 'imode.serviceSidebar', motion: 'imode.serviceSidebarMotion', custom: 'imode.servicePresetCustom' };
-  var PRESETS = [
-    { id: 'light', name: 'เรียบ สว่าง', desc: 'มาตรฐาน พื้นสว่าง แถบเมนูกรมท่า', set: { theme: 'flat-light', icons: 'emoji', side: 'navy', motion: 'normal' }, pv: THEMES[0] },
-    { id: 'dark', name: 'เรียบ มืด', desc: 'พื้นสีเข้ม ถนอมสายตาตอนกลางคืน', set: { theme: 'flat-dark', icons: 'emoji', side: 'navy', motion: 'normal' }, pv: THEMES[1] },
-    { id: 'auto', name: 'ตามระบบ', desc: 'สว่างหรือมืดตามที่ตั้งไว้ในเครื่อง', set: { theme: 'auto', icons: 'emoji', side: 'navy', motion: 'normal' }, pv: THEMES[2] },
-    { id: 'glass', name: 'กระจก (Glass)', desc: 'หน้าตาเดิมของ Service มีไล่สีและเงา', set: { theme: 'classic', icons: 'emoji', side: 'navy', motion: 'normal' }, pv: THEMES[3] },
-    { id: 'gold', name: 'ราตรีสีทอง', desc: 'พื้นมืด เมนูสีทอง ไอคอนเส้น เมนูเลื่อนแบบสไลด์', set: { theme: 'flat-dark', icons: 'line', side: 'game', motion: 'rov' },
-      pv: { bg: '#1b1b1b', side: 'linear-gradient(180deg,#080e2e,#1a2a8a)', card: '#262626', line: '#3a3a3a', bar: '#ffc845' } }
-  ];
+  var SV = SVK;
   var GROUPS = [
     { key: 'icons', title: 'สไตล์ไอคอน', opts: [
-      { id: 'emoji', name: 'Icon emoji', desc: 'ไอคอนสีสันแบบอีโมจิ (ค่าเริ่มต้น)', pv: '<span class="itp-emo">📋👥📅</span>' },
+      { id: 'emoji', name: 'Icon emoji', desc: 'ไอคอนสีสัน (ค่าเริ่มต้น)', pv: '<span class="itp-emo">📋👥📅</span>' },
       { id: 'line', name: 'แบบเส้น', desc: 'ไอคอนเส้นสีเดียว เรียบ', pv: '<svg width="44" height="18" viewBox="0 0 44 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="11" height="14" rx="2"/><path d="M5 7h5M5 11h5"/><circle cx="22" cy="7" r="3"/><path d="M17 16c0-3 2.5-5 5-5s5 2 5 5"/><rect x="31" y="3" width="11" height="12" rx="2"/><path d="M31 7h11"/></svg>' }
-    ] },
-    { key: 'side', title: 'สไตล์แถบเมนูด้านข้าง', opts: [
-      { id: 'navy', name: 'กรมท่า (เดิม)', desc: 'แถบเมนูสีน้ำเงินเข้ม โลโก้สีขาว', pv: '<span class="itp-bar" style="background:#0c225e"><i></i><i style="background:#f79009"></i><i></i></span>' },
-      { id: 'light', name: 'เรียบ', desc: 'แถบเมนูสีขาว เมนูที่เปิดอยู่เป็นแถบสีฟ้าอ่อน', pv: '<span class="itp-bar" style="background:#f8fafd;border-color:#d0d7e6"><i style="background:#c9d2e3"></i><i style="background:#0b5cd6"></i><i style="background:#c9d2e3"></i></span>' },
-      { id: 'game', name: 'ราตรีสีทอง', desc: 'แถบเมนูสีน้ำเงินม่วงเข้ม เมนูที่เปิดอยู่เป็นสีทอง', pv: '<span class="itp-bar" style="background:linear-gradient(90deg,#080e2e,#1a2a8a)"><i></i><i style="background:#ffc845"></i><i></i></span>' }
-    ] },
-    { key: 'motion', title: 'การเคลื่อนไหวของแถบเมนู', opts: [
-      { id: 'normal', name: 'ปกติ', desc: 'แถบเมนูกางเต็มตลอด', pv: '<span class="itp-bar" style="background:#f3f5f9;border-style:dashed;border-color:#9aa6bd"><i style="background:#9aa6bd"></i><i style="background:#0b5cd6"></i><i style="background:#9aa6bd"></i></span>' },
-      { id: 'rov', name: 'เลื่อนแบบสไลด์', desc: 'ย่อเหลือแต่ไอคอน ชี้เมาส์แล้วเมนูเลื่อนออกมาทับหน้าจอ', pv: '<span class="itp-bar" style="width:20px;background:#f3f5f9;border-style:dashed;border-color:#9aa6bd"><i style="background:#9aa6bd"></i><i style="background:#0b5cd6"></i><i style="background:#9aa6bd"></i></span>' }
     ] }
   ];
   function sv(k) {
@@ -157,16 +152,7 @@
     if (k === 'side') return v === 'light' || v === 'game' ? v : 'navy';
     return v === 'rov' ? 'rov' : 'normal';
   }
-  function now() { return { theme: get(), icons: sv('icons'), side: sv('side'), motion: sv('motion') }; }
-  function selected() {
-    if (lsGet(SV.custom) === '1') return 'custom';
-    var n = now();
-    for (var i = 0; i < PRESETS.length; i++) {
-      var s = PRESETS[i].set;
-      if (s.theme === n.theme && s.icons === n.icons && s.side === n.side && s.motion === n.motion) return PRESETS[i].id;
-    }
-    return 'custom';
-  }
+  function now() { return { theme: get(), icons: sv('icons') }; }
 
   var box = null, lastFocus = null;
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -188,24 +174,20 @@
       '@keyframes itp-pop{from{opacity:0;transform:translateY(28px) scale(.86)}to{opacity:1;transform:none}}' +
       '@keyframes itp-pop-out{to{opacity:0;transform:translateY(14px) scale(.94)}}' +
       '@media (prefers-reduced-motion:reduce){.itp-back,.itp-back .itp{animation:none}}' +
-      '.itp{width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:20px;border-radius:12px;background:var(--surface,#fff);color:var(--ink,#0c225e);border:1px solid var(--line-soft,#e3eaf5);box-shadow:0 18px 48px -12px rgba(0,0,0,.4);font-family:inherit}' +
+      '.itp{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:20px;border-radius:12px;background:var(--surface,#fff);color:var(--ink,#0c225e);border:1px solid var(--line-soft,#e3eaf5);box-shadow:0 18px 48px -12px rgba(0,0,0,.4);font-family:inherit}' +
       '.itp-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}' +
       '.itp-head h2{margin:0;font-size:19px;font-weight:700;line-height:1.3}' +
       '.itp-head p{margin:2px 0 0;font-size:14px;color:var(--ink-2,#4a5d80)}' +
       '.itp-x{margin-left:auto;flex:none;width:40px;height:40px;border:0;border-radius:8px;background:none;color:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center}' +
       '.itp-x:hover{background:var(--line-soft,#eef3fb)}' +
       '.itp h3{margin:18px 0 8px;font-size:15px;font-weight:600}' +
-      '.itp-presets{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}' +
-      '.itp-pre{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:6px 6px 8px;border:1px solid var(--line,#b9c8e2);border-radius:10px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}' +
-      '.itp-pre .itp-name{font-size:13px}' +
-      '.itp-pre .itp-custom{display:flex;align-items:center;justify-content:center;width:100%;height:34px;border:1px dashed var(--line,#9aa6bd);border-radius:5px;color:var(--ink-2,#4a5d80)}' +
-      '.itp-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}' +
-      '.itp-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}' +
-      '.itp-opt,.itp-pre{transition:border-color .15s}' +
+      '.itp-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}' +
+      '.itp-list .itp-prev{height:72px}' +
+      '.itp-opt{transition:border-color .15s}' +
       '.itp-opt{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;border:1px solid var(--line,#b9c8e2);border-radius:10px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}' +
       '.itp-opt.is-wide{flex-direction:row;align-items:center;gap:12px}' +
-      '.itp-opt:hover,.itp-pre:hover{border-color:var(--blue,#0b63e5)}' +
-      '.itp-opt[aria-checked="true"],.itp-pre[aria-checked="true"]{border-color:var(--blue,#0b63e5);box-shadow:inset 0 0 0 1px var(--blue,#0b63e5)}' +
+      '.itp-opt:hover{border-color:var(--blue,#0b63e5)}' +
+      '.itp-opt[aria-checked="true"]{border-color:var(--blue,#0b63e5);box-shadow:inset 0 0 0 1px var(--blue,#0b63e5)}' +
       '.itp-prev{display:flex;width:100%;height:52px;border:1px solid;border-radius:6px;overflow:hidden;flex:none}' +
       '.itp-prev i{width:22%;flex:none}' +
       '.itp-prev span{flex:1;display:flex;flex-direction:column;gap:5px;padding:6px}' +
@@ -216,20 +198,31 @@
       '.itp-txt{display:flex;flex-direction:column;gap:2px;min-width:0}' +
       '.itp-name{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600}' +
       '.itp-ok{display:none;color:var(--blue,#0b63e5)}' +
-      '.itp-opt[aria-checked="true"] .itp-ok,.itp-pre[aria-checked="true"] .itp-ok{display:inline}' +
+      '.itp-opt[aria-checked="true"] .itp-ok{display:inline}' +
       '.itp-opt small{font-size:13px;line-height:1.45;color:var(--ink-2,#4a5d80)}' +
-      '.itp-part{margin-top:14px;padding:2px 14px 14px;border:1px solid var(--line-soft,#e3eaf5);border-radius:10px}' +
-      '.itp-part[hidden]{display:none}' +
       '.itp-foot{margin:10px 0 0;font-size:13px;color:var(--ink-2,#4a5d80)}' +
-      '@media (max-width:640px){.itp-presets{grid-template-columns:repeat(3,minmax(0,1fr))}.itp-list{grid-template-columns:repeat(2,minmax(0,1fr))}.itp-prev{height:40px}}';
+      /* 2026-11-22: round buttons, a picture and a name (owner: "ดูคลีนกว่านี้") */
+      '.itp.is-round{width:min(340px,100%)}' +
+      '.itp-rows{display:flex;flex-direction:column;gap:6px}' +
+      '.itp-grp h3{margin:6px 0 10px}' +
+      '.itp-rnds{display:flex;gap:28px}' +
+      '.itp-rnd{flex-direction:column;align-items:center;gap:8px;padding:0;border:0;min-width:72px}' +
+      '.itp-rnd:hover,.itp-rnd[aria-checked="true"]{border:0;box-shadow:none}' +
+      '.itp-dot{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;border:1px solid var(--line,#c9d3e6);transition:box-shadow .15s,transform .15s}' +
+      '.itp-rnd:hover .itp-dot{transform:translateY(-2px)}' +
+      '.itp-rnd[aria-checked="true"] .itp-dot{box-shadow:0 0 0 3px var(--surface,#fff),0 0 0 5px var(--blue,#0b63e5)}' +
+      '.itp-rnd:focus-visible{outline:none}.itp-rnd:focus-visible .itp-dot{outline:2px solid var(--blue,#0b63e5);outline-offset:6px}' +
+      '.itp-lbl{font-size:14px;font-weight:500}' +
+      '.itp-rnd[aria-checked="true"] .itp-lbl{font-weight:700;color:var(--blue,#0b63e5)}' +
+      '.itp-rnd.is-sun .itp-dot{background:#ffffff;color:#f29100;border-color:#d5dbe6}' +
+      '.itp-rnd.is-moon .itp-dot{background:#141414;color:#ffd66b;border-color:#3a3a3a}' +
+      '.itp-rnd.is-emoji .itp-dot,.itp-rnd.is-line .itp-dot{background:var(--line-soft,#eef3fb);color:var(--ink,#0c225e)}' +
+      '@media (max-width:640px){.itp-list .itp-prev{height:52px}.itp-opt.is-wide{flex-direction:column;align-items:flex-start;gap:6px}}';
     document.head.appendChild(s);
   }
   function mark() {
-    var n = now(), sel = selected();
-    box.querySelectorAll('.itp-pre').forEach(function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-preset') === sel)); });
+    var n = now();
     box.querySelectorAll('.itp-opt').forEach(function (b) { b.setAttribute('aria-checked', String(n[b.getAttribute('data-k')] === b.getAttribute('data-id'))); });
-    var part = box.querySelector('.itp-part');
-    if (part) part.hidden = sel !== 'custom';
   }
   function close() {
     if (!box) return;
@@ -252,9 +245,9 @@
     lsSet(SV[k], v);
     apply();
   }
-  function applyPreset(p) {
-    set(p.set.theme); setOne('icons', p.set.icons); setOne('side', p.set.side); setOne('motion', p.set.motion);
-    lsSet(SV.custom, '0');
+  function rnd(k, id, name, cls, ico) {
+    return '<button type="button" class="itp-opt itp-rnd ' + cls + '" role="radio" data-k="' + k + '" data-id="' + id + '" aria-checked="false" aria-label="' + esc(name) + '">' +
+      '<span class="itp-dot" aria-hidden="true">' + ico + '</span><span class="itp-lbl">' + esc(name) + '</span></button>';
   }
   function open() {
     if (box) return;
@@ -264,48 +257,29 @@
     box.className = 'itp-back';
     var ok = '<span class="itp-ok" aria-hidden="true">✓</span>';
     box.innerHTML =
-      '<div class="itp" role="dialog" aria-modal="true" aria-labelledby="itpTitle">' +
+      '<div class="itp is-round" role="dialog" aria-modal="true" aria-labelledby="itpTitle">' +
       '<div class="itp-head"><div><h2 id="itpTitle">ธีมหน้าจอ</h2><p>ใช้กับทุกโมดูลของ I-MODE System</p></div>' +
       '<button type="button" class="itp-x" aria-label="ปิด"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>' +
-      '<div class="itp-presets" role="radiogroup" aria-label="พรีเซ็ตหน้าจอ">' + PRESETS.map(function (p) {
-        return '<button type="button" class="itp-pre" role="radio" data-preset="' + p.id + '" title="' + esc(p.desc) + '" aria-checked="false">' + prev(p.pv, 34) +
-          '<span class="itp-name">' + esc(p.name) + ok + '</span></button>';
-      }).join('') +
-      '<button type="button" class="itp-pre" role="radio" data-preset="custom" title="เลือกธีม ไอคอน สีและการเคลื่อนไหวของแถบเมนูเอง" aria-checked="false">' +
-      '<span class="itp-custom" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>' +
-      '<span class="itp-name">กำหนดเอง' + ok + '</span></button></div>' +
-      '<p class="itp-foot">กดพรีเซ็ตเพื่อตั้งค่ามาตรฐานทั้งหมดในครั้งเดียว เปลี่ยนแล้วทุกโมดูลเปลี่ยนตามทันที</p>' +
-      '<div class="itp-part"><h3>ธีมหน้าจอ (กำหนดเอง)</h3><div class="itp-list" role="radiogroup" aria-label="ธีมหน้าจอ">' + THEMES.map(function (t) {
-        return '<button type="button" class="itp-opt" role="radio" data-k="theme" data-id="' + t.id + '" aria-checked="false">' + prev(t) +
-          '<span class="itp-name">' + esc(t.name) + ok + '</span><small>' + esc(t.desc) + '</small></button>';
-      }).join('') + '</div></div>' +
-      GROUPS.map(function (g) {
-        return '<h3>' + esc(g.title) + '</h3><div class="itp-row" role="radiogroup" aria-label="' + esc(g.title) + '">' + g.opts.map(function (o) {
-          return '<button type="button" class="itp-opt is-wide" role="radio" data-k="' + g.key + '" data-id="' + o.id + '" aria-checked="false">' + o.pv +
-            '<span class="itp-txt"><span class="itp-name">' + esc(o.name) + ok + '</span><small>' + esc(o.desc) + '</small></span></button>';
-        }).join('') + '</div>';
-      }).join('') +
-      '<p class="itp-foot">ธีมจำไว้กับบัญชีของคุณ ส่วนไอคอนและแถบเมนูจำไว้ในเครื่องนี้ ใช้กับทุกโมดูลเหมือนกัน</p></div>';
+      '<div class="itp-rows">' +
+      '<div class="itp-grp"><h3>สี</h3><div class="itp-rnds" role="radiogroup" aria-label="สีหน้าจอ">' +
+        rnd('theme', 'flat-light', 'สว่าง', 'is-sun', '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>') +
+        rnd('theme', 'flat-dark', 'มืด', 'is-moon', '<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1z"/></svg>') + '</div></div>' +
+      '<div class="itp-grp"><h3>ไอคอน</h3><div class="itp-rnds" role="radiogroup" aria-label="สไตล์ไอคอน">' +
+        rnd('icons', 'emoji', 'อีโมจิ', 'is-emoji', '<span style="font-size:26px;line-height:1">📋</span>') +
+        rnd('icons', 'line', 'แบบเส้น', 'is-line', '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 3.5h6v3H9zM8.5 11h7M8.5 15h5"/></svg>') + '</div></div></div>' +
+      '</div>';
     document.body.appendChild(box);
     mark();
     box.addEventListener('click', function (e) {
       if (e.target === box || e.target.closest('.itp-x')) { close(); return; }
-      var p = e.target.closest('.itp-pre');
-      if (p) {
-        var id = p.getAttribute('data-preset');
-        if (id === 'custom') lsSet(SV.custom, '1');
-        else applyPreset(PRESETS.filter(function (x) { return x.id === id; })[0]);
-        mark(); return;
-      }
       var b = e.target.closest('.itp-opt');
       if (b) {
-        lsSet(SV.custom, b.getAttribute('data-k') === 'theme' ? '1' : '0');
         setOne(b.getAttribute('data-k'), b.getAttribute('data-id'));
         mark();
       }
     });
     document.addEventListener('keydown', onKey, true);
-    (box.querySelector('.itp-pre[aria-checked="true"]') || box.querySelector('.itp-pre')).focus();
+    (box.querySelector('.itp-opt[aria-checked="true"]') || box.querySelector('.itp-opt')).focus();
   }
 
   /* round button at the bottom right, for pages that ask for it (<body data-theme-fab>) */
@@ -334,10 +308,6 @@
     if (e.key === KEY || e.key === LEGACY || e.key === SV.icons || e.key === SV.side || e.key === SV.motion) apply();
     if (box) mark();
   });
-  if (mq) {
-    var onMq = function () { if (get() === 'auto') apply(); };
-    if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);
-  }
   document.addEventListener('DOMContentLoaded', function () { swapLogos(mode()); addFab(); });
   // pages build their logos later (module shell); catch those too
   try { new MutationObserver(function () { if (document.querySelector('img[data-dark-src]:not([data-light-src])')) swapLogos(mode()); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}

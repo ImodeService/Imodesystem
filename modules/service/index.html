@@ -18,14 +18,13 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>I-MODE Plus Service & Maintenance · Version 1.0</title>
   <!-- 2026-10-12: screen theme (Settings → ธีมหน้าจอ, js/127) applied before the first paint. -->
-  <script>(function(){var c=/[?&](machineToken|serial)=|[?&]page=(customer-entry|scan|customer-portal|customer-home)\b/.test(location.search)||/customer-portal|#\/(customer-home|customer-entry|scan)/.test(location.hash),v='';try{v=(c?localStorage.getItem('imode.customerTheme'):localStorage.getItem('imode.theme')||localStorage.getItem('imode.serviceTheme'))||''}catch(e){}var r=document.documentElement;r.setAttribute('data-view',c?'customer':'staff');if(v==='auto')v=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'flat-dark':'flat-light';r.setAttribute('data-ui',/^(flat-light|flat-dark|classic)$/.test(v)?v:(c?'classic':'flat-light'))})();</script>
+  <script>(function(){var c=/[?&](machineToken|serial)=|[?&]page=(customer-entry|scan|customer-portal|customer-home)\b/.test(location.search)||/customer-portal|#\/(customer-home|customer-entry|scan)/.test(location.hash),v='';try{v=(c?localStorage.getItem('imode.customerTheme'):localStorage.getItem('imode.theme')||localStorage.getItem('imode.serviceTheme'))||''}catch(e){}var r=document.documentElement;r.setAttribute('data-view',c?'customer':'staff');if(!c&&v==='classic')v='flat-light';if(v==='auto')v=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'flat-dark':'flat-light';r.setAttribute('data-ui',/^(flat-light|flat-dark|classic)$/.test(v)?v:(c?'classic':'flat-light'))})();</script>
   <!-- platform sign-in (G:\imodeservice): shared settings, then Service joins the shared session -->
   <script src="../../shared/config.js"></script>
   <!-- 2026-10-14: staff theme shared with every module (shared/theme-pref.js); js/127 still draws Service's picker -->
-  <script src="../../shared/theme-pref.js?v=20261029"></script>
+  <script src="../../shared/theme-pref.js?v=20261122"></script>
   <script src="./js/00-platform.js"></script>
   <!-- 2026-10-14: sidebar style (navy / light). In <head> so it applies before the first paint. -->
-  <script src="./js/131-v70SidebarStyleScript.js?v=20261026"></script>
 <link rel="stylesheet" href="./css/01-base-theme.css">
 <link rel="stylesheet" href="./css/02-v6.1-sales-easy-mode.css">
 <link rel="stylesheet" href="./css/03-service-focus-badge.css">
@@ -1121,7 +1120,6 @@
 <!-- 2026-10-14: icon style choice (emoji / line) next to the theme picker. -->
 <script src="./js/130-v70IconStyleScript.js"></script>
 <!-- 2026-10-14: presets at the top of Settings → ธีมหน้าจอ, separate choices under กำหนดเอง (js/133). -->
-<script src="./js/133-v70ThemePresetScript.js"></script>
 <!-- 2026-10-15: ธีมหน้าจอ opens the same picker as the module picker page (js/134). -->
 <script src="./js/134-v70SharedThemePickerScript.js"></script>
 <!-- 2026-10-15: Settings page in folder tabs, one category per tab (js/135). -->
