@@ -3,7 +3,7 @@
    href ว่าง = ยังไม่ได้ทำในระบบใหม่ (แสดงจาง) ; old = ลิงก์ไปของเดิมระหว่างรอ */
 window.NEXT_MODULES = [
   { id: 'dashboard', name: 'Dashboard',          ab: 'DB', color: '#0F7C8C', perm: 'dashboard.view', href: 'next/dashboard/index.html' },
-  { id: 'service',   name: 'Service',            ab: 'SV', color: '#3B6FB6', perm: 'service.view',   href: 'next/service/index.html' },
+  { id: 'service',   name: 'Service',            ab: 'SV', color: '#3B6FB6', perm: 'service.view',   href: 'next/service/overview.html' },
   { id: 'qc',        name: 'QC',                 ab: 'QC', color: '#2E7D4F', perm: 'qc.view',        href: '', old: 'modules/qc-rnd/index.html' },
   { id: 'demo',      name: 'Demo',               ab: 'DM', color: '#6B4FA0', perm: 'demo.view',      href: '' },
   { id: 'modify',    name: 'Modify',             ab: 'MD', color: '#7A3E6E', perm: 'modify.view',    href: '' },
@@ -25,8 +25,18 @@ window.NEXT_MODULES = [
    match = ส่วนของที่อยู่หน้าที่ถือว่าอยู่เมนูนั้น (ทำไฮไลท์) · หน้าที่ยังไม่ได้ทำใหม่ลิงก์ไปหน้าเดิมใน Service
    ไม่มี "หน้างานช่าง": ช่างใช้แอปมือถือเท่านั้น แอดมินไม่ต้องเห็น (เจ้าของ 2026-11-22) */
 window.NEXT_SIDE = {
+  // 2026-11-22 v2: หน้าภาพรวม + หมวดตามขั้นงาน (cnt = ตัวเลขข้างเมนู) + เมนูอื่นครบ
   service: [
-    { ic: '📋', label: 'เคสงานบริการ', href: 'next/service/index.html', match: ['/next/service/'] },
+    { ic: '🏠', label: 'ภาพรวม', href: 'next/service/overview.html', match: ['/next/service/overview.html'] },
+    { ic: '🆕', label: 'งานใหม่', cnt: 'new', href: 'next/service/index.html?c=new', match: ['/next/service/?c=new$'] },
+    { ic: '⏳', label: 'รอลูกค้า', cnt: 'wait', href: 'next/service/index.html?c=wait', match: ['/next/service/?c=wait$'] },
+    { ic: '🔧', label: 'กำลังซ่อม', cnt: 'repair', href: 'next/service/index.html?c=repair', match: ['/next/service/?c=repair$'] },
+    { ic: '📦', label: 'ส่งคืน', cnt: 'return', href: 'next/service/index.html?c=return', match: ['/next/service/?c=return$'] },
+    { ic: '📋', label: 'ทั้งหมด (บอร์ด)', href: 'next/service/index.html', match: ['/next/service/$', '/next/service/case.html', '/next/service/new.html'] },
+    { sep: true },
+    // หน้าที่ยังไม่ได้ทำใหม่ เปิดหน้าเดิมแบบ "หน้าเดียว" (ไม่มีเมนูเก่า มีปุ่มกลับ · js/162 ของ Service เดิม) 2026-11-23
+    { ic: '🧾', label: 'ใบเสนอราคา', href: 'modules/service/index.html?page=quotation' },
+    { ic: '📨', label: 'คำขอจากลูกค้า', href: 'modules/service/index.html?page=requests' },
     { ic: '👨‍🔧', label: 'ทีมงาน', href: 'modules/service/index.html?page=technicians' },
     { ic: '🔔', label: 'แจ้งเตือน', href: 'next/notifications/index.html', match: ['/next/notifications/'] },
     { ic: '📊', label: 'รายงาน', href: 'modules/service/index.html?page=reports' },
@@ -39,5 +49,16 @@ window.NEXT_SIDE = {
     { ic: '👥', label: 'ทีมงาน', href: 'next/dashboard/team.html', match: ['/next/dashboard/team.html'] },
     { ic: '🧾', label: 'ใบเสนอราคา', href: 'next/dashboard/quotes.html', match: ['/next/dashboard/quotes.html'] },
     { ic: '✅', label: 'QC', href: 'next/dashboard/qc.html', match: ['/next/dashboard/qc.html'] }
+  ]
+};
+
+/* 2026-11-22 v2: แถบล่างบนมือถือ (เฉพาะโมดุลที่มี) */
+window.NEXT_BOTTOM = {
+  service: [
+    { ic: '🏠', label: 'ภาพรวม', href: 'next/service/overview.html', match: ['/next/service/overview.html'] },
+    { ic: '🆕', label: 'งานใหม่', href: 'next/service/index.html?c=new', match: ['/next/service/?c=new$'] },
+    { ic: '⏳', label: 'รอลูกค้า', href: 'next/service/index.html?c=wait', match: ['/next/service/?c=wait$'] },
+    { ic: '🔧', label: 'ซ่อม', href: 'next/service/index.html?c=repair', match: ['/next/service/?c=repair$'] },
+    { ic: '📋', label: 'ทั้งหมด', href: 'next/service/index.html', match: ['/next/service/$', '/next/service/?c=return$'] }
   ]
 };

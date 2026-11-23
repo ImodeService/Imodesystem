@@ -73,15 +73,40 @@
       '<img class="nx-logo-d' + (cls ? ' ' + cls : '') + '" src="' + esc(ROOT + 'assets/brand/imode-logo-white.png') + '" alt="">';
   }
   /* 2026-11-22: แถบเมนูซ้ายแบบ Service เดิม (เฉพาะโมดุลที่มีใน NEXT_SIDE) ตัดหน้าที่ย้ายไปเป็นโมดุลของตัวเองแล้ว */
+  /* match: ลงท้าย $ = ต้องตรงตัว (นับ ?query ด้วย) ; ไม่มี $ = มีคำนี้อยู่ในที่อยู่ */
+  function isHere(it) {
+    if (!it.match) return false;
+    var here = location.pathname.replace(/\/index\.html$/, '/'), full = here + location.search;
+    return it.match.some(function (m) { return m.slice(-1) === '$' ? full.slice(-(m.length - 1)) === m.slice(0, -1) : full.indexOf(m) >= 0; });
+  }
+  /* 2026-11-22 v2: ตัวเลขข้างเมนู (cnt) ตั้งค่าด้วย NextShell.setCounts({ new: 8, ... }) */
+  function setCounts(map) {
+    document.querySelectorAll('[data-cnt]').forEach(function (el) {
+      var n = map[el.getAttribute('data-cnt')];
+      el.textContent = n == null ? '' : String(n); el.hidden = n == null;
+    });
+  }
+  /* แถบล่างมือถือ (NEXT_BOTTOM[moduleId]) */
+  function buildBottom(items) {
+    var nav = document.createElement('nav');
+    nav.className = 'nx-bnav'; nav.setAttribute('aria-label', 'เมนูหลัก');
+    nav.innerHTML = items.map(function (it) {
+      var on = isHere(it);
+      return '<a href="' + esc(ROOT + it.href) + '"' + (on ? ' class="on" aria-current="page"' : '') + '><span class="i" aria-hidden="true">' + it.ic + '</span>' + esc(it.label) + '</a>';
+    }).join('');
+    document.body.appendChild(nav);
+    document.body.classList.add('nx-with-bnav');
+  }
   function buildSide(items, opts) {
-    var here = location.pathname.replace(/\/index\.html$/, '/');
     var aside = document.createElement('aside');
     aside.className = 'nx-side'; aside.id = 'nx-side';
     aside.innerHTML =
       '<a href="' + esc(ROOT + 'apps/launcher/index.html') + '" class="nx-side-logo" aria-label="หน้าเลือกโมดุล"><img src="' + esc(ROOT + 'assets/brand/imode-logo-white.png') + '" alt="I-MODE"></a>' +
       '<nav aria-label="เมนู ' + esc(opts.title || '') + '"><ul>' + items.map(function (it) {
-        var href = ROOT + it.href, on = it.match ? it.match.some(function (m) { return m.slice(-1) === '$' ? here.slice(-(m.length - 1)) === m.slice(0, -1) : here.indexOf(m) >= 0; }) : false;
-        return '<li><a href="' + esc(href) + '"' + (on ? ' class="on" aria-current="page"' : '') + '><span class="ic" aria-hidden="true">' + it.ic + '</span><span>' + esc(it.label) + '</span></a></li>';
+        if (it.sep) return '<li class="nx-sep" role="separator"></li>';
+        var href = ROOT + it.href, on = isHere(it);
+        return '<li><a href="' + esc(href) + '"' + (on ? ' class="on" aria-current="page"' : '') + '><span class="ic" aria-hidden="true">' + it.ic + '</span><span>' + esc(it.label) + '</span>' +
+          (it.cnt ? '<span class="cnt" data-cnt="' + esc(it.cnt) + '" hidden></span>' : '') + '</a></li>';
       }).join('') + '</ul></nav>';
     var back = document.createElement('div');
     back.className = 'nx-side-back'; back.hidden = true;
@@ -103,7 +128,7 @@
       '<button type="button" class="nx-icon-btn" data-theme-btn aria-label="สลับธีม สว่าง/มืด"></button>' +
       '<span class="nx-bell-wrap" hidden><button type="button" class="nx-icon-btn" data-bell aria-label="แจ้งเตือน" aria-expanded="false" aria-controls="nx-bell">' +
       '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>' +
-      '<span class="nx-badge" hidden></span></button></span>' +
+      '<span class="nx-bell-n" hidden></span></button></span>' +
       '<button type="button" class="nx-icon-btn" data-sw-btn aria-label="โมดุลทั้งหมด" aria-expanded="false" aria-controls="nx-sw">' +
       '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg></button>' +
       '<button type="button" class="nx-avatar" data-acct aria-label="บัญชีของฉัน" title="' + esc(state.user ? state.user.name + ' · ' + state.user.role : '') + '">' + esc(initials) + '</button>';
@@ -225,7 +250,7 @@
     if (res.error) return; // ยังไม่ได้รัน SQL 04 → ไม่แสดงกระดิ่ง
     var cnt = await sb.from('app_notifications').select('id', { count: 'exact', head: true }).eq('user_id', state.user.id).is('read_at', null);
     notif.ok = true; notif.list = res.data || []; notif.unread = cnt.count || notif.list.filter(function (n) { return !n.read_at; }).length;
-    var wrap = top.querySelector('.nx-bell-wrap'), btn = top.querySelector('[data-bell]'), badge = top.querySelector('.nx-badge');
+    var wrap = top.querySelector('.nx-bell-wrap'), btn = top.querySelector('[data-bell]'), badge = top.querySelector('.nx-bell-n');
     wrap.hidden = false;
     var panel = document.createElement('div');
     panel.className = 'nx-bell'; panel.id = 'nx-bell'; panel.hidden = true;
@@ -275,6 +300,8 @@
     var permErr = null;
     try { await loadPerms(); } catch (e) { permErr = e; }
     buildTop(opts);
+    var bottom = (window.NEXT_BOTTOM || {})[opts.moduleId];
+    if (bottom && bottom.length) buildBottom(bottom);
     if (permErr) throw permErr;
     setupBell(document.querySelector('.nx-top')).catch(function () {});
     var mod = (window.NEXT_MODULES || []).filter(function (m) { return m.id === opts.moduleId; })[0];
@@ -282,5 +309,5 @@
     return { user: state.user, can: can, sb: window.ImodeAuth.client(), root: ROOT, esc: esc };
   }
 
-  window.NextShell = { start: start, applyTheme: applyTheme, esc: esc };
+  window.NextShell = { start: start, applyTheme: applyTheme, esc: esc, setCounts: setCounts };
 })();

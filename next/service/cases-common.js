@@ -51,7 +51,31 @@
     }).filter(Boolean).join(', ');
   }
 
+  /* 2026-11-22 v2: หมวดงาน (เมนูซ้าย/แถบล่าง/การ์ดหน้าภาพรวม) = กลุ่มของขั้นงาน */
+  var CATS = [
+    { id: 'new',    name: 'งานใหม่',   stages: ['received', 'inspect'] },
+    { id: 'wait',   name: 'รอลูกค้า',  stages: ['quote', 'hold'] },
+    { id: 'repair', name: 'กำลังซ่อม', stages: ['transport', 'repair'] },
+    { id: 'return', name: 'ส่งคืน',    stages: ['return'] }
+  ];
+  function ymd(x) { return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); }
+  /* เลยกำหนด = วันนัดผ่านไปแล้ว และเคสยังไม่ส่งคืน/ปิด */
+  function isLate(c) {
+    if (!c.appointment) return false;
+    var st = stageOf(c); if (st === 'return' || st === 'closed') return false;
+    var d = new Date(c.appointment); return !isNaN(d) && ymd(d) < ymd(new Date());
+  }
+  function lateDays(c) {
+    var d = new Date(c.appointment), t = new Date(); d.setHours(0, 0, 0, 0); t.setHours(0, 0, 0, 0);
+    return Math.round((t - d) / 864e5);
+  }
+  function catCounts(cases) {
+    var m = {}; CATS.forEach(function (k) { m[k.id] = 0; });
+    cases.forEach(function (c) { var st = stageOf(c); CATS.forEach(function (k) { if (k.stages.indexOf(st) >= 0) m[k.id]++; }); });
+    return m;
+  }
   window.SvCommon = {
+    CATS: CATS, ymd: ymd, isLate: isLate, lateDays: lateDays, catCounts: catCounts,
     STAGES: STAGES, FLOW: FLOW, NEXT_LABEL: NEXT_LABEL, FROM_OLD: FROM_OLD, TYPES: TYPES,
     PRIORITIES: PRIORITIES, CHANNELS: CHANNELS,
     stageOf: stageOf, stageName: stageName, typeName: typeName, holdDays: holdDays,

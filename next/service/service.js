@@ -29,6 +29,10 @@
   var $ = function (id) { return document.getElementById(id); };
   var boardEl = $('board'), daysEl = $('days'), errEl = $('err');
   var cases = [], api = null, type = '', q = '', showClosed = false, dragId = null;
+  /* 2026-11-22 v2: ?c=new|wait|repair|return = ดูเฉพาะหมวด (เมนูซ้าย/แถบล่าง) */
+  var C = window.SvCommon, cat = C.CATS.filter(function (k) { return k.id === new URLSearchParams(location.search).get('c'); })[0] || null;
+  var techs = [];
+  function inCat(st) { return !cat || cat.stages.indexOf(st) >= 0 || (st === 'closed' && cat.id === 'return'); }
 
   function stageOf(c) { return c.stage || FROM_OLD[c.status] || 'received'; }
   function typeName(t) { var x = TYPES.filter(function (y) { return y.id && y.id === t; })[0]; return x ? x.name : (t || '-'); }
@@ -37,6 +41,7 @@
   function dayKey(c) {
     var d = c.appointment ? new Date(c.appointment) : (c.created_at ? new Date(c.created_at) : null);
     if (!d || isNaN(d)) return { k: '9999', label: 'ไม่ระบุวัน' };
+    if (C.isLate(c)) return { k: '0000', label: 'เลยกำหนด' };
     var ymd = function (x) { return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
     var k = ymd(d), today = new Date(), tk = ymd(today), tm = ymd(new Date(today.getTime() + 864e5));
     var label = d.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'short' });
@@ -47,6 +52,7 @@
     var s = q.trim().toLowerCase();
     return cases.filter(function (c) {
       if (type && c.service_type !== type) return false;
+      if (!inCat(stageOf(c))) return false;
       if (!showClosed && stageOf(c) === 'closed') return false;
       if (s && [c.ticket, c.customer, c.machine, c.model, c.serial, c.assignee].join(' ').toLowerCase().indexOf(s) < 0) return false;
       return true;
@@ -54,22 +60,22 @@
   }
 
   function cardHtml(c) {
-    var st = stageOf(c), hd = st === 'hold' ? '<span class="hd">Hold ' + holdDays(c) + ' วัน</span>' : '';
+    var st = stageOf(c), hd = st === 'hold' ? '<span class="hd">Hold ' + holdDays(c) + ' วัน</span>' : (C.isLate(c) ? '<span class="late">เลย ' + C.lateDays(c) + ' วัน</span>' : '');
     var opts = STAGES.map(function (s) { return '<option value="' + s.id + '"' + (s.id === st ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('');
     return '<article class="sv-card" draggable="' + (api.can('service.edit') ? 'true' : 'false') + '" data-id="' + esc(c.id) + '">' +
       '<div class="t"><span>' + esc(c.ticket || c.id) + ' · ' + esc(typeName(c.service_type)) + '</span>' + hd + '</div>' +
       '<div class="c">' + esc(c.customer || '-') + '</div>' +
       '<div class="m">' + esc([c.machine, c.model].filter(Boolean).join(' ') || '-') + '</div>' +
-      (c.assignee ? '<div class="m">ช่าง: ' + esc(c.assignee) + '</div>' : '') +
+      (c.assignee ? '<div class="m">ช่าง: ' + esc(C.techNames(c.assignee, techs)) + '</div>' : '') +
       '<div class="f">' + (api.can('service.edit') ? '<label class="vh" for="mv-' + esc(c.id) + '">ย้ายไปขั้น</label><select id="mv-' + esc(c.id) + '" data-move="' + esc(c.id) + '">' + opts + '</select>' : '') +
       (api.can('service.delete') ? '<button type="button" class="del" data-del="' + esc(c.id) + '" aria-label="ย้ายเคส ' + esc(c.ticket || c.id) + ' ไปถังขยะ">ลบ</button>' : '') + '</div></article>';
   }
 
   function renderBoard(list) {
-    var cols = STAGES.filter(function (s) { return showClosed || s.id !== 'closed'; });
+    var cols = STAGES.filter(function (s) { return (showClosed || s.id !== 'closed') && inCat(s.id); });
     boardEl.innerHTML = cols.map(function (s) {
       var items = list.filter(function (c) { return stageOf(c) === s.id; });
-      return '<section class="sv-col' + (s.id === 'hold' ? ' hold' : '') + '" data-stage="' + s.id + '" aria-label="' + esc(s.name) + '">' +
+      return '<section class="sv-col" data-stage="' + s.id + '" aria-label="' + esc(s.name) + '">' +
         '<div class="sv-col-h">' + esc(s.name) + '<span class="n">' + items.length + '</span></div>' +
         '<div class="sv-col-b">' + items.map(cardHtml).join('') + '</div></section>';
     }).join('');
@@ -90,10 +96,10 @@
       return '<h2>' + esc(groups[k].label) + '</h2>' + groups[k].items.map(function (c) {
         var st = stageOf(c), held = st === 'hold';
         var nextBtn = !api.can('service.edit') || st === 'closed' ? '' : held
-          ? '<button class="nx-btn edit" data-unhold="' + esc(c.id) + '">ลูกค้าตอบแล้ว</button>'
+          ? '<button class="nx-btn primary" data-unhold="' + esc(c.id) + '">ลูกค้าตอบแล้ว</button>'
           : '<button class="nx-btn primary" data-next="' + esc(c.id) + '">' + esc(NEXT_LABEL[st] || 'ขั้นต่อไป') + '</button>';
-        return '<article class="sv-mcard' + (held ? ' hold' : '') + '" data-id="' + esc(c.id) + '"><div class="sv-card" style="border:none;padding:0;background:none;cursor:default">' +
-          '<div class="t"><span>' + esc(c.ticket || c.id) + ' · ' + esc(typeName(c.service_type)) + '</span><span class="nx-badge' + (held ? ' hold' : '') + '">' + esc(held ? 'Hold ' + holdDays(c) + ' วัน' : (STAGES.filter(function (s) { return s.id === st; })[0] || {}).name) + '</span></div>' +
+        return '<article class="sv-mcard" data-id="' + esc(c.id) + '"><div class="sv-card" style="border:none;padding:0;background:none;cursor:default">' +
+          '<div class="t"><span>' + esc(c.ticket || c.id) + ' · ' + esc(typeName(c.service_type)) + '</span><span class="nx-badge">' + esc(held ? 'Hold ' + holdDays(c) + ' วัน' : (STAGES.filter(function (s) { return s.id === st; })[0] || {}).name) + '</span></div>' +
           '<div class="c">' + esc(c.customer || '-') + '</div><div class="m">' + esc([c.machine, c.model].filter(Boolean).join(' ') || '-') + '</div></div>' +
           stepBar(c) + '<div class="btns">' + (api.can('service.edit') && !held && st !== 'closed' ? '<button class="nx-btn" data-hold="' + esc(c.id) + '">พัก Hold</button>' : '') + nextBtn + '</div></article>';
       }).join('');
@@ -103,8 +109,9 @@
   function render() {
     var list = visible();
     renderBoard(list); renderDays(list);
+    window.NextShell.setCounts(C.catCounts(cases));
     $('types').innerHTML = TYPES.map(function (t) {
-      var n = cases.filter(function (c) { return (!t.id || c.service_type === t.id) && (showClosed || stageOf(c) !== 'closed'); }).length;
+      var n = cases.filter(function (c) { return (!t.id || c.service_type === t.id) && (showClosed || stageOf(c) !== 'closed') && inCat(stageOf(c)); }).length;
       return '<button type="button" data-type="' + esc(t.id) + '" aria-pressed="' + (type === t.id) + '">' + esc(t.name) + ' ' + n + '</button>';
     }).join('');
   }
@@ -120,7 +127,9 @@
       .select('id,ticket,created_at,updated_at,customer,machine,model,serial,service_type,status,assignee,appointment,stage,stage_before_hold,hold_since,deleted_at')
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(500);
     if (res.error) { showErr('โหลดเคสไม่ได้: ' + res.error.message); boardEl.innerHTML = daysEl.innerHTML = ''; return; }
-    showErr(''); cases = res.data || []; render();
+    showErr(''); cases = res.data || [];
+    if (!techs.length) techs = await C.loadTechs(api.sb);
+    render();
   }
   async function move(id, stage) {
     var c = cases.filter(function (x) { return x.id === id; })[0];
@@ -139,6 +148,7 @@
   catch (e) { boardEl.innerHTML = daysEl.innerHTML = ''; showErr(e.message); return; }
 
   if (api.can('service.edit')) $('newCase').hidden = false;
+  if (cat) { document.querySelector('.sv-head h1').textContent = cat.name; document.title = cat.name + ' · Service · I-MODE System'; }
   // กดการ์ด (ที่ไม่ใช่ปุ่ม/เมนู) เปิดหน้ารายละเอียดเคส
   function openCase(e) {
     if (e.target.closest('select,button,a,label,input')) return;

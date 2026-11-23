@@ -1,0 +1,43 @@
+/* I-MODE System (ระบบใหม่) · หน้าภาพรวม Service (v2, 2026-11-22) · Hold ไม่ใช้สีเน้น (เจ้าของสั่ง) */
+.ov-banner{border-radius:16px;padding:20px 22px;background:var(--navy);color:var(--navy-fg);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+:root[data-theme="dark"] .ov-banner{background:#1d2a44;color:#e8ecf4}
+.ov-banner h1{margin:0;font-size:22px}
+.ov-banner p{margin:4px 0 0;opacity:.85;font-size:14px;min-height:1.4em}
+.ov-banner .tx{flex:1;min-width:220px}
+.ov-banner .bt{display:flex;gap:8px;flex-wrap:wrap}
+.ov-banner .bt a{height:40px;display:inline-flex;align-items:center;padding:0 16px;border-radius:10px;font-weight:600;text-decoration:none}
+.ov-banner .bt a[hidden]{display:none}
+.ov-banner .b1{background:#f29100;color:#fff}
+.ov-banner .b2{background:rgba(255,255,255,.14);color:inherit}
+.ov-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.ov-card{padding:16px;display:block;color:inherit;text-decoration:none;border-top:4px solid var(--navy)}
+.ov-card:hover{box-shadow:var(--shadow)}
+.ov-card small{color:var(--mut);font-size:13px;display:block}
+.ov-card b{font-size:32px;line-height:1.2;display:block;font-variant-numeric:tabular-nums}
+.ov-card .sub{font-size:12px;color:var(--mut);display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.ov-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px;margin-top:12px}
+.ov-box{padding:16px}
+.ov-box h2{font-size:16px;margin:0 0 12px;display:flex;align-items:center}
+.ov-box h2 a{margin-left:auto;font-size:13px;font-weight:600;text-decoration:none}
+.vb{display:flex;align-items:flex-end;gap:14px;height:180px;padding:0 4px;border-bottom:1px solid var(--line)}
+.vb a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;font-size:12px;color:var(--mut);text-decoration:none;font-variant-numeric:tabular-nums}
+.vb i{display:block;width:100%;max-width:34px;min-height:2px;background:var(--navy);border-radius:4px 4px 0 0}
+.vb a:hover i,.vb a:focus-visible i{opacity:.8}
+.vl{display:flex;gap:14px;padding:6px 4px 0}
+.vl span{flex:1;text-align:center;font-size:12px;color:var(--mut)}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{border-top:1px solid var(--line2)}
+.tl li:first-child{border-top:none}
+.tl a{display:flex;gap:10px;align-items:center;padding:9px 0;font-size:14px;color:inherit;text-decoration:none}
+.tl a:hover .nm{text-decoration:underline}
+.tl .tm{width:52px;flex:none;font-variant-numeric:tabular-nums;color:var(--mut);font-size:13px}
+.tl .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl .late{color:var(--bad-fg);font-weight:600;font-size:12px;white-space:nowrap}
+.tl .empty{padding:9px 0;color:var(--mut);font-size:14px}
+@media (max-width:900px){
+  .ov-cards{grid-template-columns:1fr 1fr}
+  .ov-grid{grid-template-columns:minmax(0,1fr)}
+  .ov-chart{display:none}
+  .ov-banner h1{font-size:19px}
+  .ov-card b{font-size:26px}
+}

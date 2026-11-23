@@ -9,7 +9,7 @@ window.IMODE_MODULES = [
   { id: 'dashboard', name: 'แดชบอร์ด', group: 'report', href: 'next/dashboard/index.html',
     icon: '<rect x="8" y="24" width="8" height="16" rx="2" fill="#0b63e5"/><rect x="20" y="14" width="8" height="26" rx="2" fill="#f79009"/><rect x="32" y="8" width="8" height="32" rx="2" fill="#0c225e"/>' },
   /* 2026-11-22: ระบบใหม่ + แยกโมดุลที่เคยอยู่ใน Service ออกมา (ระหว่างทำใหม่ เปิดหน้าเดิมใน Service) */
-  { id: 'service', name: 'Service', fullName: 'เคสงานบริการ', group: 'ops', href: 'next/service/index.html',
+  { id: 'service', name: 'Service', fullName: 'เคสงานบริการ', group: 'ops', href: 'next/service/overview.html',
     icon: '<path d="M30 8a10 10 0 0 0-9.6 12.8L8 33.2a4 4 0 0 0 5.7 5.7l12.4-12.4A10 10 0 0 0 39 16.6l-6 6-6.4-1.7L24.9 15l6-6A10 10 0 0 0 30 8z" fill="#0b63e5"/><circle cx="11" cy="36" r="2" fill="#fff"/><circle cx="38" cy="36" r="7" fill="#f79009"/>' },
   { id: 'calendar', name: 'ปฏิทินงาน', fullName: 'ปฏิทินและแผนงานช่าง', group: 'ops', href: 'next/calendar/index.html',
     icon: '<rect x="6" y="9" width="36" height="32" rx="5" fill="#f79009"/><rect x="6" y="9" width="36" height="9" rx="4" fill="#c25e00"/><rect x="13" y="5" width="4" height="9" rx="2" fill="#0c225e"/><rect x="31" y="5" width="4" height="9" rx="2" fill="#0c225e"/><rect x="12" y="23" width="7" height="6" rx="1.5" fill="#fff"/><rect x="22" y="23" width="7" height="6" rx="1.5" fill="#fff"/><rect x="12" y="32" width="7" height="5" rx="1.5" fill="#fff"/>' },
@@ -27,7 +27,7 @@ window.IMODE_MODULES = [
     icon: '<path d="M24 6l16 9v18l-16 9-16-9V15z" fill="#9a4a1c"/><path d="M8 15l16 9 16-9" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M24 24v18" stroke="#fff" stroke-width="3"/>' },
   { id: 'petty-cash', name: 'เงินสดย่อย', fullName: 'เงินสดย่อย', group: 'org', href: 'modules/service/index.html?page=petty-cash',
     icon: '<rect x="4" y="11" width="40" height="27" rx="5" fill="#2f6b3a"/><circle cx="24" cy="24.5" r="7" fill="#f79009"/><text x="24" y="29" font-size="10" font-weight="700" text-anchor="middle" fill="#fff">฿</text>' },
-  { id: 'service-old', name: 'Service เดิม', fullName: 'หน้างานช่าง รายงาน ตั้งค่า (ระบบเดิม)', group: 'ops', href: 'modules/service/index.html',
+  { id: 'service-old', hidden: true, name: 'Service เดิม', fullName: 'หน้างานช่าง รายงาน ตั้งค่า (ระบบเดิม)', group: 'ops', href: 'modules/service/index.html',
     icon: '<rect x="8" y="8" width="32" height="32" rx="8" fill="#8a93a3"/><path d="M30 13a7 7 0 0 0-6.7 9L14 31.3a2.8 2.8 0 0 0 4 4l9.3-9.3A7 7 0 0 0 36 19.3l-4.2 4.2-4.5-1.2-1.2-4.5 4.2-4.2A7 7 0 0 0 30 13z" fill="#fff"/>' },
   { id: 'qc', name: 'QC & R&D', fullName: 'ควบคุมคุณภาพและวิจัยพัฒนา', group: 'ops', href: 'modules/qc-rnd/index.html',
     icon: '<rect x="8" y="8" width="32" height="32" rx="7" fill="#12a06a"/><path d="M16 24.5l5.5 5.5L33 18.5" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>' },

@@ -25,14 +25,15 @@
 .sv-card .f{display:flex;gap:6px;align-items:center;margin-top:8px}
 .sv-card .f select{flex:1;min-width:0;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);font:inherit;font-size:12px}
 .sv-card .del{height:32px;padding:0 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--bad-fg);font-size:12px}
-.sv-card .hd{color:var(--hold-fg);font-weight:600;white-space:nowrap}
+.sv-card .hd{color:var(--fg);font-weight:600;white-space:nowrap}
+.sv-card .late{color:var(--bad-fg);font-weight:600;white-space:nowrap}
 /* mobile day list */
 .sv-days{display:none;flex-direction:column;gap:10px}
 .sv-days h2{margin:6px 0 0;font-size:13px;color:var(--mut);font-weight:600}
 .sv-steps{display:flex;gap:3px;margin-top:10px}
 .sv-steps span{flex:1;height:6px;border-radius:3px;background:var(--line)}
 .sv-steps span.on{background:var(--navy)}
-.sv-steps span.hold{background:var(--orange)}
+.sv-steps span.hold{background:var(--navy);opacity:.4}
 .sv-mcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 
 .sv-mcard .btns{display:flex;gap:8px;margin-top:10px}
