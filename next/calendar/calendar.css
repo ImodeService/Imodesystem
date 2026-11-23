@@ -125,3 +125,6 @@
 .cl-main.cl-big .cl-grid{grid-template-rows:auto auto 1fr;align-content:start}
 .cl-main:not(.cl-big) .cl-mhead .bigonly{display:none}
 .cl-main.cl-big .cl-side>.cl-box:not(:first-child){align-self:start}
+.cl-month{grid-template-columns:repeat(7,minmax(0,1fr))}
+.cl-month button,.cl-month .pad{min-width:0;overflow:hidden}
+.cl-main.cl-big .cl-month button .chips{min-width:0;width:100%}
