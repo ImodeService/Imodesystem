@@ -6,7 +6,8 @@
   'use strict';
   var C = window.SvCommon, esc = window.NextShell.esc;
   var $ = function (id) { return document.getElementById(id); };
-  var api, techs = [], monthCases = [], monthJobs = [], day = new Date(), month = null, editJob = null;
+  var api, techs = [], monthCases = [], monthJobs = [], day = new Date(), month = null, editJob = null, picked = false, colors = {}, acct = {}, colorCol = true;
+  var PALETTE = ['#2F6FDE', '#E0793B', '#2E9E6B', '#8A4FBF', '#C2415D', '#0E8A9A', '#9A7B0A', '#5A6478'];
   var K_NOTIFY = 'imode.next.cal.notify', K_POLITE = 'imode.next.cal.polite';
   var MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
@@ -15,21 +16,28 @@
   function showErr(m) { $('err').innerHTML = m ? '<div class="nx-err" role="alert">' + esc(m) + '</div>' : ''; }
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
   function techName(id) { var t = techs.filter(function (x) { return x.id === id; })[0]; return t ? t.name : id; }
+  /* สีประจำ Account: สีของบัญชีที่ผูกกับช่าง (profiles.color) ถ้ายังไม่ตั้ง ใช้สีเดิมของช่าง แล้วค่อยใช้สีสำรอง */
+  function colorOf(tid) {
+    if (!tid) return '#8A93A3';
+    if (colors[tid]) return colors[tid];
+    var i = Math.max(0, techs.findIndex(function (t) { return t.id === tid; })), t = techs[i];
+    return (t && /^#[0-9a-f]{6}$/i.test(t.color || '') ? t.color : PALETTE[i % PALETTE.length]);
+  }
   function firstLine(s, n) { s = String(s || '').split('\n')[0].trim(); return s.length > n ? s.slice(0, n) + '…' : s; }
 
   /* รายการงานของวันที่เลือก */
-  function dayItems() {
-    var k = ymd(day), out = [];
+  function dayItems(k) {
+    k = k || ymd(day); var out = [];
     monthCases.forEach(function (c) {
       if (String(c.appointment || '').slice(0, 10) !== k) return;
       var t = (String(c.appointment).match(/T(\d\d:\d\d)/) || [])[1] || '';
-      out.push({ kind: 'case', id: c.id, ticket: c.ticket, techs: String(c.assignee || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean),
+      out.push({ kind: 'case', id: c.id, color: colorOf(String(c.assignee || '').split(',')[0].trim()), ticket: c.ticket, techs: String(c.assignee || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean),
         customer: c.customer || '', task: firstLine(c.issue, 70) || C.typeName(c.service_type), machine: [c.machine, c.model].filter(Boolean).join(' '),
         time: t ? t.replace(/^0/, '') + ' น.' : '', sort: t || '99' });
     });
     monthJobs.forEach(function (j) {
       if (j.day !== k) return;
-      out.push({ kind: 'job', id: j.id, techs: j.techs || [], customer: j.customer || '', task: j.task || '', machine: j.machine || '', time: j.time_text || '',
+      out.push({ kind: 'job', id: j.id, color: colorOf((j.techs || [])[0]), techs: j.techs || [], customer: j.customer || '', task: j.task || '', machine: j.machine || '', time: j.time_text || '',
         sort: (String(j.time_text || '').match(/\d{1,2}[:.]\d\d/) || ['99'])[0].replace('.', ':').padStart(5, '0') });
     });
     out.sort(function (a, b) { return a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : 0; });
@@ -66,26 +74,39 @@
 
   function renderMonth() {
     var y = month.getFullYear(), m = month.getMonth(), first = new Date(y, m, 1).getDay(), n = new Date(y, m + 1, 0).getDate();
-    var has = {}; monthCases.forEach(function (c) { has[String(c.appointment || '').slice(0, 10)] = 1; }); monthJobs.forEach(function (j) { has[j.day] = 1; });
     var h = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map(function (w) { return '<span class="wd">' + w + '</span>'; }).join('');
-    for (var i = 0; i < first; i++) h += '<span></span>';
-    var sel = ymd(day), tk = ymd(new Date());
+    for (var i = 0; i < first; i++) h += '<span class="pad"></span>';
+    var sel = picked ? ymd(day) : '', tk = ymd(new Date());
     for (var d = 1; d <= n; d++) {
-      var k = ymd(new Date(y, m, d));
-      h += '<button type="button" data-day="' + k + '" class="' + (has[k] ? 'has ' : '') + (k === tk ? 'today' : '') + '" aria-selected="' + (k === sel) + '" aria-label="' + d + ' ' + MONTHS[m] + (has[k] ? ' มีงาน' : '') + '">' + d + '</button>';
+      var k = ymd(new Date(y, m, d)), its = dayItems(k);
+      var chips = its.slice(0, 3).map(function (it) { return '<span class="chip" style="background:' + it.color + '">' + esc(it.customer || it.task || '-') + '</span>'; }).join('') + (its.length > 3 ? '<span class="more">+' + (its.length - 3) + ' งาน</span>' : '');
+      var dots = its.map(function (it) { return '<i style="background:' + it.color + '"></i>'; }).join('');
+      h += '<button type="button" data-day="' + k + '" class="' + (its.length ? 'has ' : '') + (k === tk ? 'today' : '') + '" aria-selected="' + (k === sel) + '" aria-label="' + d + ' ' + MONTHS[m] + (its.length ? ' มี ' + its.length + ' งาน' : '') + '">' +
+        '<b class="dn">' + d + '</b><span class="chips">' + chips + '</span><span class="dots">' + dots + '</span></button>';
     }
     $('month').innerHTML = h;
     $('mTitle').textContent = MONTHS[m] + ' ' + (y + 543);
   }
+  /* กล่อง "สีประจำ Account": ช่างที่มีบัญชีผูกอยู่ ตั้งสีได้ถ้ามีสิทธิ์แก้ปฏิทิน */
+  function renderLegend() {
+    var canEdit = api.can('calendar.edit') && colorCol;
+    $('legend').innerHTML = techs.map(function (t) {
+      var c = colorOf(t.id);
+      return '<label class="cl-lg"' + (acct[t.id] || !colorCol ? '' : ' title="ยังไม่มีบัญชีผูกกับช่างคนนี้"') + '><input type="color" value="' + c + '" data-tc="' + esc(t.id) + '"' + (canEdit && acct[t.id] ? '' : ' disabled') + ' aria-label="สีของ ' + esc(t.name) + '"><span>' + esc(t.name) + '</span></label>';
+    }).join('');
+    $('legNote').textContent = colorCol ? (canEdit ? 'กดที่สีเพื่อเปลี่ยน' : '') : 'ตั้งสีไม่ได้จนกว่าจะรัน SQL 05 (ตอนนี้ใช้สีเดิมของช่าง)';
+  }
 
   function render() {
-    renderMonth();
+    document.querySelector('.cl-main').classList.toggle('cl-big', !picked);
+    renderMonth(); renderLegend();
+    if (!picked) return;
     var items = dayItems(), gs = groups(items), canEdit = api.can('calendar.edit');
     $('dTitle').textContent = day.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     $('sheet').innerHTML = '<div class="ttl">แผนงานช่าง ' + esc(short(day)) + '</div><div class="sub">' + items.length + ' งาน · ช่าง ' +
       Object.keys(items.reduce(function (a, it) { it.techs.forEach(function (t) { a[t] = 1; }); return a; }, {})).length + ' คน</div>' +
       (gs.length ? gs.map(function (g) {
-        return '<div class="cl-g"><div class="who">' + (g.techs.length ? g.techs.map(function (t) { return '<span>' + esc(techName(t)) + '</span>'; }).join('') : '<span class="none">ยังไม่ระบุช่าง</span>') + '</div>' +
+        return '<div class="cl-g"><div class="who">' + (g.techs.length ? g.techs.map(function (t) { return '<span style="border-left:6px solid ' + colorOf(t) + '">' + esc(techName(t)) + '</span>'; }).join('') : '<span class="none">ยังไม่ระบุช่าง</span>') + '</div>' +
           '<table class="cl-t"><thead><tr><th>#</th><th>ลูกค้า</th><th>รายละเอียดงาน</th><th>เครื่อง</th><th>เวลา</th></tr></thead><tbody>' +
           g.items.map(function (it, i) {
             var cust = it.kind === 'case'
@@ -122,18 +143,35 @@
   try { api = await window.NextShell.start({ title: 'ปฏิทินงาน', moduleId: 'calendar' }); }
   catch (e) { $('sheet').innerHTML = ''; showErr(e.message); return; }
   $('notify').value = ls(K_NOTIFY); $('polite').value = ls(K_POLITE) || 'ค่ะ';
-  if (api.can('calendar.edit')) $('addJob').hidden = false;
+  if (api.can('calendar.edit')) { $('addJob').hidden = false; $('mAdd').hidden = false; }
   var q = new URLSearchParams(location.search).get('d');
   if (q && /^\d{4}-\d\d-\d\d$/.test(q)) day = new Date(q + 'T00:00');
   techs = await C.loadTechs(api.sb);
+  async function loadColors() {
+    var r = await api.sb.from('profiles').select('technician_id,color').not('technician_id', 'is', null);
+    if (r.error) { colorCol = false; return; }
+    colors = {}; acct = {}; (r.data || []).forEach(function (p) { if (p.technician_id) acct[p.technician_id] = 1; if (p.technician_id && /^#[0-9a-f]{6}$/i.test(p.color || '')) colors[p.technician_id] = p.color; });
+  }
+  await loadColors();
+  picked = !!(q && /^\d{4}-\d\d-\d\d$/.test(q));
   await go(day);
 
-  $('month').addEventListener('click', function (e) { var b = e.target.closest('[data-day]'); if (b) go(new Date(b.getAttribute('data-day') + 'T00:00')); });
+  $('month').addEventListener('click', function (e) { var b = e.target.closest('[data-day]'); if (b) { picked = true; go(new Date(b.getAttribute('data-day') + 'T00:00')).then(function () { if (window.matchMedia('(max-width:860px)').matches) $('dTitle').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); } });
+  $('legend').addEventListener('change', async function (e) {
+    var i = e.target.closest('[data-tc]'); if (!i) return;
+    var t = i.getAttribute('data-tc'), c = i.value;
+    var p = await api.sb.rpc('account_set_color', { p_tech: t, p_color: c });
+    if (p.error) { showErr('เปลี่ยนสีไม่สำเร็จ: ' + p.error.message); return; }
+    colors[t] = c; showErr(''); render();
+  });
+  $('mToday').onclick = function () { var t = new Date(); picked = false; go(new Date(t.getFullYear(), t.getMonth(), 1)); };
+  $('mAdd').onclick = function () { openJob(null); };
+  $('backBig').onclick = function () { picked = false; render(); };
   $('mPrev').onclick = function () { go(new Date(month.getFullYear(), month.getMonth() - 1, 1)); };
   $('mNext').onclick = function () { go(new Date(month.getFullYear(), month.getMonth() + 1, 1)); };
-  $('dPrev').onclick = function () { go(new Date(day.getFullYear(), day.getMonth(), day.getDate() - 1)); };
-  $('dNext').onclick = function () { go(new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1)); };
-  $('today').onclick = function () { var t = new Date(); go(new Date(t.getFullYear(), t.getMonth(), t.getDate())); };
+  $('dPrev').onclick = function () { picked = true; go(new Date(day.getFullYear(), day.getMonth(), day.getDate() - 1)); };
+  $('dNext').onclick = function () { picked = true; go(new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1)); };
+  $('today').onclick = function () { var t = new Date(); picked = true; go(new Date(t.getFullYear(), t.getMonth(), t.getDate())); };
   $('notify').addEventListener('input', function () { ls(K_NOTIFY, this.value); render(); });
   $('polite').addEventListener('change', function () { ls(K_POLITE, this.value); render(); });
 
@@ -181,6 +219,6 @@
     if (!row.day || !row.task) { showErr('ต้องใส่วันที่และรายละเอียดงาน'); return; }
     var r = editJob ? await api.sb.from('calendar_jobs').update(row).eq('id', editJob.id) : await api.sb.from('calendar_jobs').insert(row);
     if (r.error) { showErr('บันทึกไม่สำเร็จ: ' + r.error.message); return; }
-    month = null; await go(new Date(row.day + 'T00:00'));
+    month = null; picked = true; await go(new Date(row.day + 'T00:00'));
   });
 })();

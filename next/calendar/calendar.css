@@ -54,3 +54,54 @@
   .cl-dhead .nx-btn{flex:1 1 40%;height:44px}.cl-dhead h1{flex:1 1 60%;font-size:17px}}
 .cl-t{table-layout:fixed;min-width:560px}
 .cl-t th:nth-child(1){width:32px}.cl-t th:nth-child(2){width:28%}.cl-t th:nth-child(4){width:20%}.cl-t th:nth-child(5){width:110px}
+
+/* 2026-11-23: ปฏิทินเดือนใหญ่ตรงกลางก่อน กดวันแล้วหดไปซ้ายบน + รายละเอียดวันนั้น ; สีตามบัญชี */
+.cl-month button{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:40px}
+.cl-month button .chips{display:none}
+.cl-month button .dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:100%}
+.cl-month button .dots i{width:6px;height:6px;border-radius:50%;display:block}
+.cl-month button.has::after{display:none}
+.cl-month .pad{display:block}
+.cl-mhead .bigonly{display:none}
+.cl-legend{display:flex;flex-wrap:wrap;gap:8px 14px}
+.cl-lg{display:inline-flex;align-items:center;gap:6px;font-size:14px}
+.cl-lg input[type=color]{width:22px;height:22px;padding:0;border:0;border-radius:50%;background:none;cursor:pointer}
+.cl-lg input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.cl-lg input[type=color]::-webkit-color-swatch{border:0;border-radius:50%}
+.cl-lg input:disabled{cursor:default}
+.cl-note{font-size:12px;margin:8px 0 0}
+.cl-note:empty{display:none}
+.cl-main.cl-big .cl-grid{grid-template-columns:minmax(0,1100px);justify-content:center}
+.cl-main.cl-big .cl-day,.cl-main.cl-big .seledonly{display:none}
+.cl-main.cl-big .cl-side{gap:12px}
+.cl-main.cl-big .cl-mhead .bigonly{display:inline-flex}
+.cl-main.cl-big .cl-mhead .sp{flex:1}
+.cl-main.cl-big .cl-mhead{gap:8px;margin-bottom:10px}
+.cl-main.cl-big .cl-mhead b{font-size:20px}
+.cl-main.cl-big .cl-month{gap:0;border-top:1px solid var(--line);border-left:1px solid var(--line);font-size:14px}
+.cl-main.cl-big .cl-month .wd{padding:8px 0;background:var(--bg);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.cl-main.cl-big .cl-month .pad{border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bg)}
+.cl-main.cl-big .cl-month button{border-radius:0;align-items:stretch;min-height:118px;padding:5px 6px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);text-align:left}
+.cl-main.cl-big .cl-month button .dn{font-weight:500;font-size:13px;color:var(--mut);width:24px;height:24px;display:grid;place-items:center}
+.cl-main.cl-big .cl-month button.today .dn{background:var(--navy);color:var(--navy-fg);border-radius:50%}
+.cl-main.cl-big .cl-month button.today{outline:none}
+.cl-main.cl-big .cl-month button .chips{display:flex;flex-direction:column;gap:3px;margin-top:2px}
+.cl-main.cl-big .cl-month button .chip{font-size:12px;line-height:1.3;border-radius:6px;padding:2px 6px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl-main.cl-big .cl-month button .more{font-size:12px;color:var(--mut)}
+.cl-main.cl-big .cl-month button .dots{display:none}
+.cl-main:not(.cl-big) .cl-month button .dn{font-weight:inherit}
+@media (max-width:860px){
+  .cl-main.cl-big .cl-month button{min-height:56px;align-items:center;padding:3px}
+  .cl-main.cl-big .cl-month button .chips{display:none}
+  .cl-main.cl-big .cl-month button .dots{display:flex}
+  .cl-main.cl-big .cl-month button .dn{text-align:center}
+  .cl-main.cl-big .cl-mhead .nx-btn{height:40px}
+}
+.cl-mhead .nx-btn{height:40px;padding:0 14px;display:inline-flex;align-items:center}
+@media (max-width:860px){
+  .cl-main.cl-big .cl-mhead{flex-wrap:wrap;justify-content:space-between}
+  .cl-main.cl-big .cl-mhead b{font-size:18px;white-space:nowrap}
+  .cl-main.cl-big .cl-mhead .sp{display:none}
+  .cl-main.cl-big .cl-mhead .nx-btn.bigonly{flex:1 1 40%;white-space:nowrap;justify-content:center}
+}
+.cl-main .cl-mhead .nx-btn{white-space:nowrap}

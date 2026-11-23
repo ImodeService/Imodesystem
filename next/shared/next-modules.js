@@ -30,7 +30,7 @@ window.NEXT_SIDE = {
   service: [
     { ic: '🏠', label: 'ภาพรวม', href: 'next/service/overview.html', match: ['/next/service/overview.html'] },
     { ic: '📋', label: 'ทั้งหมด (บอร์ด)', href: 'next/service/index.html', match: ['/next/service/$', '/next/service/case.html', '/next/service/new.html'] },
-    { ic: '📨', label: 'คำขอจากลูกค้า', href: 'modules/service/index.html?page=requests' },
+    { ic: '📨', label: 'คำขอจากลูกค้า', href: 'next/service/requests.html', match: ['/next/service/requests.html'] },
     { ic: '🗂️', label: 'งาน', children: [
       { ic: '🆕', label: 'งานใหม่', cnt: 'new', href: 'next/service/index.html?c=new', match: ['/next/service/?c=new$'] },
       { ic: '⏳', label: 'รอลูกค้า', cnt: 'wait', href: 'next/service/index.html?c=wait', match: ['/next/service/?c=wait$'] },

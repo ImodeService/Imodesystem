@@ -1,0 +1,21 @@
+/* I-MODE System (ระบบใหม่) · คำขอจากลูกค้า (2026-11-23) */
+.rq-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.rq-kpi{padding:14px 16px;border:1px solid var(--line);border-top:4px solid var(--navy);border-radius:12px;background:var(--card);color:var(--fg);text-align:left;font:inherit;cursor:pointer}
+.rq-kpi small{display:block;color:var(--mut);font-size:13px}
+.rq-kpi b{display:block;font-size:28px;line-height:1.2;font-variant-numeric:tabular-nums}
+.rq-kpi[aria-pressed="true"]{background:var(--soft);border-color:var(--navy)}
+.rq-list{display:flex;flex-direction:column;gap:10px}
+.rq-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.rq-main{flex:1;min-width:240px}
+.rq-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;color:var(--mut);font-size:13px}
+.rq-cust{font-weight:600;font-size:16px;margin-top:4px}
+.rq-msg{margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}
+.rq-meta{margin-top:6px;color:var(--mut);font-size:13px;display:flex;gap:12px;flex-wrap:wrap}
+.rq-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rq-act .nx-btn,.rq-act a{height:40px;display:inline-flex;align-items:center;padding:0 14px;text-decoration:none}
+.rq-late{color:var(--bad-fg);font-weight:600}
+@media (max-width:900px){
+  .rq-kpis{grid-template-columns:1fr 1fr}
+  .rq-act{width:100%}.rq-act .nx-btn,.rq-act a{flex:1;justify-content:center;height:44px}
+}
+@media (max-width:900px){.sv-head .sv-search,.sv-head .sv-search input{width:100%}}

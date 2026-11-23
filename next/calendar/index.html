@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/next.css?v=20261123b">
-<link rel="stylesheet" href="calendar.css?v=20261120">
+<link rel="stylesheet" href="calendar.css?v=20261123">
 <script src="../shared/next-shell.js?v=20261123b"></script>
 </head>
 <body>
@@ -17,11 +17,13 @@
   <div class="cl-grid">
     <aside class="cl-side">
       <section class="nx-card cl-box">
-        <div class="cl-mhead"><button type="button" class="nx-icon-btn" id="mPrev" aria-label="เดือนก่อน">‹</button><b id="mTitle"></b><button type="button" class="nx-icon-btn" id="mNext" aria-label="เดือนถัดไป">›</button></div>
+        <div class="cl-mhead"><button type="button" class="nx-icon-btn" id="mPrev" aria-label="เดือนก่อน">‹</button><b id="mTitle"></b><button type="button" class="nx-icon-btn" id="mNext" aria-label="เดือนถัดไป">›</button>
+          <span class="bigonly sp"></span><button type="button" class="nx-btn bigonly" id="mToday">วันนี้</button><button type="button" class="nx-btn primary bigonly" id="mAdd" hidden>+ เพิ่มงาน</button></div>
         <div class="cl-month" id="month" role="grid" aria-label="เลือกวัน"></div>
       </section>
-      <section class="nx-card cl-box"><h2>ช่างวันนี้</h2><div id="techSum"></div></section>
-      <section class="nx-card cl-box"><h2>ตั้งค่าข้อความ LINE</h2>
+      <section class="nx-card cl-box cl-legendbox"><h2>สีประจำ Account</h2><div id="legend" class="cl-legend"></div><p class="mut cl-note" id="legNote"></p></section>
+      <section class="nx-card cl-box seledonly"><h2>ช่างวันนี้</h2><div id="techSum"></div></section>
+      <section class="nx-card cl-box seledonly"><h2>ตั้งค่าข้อความ LINE</h2>
         <label class="cl-f">แจ้งถึง (บรรทัดแรก ไม่ใส่ก็ได้)<input id="notify" placeholder="@ชื่อหัวหน้า" autocomplete="off"></label>
         <label class="cl-f">ลงท้าย<select id="polite"><option>ค่ะ</option><option>ครับ</option></select></label>
       </section>
@@ -32,6 +34,7 @@
         <button type="button" class="nx-icon-btn" id="dNext" aria-label="วันถัดไป">›</button>
         <h1 id="dTitle"></h1>
         <div class="sp"></div>
+        <button type="button" class="nx-btn" id="backBig">ดูทั้งเดือน</button>
         <button type="button" class="nx-btn" id="today">วันนี้</button>
         <button type="button" class="nx-btn" id="addJob" hidden>+ เพิ่มงาน</button>
         <button type="button" class="nx-btn" id="saveImg">บันทึกเป็นรูป</button>
@@ -63,7 +66,7 @@
 <script src="../../shared/config.js"></script>
 <script src="../../shared/auth.js"></script>
 <script src="../shared/next-modules.js?v=20261123"></script>
-<script src="../service/cases-common.js?v=20261120"></script>
-<script src="calendar.js?v=20261120"></script>
+<script src="../service/cases-common.js?v=20261123b"></script>
+<script src="calendar.js?v=20261123"></script>
 </body>
 </html>
