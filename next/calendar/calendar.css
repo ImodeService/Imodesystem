@@ -71,8 +71,14 @@
 .cl-lg input:disabled{cursor:default}
 .cl-note{font-size:12px;margin:8px 0 0}
 .cl-note:empty{display:none}
-.cl-main.cl-big .cl-grid{grid-template-columns:minmax(0,1100px);justify-content:center}
-.cl-main.cl-big .cl-day,.cl-main.cl-big .seledonly{display:none}
+.cl-main.cl-big .cl-grid{grid-template-columns:250px minmax(0,1fr) 300px;grid-auto-rows:min-content}
+.cl-main.cl-big .cl-side,.cl-main.cl-big .cl-day,.cl-main.cl-big .cl-two{display:contents}
+.cl-main.cl-big .cl-side>.cl-box:first-child{grid-column:2;grid-row:1/span 3}
+.cl-main.cl-big .cl-legendbox{grid-column:1;grid-row:1}
+.cl-main.cl-big .cl-side>.seledonly:nth-of-type(3){grid-column:1;grid-row:2}
+.cl-main.cl-big .cl-side>.seledonly:nth-of-type(4){grid-column:1;grid-row:3}
+.cl-main.cl-big .cl-line{grid-column:3;grid-row:1/span 3;align-self:start;position:static}
+.cl-main.cl-big .cl-dhead,.cl-main.cl-big .cl-sheet{display:none}
 .cl-main.cl-big .cl-side{gap:12px}
 .cl-main.cl-big .cl-mhead .bigonly{display:inline-flex}
 .cl-main.cl-big .cl-mhead .sp{flex:1}
@@ -105,3 +111,17 @@
   .cl-main.cl-big .cl-mhead .nx-btn.bigonly{flex:1 1 40%;white-space:nowrap;justify-content:center}
 }
 .cl-main .cl-mhead .nx-btn{white-space:nowrap}
+
+.cl-main.cl-big .cl-grid>*,.cl-main.cl-big .cl-box,.cl-main.cl-big .cl-line{min-width:0}
+@media (max-width:1180px){
+  .cl-main.cl-big .cl-grid{grid-template-columns:minmax(0,1fr)}
+  .cl-main.cl-big .cl-side>.cl-box:first-child,.cl-main.cl-big .cl-legendbox,.cl-main.cl-big .cl-side>.seledonly,.cl-main.cl-big .cl-line{grid-column:1;grid-row:auto}
+  .cl-main.cl-big .cl-side>.cl-box:first-child{order:-1}
+  .cl-main.cl-big .cl-line,.cl-main.cl-big .cl-side>.seledonly{display:none}
+}
+@keyframes clIn{from{opacity:0}to{opacity:1}}
+.cl-main.cl-anim .cl-box:not(:first-child),.cl-main.cl-anim .cl-line,.cl-main.cl-anim .cl-day{animation:clIn .35s ease both}
+@media (prefers-reduced-motion:reduce){.cl-main.cl-anim *{animation:none!important}}
+.cl-main.cl-big .cl-grid{grid-template-rows:auto auto 1fr;align-content:start}
+.cl-main:not(.cl-big) .cl-mhead .bigonly{display:none}
+.cl-main.cl-big .cl-side>.cl-box:not(:first-child){align-self:start}

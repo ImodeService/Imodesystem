@@ -98,7 +98,20 @@
   }
 
   function render() {
-    document.querySelector('.cl-main').classList.toggle('cl-big', !picked);
+    var mainEl = document.querySelector('.cl-main'), boxEl = mainEl.querySelector('.cl-side>.cl-box'), wasBig = mainEl.classList.contains('cl-big');
+    var f = boxEl.getBoundingClientRect();
+    mainEl.classList.toggle('cl-big', !picked);
+    if (wasBig !== !picked && !window.matchMedia('(prefers-reduced-motion:reduce)').matches) {
+      var l = boxEl.getBoundingClientRect();
+      if (l.width && f.width) {
+        mainEl.classList.add('cl-anim');
+        boxEl.style.transition = 'none'; boxEl.style.transformOrigin = '0 0';
+        boxEl.style.transform = 'translate(' + (f.left - l.left) + 'px,' + (f.top - l.top) + 'px) scale(' + (f.width / l.width) + ',' + (f.height / l.height) + ')';
+        void boxEl.offsetWidth;
+        boxEl.style.transition = 'transform .38s cubic-bezier(.2,.7,.2,1)'; boxEl.style.transform = '';
+        setTimeout(function () { boxEl.style.transition = ''; boxEl.style.transformOrigin = ''; mainEl.classList.remove('cl-anim'); }, 420);
+      }
+    }
     renderMonth(); renderLegend();
     if (!picked) return;
     var items = dayItems(), gs = groups(items), canEdit = api.can('calendar.edit');
