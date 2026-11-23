@@ -8,7 +8,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var api, techs = [], monthCases = [], monthJobs = [], day = new Date(), month = null, editJob = null, picked = false, colors = {}, acct = {}, colorCol = true;
   var PALETTE = ['#2F6FDE', '#E0793B', '#2E9E6B', '#8A4FBF', '#C2415D', '#0E8A9A', '#9A7B0A', '#5A6478'];
-  var K_NOTIFY = 'imode.next.cal.notify', K_POLITE = 'imode.next.cal.polite';
+  var K_NOTIFY = 'imode.next.cal.notify', K_POLITE = 'imode.next.cal.polite', K_TAGS = 'imode.next.cal.tags', tags = {};
   var MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
   function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -60,7 +60,7 @@
     L.push('แจ้งแพลนงานช่าง ' + short(day) + ' ' + p);
     if (!gs.length) L.push('- ไม่มีงาน');
     gs.forEach(function (g) {
-      L.push(g.techs.length ? g.techs.map(function (t) { return '@' + techName(t); }).join(' ') : '(ยังไม่ระบุช่าง)');
+      L.push(g.techs.length ? g.techs.map(function (t) { return '@' + (tags[t] || techName(t)); }).join(' ') : '(ยังไม่ระบุช่าง)');
       g.items.forEach(function (it) {
         var s = '- ' + [it.customer, it.task].filter(Boolean).join(' // ');
         if (it.machine) s += ' ' + it.machine;
@@ -155,11 +155,14 @@
 
   try { api = await window.NextShell.start({ title: 'ปฏิทินงาน', moduleId: 'calendar' }); }
   catch (e) { $('sheet').innerHTML = ''; showErr(e.message); return; }
+  try { tags = JSON.parse(ls(K_TAGS) || '{}') || {}; } catch (e) { tags = {}; }
+  $('tagNames').addEventListener('input', function (e) { var i = e.target.closest('[data-tg]'); if (!i) return; var v = i.value.trim(); if (v) tags[i.getAttribute('data-tg')] = v; else delete tags[i.getAttribute('data-tg')]; ls(K_TAGS, JSON.stringify(tags)); render(); });
   $('notify').value = ls(K_NOTIFY); $('polite').value = ls(K_POLITE) || 'ค่ะ';
   if (api.can('calendar.edit')) { $('addJob').hidden = false; $('mAdd').hidden = false; }
   var q = new URLSearchParams(location.search).get('d');
   if (q && /^\d{4}-\d\d-\d\d$/.test(q)) day = new Date(q + 'T00:00');
   techs = await C.loadTechs(api.sb);
+  $('tagNames').innerHTML = techs.map(function (t) { return '<label class="cl-f">@ ของ ' + esc(t.name) + '<input data-tg="' + esc(t.id) + '" value="' + esc(tags[t.id] || '') + '" placeholder="' + esc(t.name) + '" autocomplete="off"></label>'; }).join('');
   async function loadColors() {
     var r = await api.sb.from('profiles').select('technician_id,color').not('technician_id', 'is', null);
     if (r.error) { colorCol = false; return; }
