@@ -131,7 +131,11 @@ body.nx-with-side .nx-top,body.nx-with-side .nx-main{transition:margin-left .2s 
 .nx-side .nx-grp-btn:hover{background:rgba(255,255,255,.08);color:#fff}
 .nx-side .nx-grp-btn .chev{margin-left:auto;transition:transform .2s}
 .nx-side .nx-grp-btn[aria-expanded="true"] .chev{transform:rotate(180deg)}
-.nx-side .nx-sub{list-style:none;margin:2px 0 4px;padding:0 0 0 22px}
-.nx-side .nx-sub[hidden]{display:none}
+.nx-side .nx-sub-wrap{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .28s ease,opacity .22s ease}
+.nx-side .nx-sub-wrap.open{grid-template-rows:1fr;opacity:1}
+.nx-side .nx-sub{list-style:none;margin:0;padding:0 0 0 22px;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:2px}
+.nx-side .nx-sub-wrap.open .nx-sub{padding-top:2px;padding-bottom:4px}
+.nx-side .nx-sub li{transform:translateY(-6px);transition:transform .28s ease}
+.nx-side .nx-sub-wrap.open .nx-sub li{transform:none}
 .nx-side .nx-sub li a{min-height:40px;font-size:14px}
-@media (prefers-reduced-motion:reduce){.nx-side .nx-grp-btn .chev{transition:none}}
+@media (prefers-reduced-motion:reduce){.nx-side .nx-grp-btn .chev,.nx-side .nx-sub-wrap,.nx-side .nx-sub li{transition:none}}

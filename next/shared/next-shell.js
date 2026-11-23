@@ -115,14 +115,15 @@
           if (!inside) { try { open = localStorage.getItem(key) === '1'; } catch (e) {} }
           return '<li class="nx-grp"><button type="button" class="nx-grp-btn" data-grp="' + esc(key) + '" aria-expanded="' + open + '" aria-controls="nx-grp-' + gi + '"><span class="ic" aria-hidden="true">' + it.ic + '</span><span>' + esc(it.label) + '</span>' +
             '<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>' +
-            '<ul class="nx-sub" id="nx-grp-' + gi + '"' + (open ? '' : ' hidden') + '>' + it.children.map(function (c) { return link(c, true); }).join('') + '</ul></li>';
+            '<div class="nx-sub-wrap' + (open ? ' open' : '') + '"' + (open ? '' : ' inert') + '><ul class="nx-sub" id="nx-grp-' + gi + '">' + it.children.map(function (c) { return link(c, true); }).join('') + '</ul></div></li>';
         }
         return link(it, false);
       }).join('') + '</ul></nav>';
     aside.addEventListener('click', function (e) {
       var b = e.target.closest('[data-grp]'); if (!b) return;
       var open = b.getAttribute('aria-expanded') !== 'true';
-      b.setAttribute('aria-expanded', String(open)); b.nextElementSibling.hidden = !open;
+      b.setAttribute('aria-expanded', String(open));
+      var w = b.nextElementSibling; w.classList.toggle('open', open); if (open) w.removeAttribute('inert'); else w.setAttribute('inert', '');
       try { localStorage.setItem(b.getAttribute('data-grp'), open ? '1' : '0'); } catch (x) {}
     });
     var back = document.createElement('div');
