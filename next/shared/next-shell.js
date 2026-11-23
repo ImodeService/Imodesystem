@@ -102,12 +102,29 @@
     aside.className = 'nx-side'; aside.id = 'nx-side';
     aside.innerHTML =
       '<a href="' + esc(ROOT + 'apps/launcher/index.html') + '" class="nx-side-logo" aria-label="หน้าเลือกโมดุล"><img src="' + esc(ROOT + 'assets/brand/imode-logo-white.png') + '" alt="I-MODE"></a>' +
-      '<nav aria-label="เมนู ' + esc(opts.title || '') + '"><ul>' + items.map(function (it) {
+      '<nav aria-label="เมนู ' + esc(opts.title || '') + '"><ul>' + items.map(function (it, gi) {
         if (it.sep) return '<li class="nx-sep" role="separator"></li>';
-        var href = ROOT + it.href, on = isHere(it);
-        return '<li><a href="' + esc(href) + '"' + (on ? ' class="on" aria-current="page"' : '') + '><span class="ic" aria-hidden="true">' + it.ic + '</span><span>' + esc(it.label) + '</span>' +
-          (it.cnt ? '<span class="cnt" data-cnt="' + esc(it.cnt) + '" hidden></span>' : '') + '</a></li>';
+        function link(x, sub) {
+          var on = isHere(x);
+          return '<li><a href="' + esc(ROOT + x.href) + '"' + (on || sub ? ' class="' + (on ? 'on' : '') + (sub ? ' sub' : '') + '"' : '') + (on ? ' aria-current="page"' : '') + '><span class="ic" aria-hidden="true">' + x.ic + '</span><span>' + esc(x.label) + '</span>' +
+            (x.cnt ? '<span class="cnt" data-cnt="' + esc(x.cnt) + '" hidden></span>' : '') + '</a></li>';
+        }
+        /* 2026-11-23: กลุ่มพับได้ (it.children) เปิดค้างไว้เมื่ออยู่ในหน้าลูก หรือจำสถานะที่ผู้ใช้กดไว้ */
+        if (it.children) {
+          var inside = it.children.some(isHere), key = 'imode.next.grp.' + (opts.moduleId || '') + '.' + gi, open = inside;
+          if (!inside) { try { open = localStorage.getItem(key) === '1'; } catch (e) {} }
+          return '<li class="nx-grp"><button type="button" class="nx-grp-btn" data-grp="' + esc(key) + '" aria-expanded="' + open + '" aria-controls="nx-grp-' + gi + '"><span class="ic" aria-hidden="true">' + it.ic + '</span><span>' + esc(it.label) + '</span>' +
+            '<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>' +
+            '<ul class="nx-sub" id="nx-grp-' + gi + '"' + (open ? '' : ' hidden') + '>' + it.children.map(function (c) { return link(c, true); }).join('') + '</ul></li>';
+        }
+        return link(it, false);
       }).join('') + '</ul></nav>';
+    aside.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-grp]'); if (!b) return;
+      var open = b.getAttribute('aria-expanded') !== 'true';
+      b.setAttribute('aria-expanded', String(open)); b.nextElementSibling.hidden = !open;
+      try { localStorage.setItem(b.getAttribute('data-grp'), open ? '1' : '0'); } catch (x) {}
+    });
     var back = document.createElement('div');
     back.className = 'nx-side-back'; back.hidden = true;
     document.body.insertBefore(back, document.body.firstChild);

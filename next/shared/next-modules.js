@@ -26,17 +26,19 @@ window.NEXT_MODULES = [
    ไม่มี "หน้างานช่าง": ช่างใช้แอปมือถือเท่านั้น แอดมินไม่ต้องเห็น (เจ้าของ 2026-11-22) */
 window.NEXT_SIDE = {
   // 2026-11-22 v2: หน้าภาพรวม + หมวดตามขั้นงาน (cnt = ตัวเลขข้างเมนู) + เมนูอื่นครบ
+  // 2026-11-23: กลุ่ม "งาน" (พับได้) รวม 4 หมวด + คำขอจากลูกค้า ; ปุ่มอื่นคงไว้ (หน้าที่ยังไม่ทำใหม่เปิดหน้าเดิมแบบหน้าเดียว มีปุ่มกลับ)
   service: [
     { ic: '🏠', label: 'ภาพรวม', href: 'next/service/overview.html', match: ['/next/service/overview.html'] },
-    { ic: '🆕', label: 'งานใหม่', cnt: 'new', href: 'next/service/index.html?c=new', match: ['/next/service/?c=new$'] },
-    { ic: '⏳', label: 'รอลูกค้า', cnt: 'wait', href: 'next/service/index.html?c=wait', match: ['/next/service/?c=wait$'] },
-    { ic: '🔧', label: 'กำลังซ่อม', cnt: 'repair', href: 'next/service/index.html?c=repair', match: ['/next/service/?c=repair$'] },
-    { ic: '📦', label: 'ส่งคืน', cnt: 'return', href: 'next/service/index.html?c=return', match: ['/next/service/?c=return$'] },
     { ic: '📋', label: 'ทั้งหมด (บอร์ด)', href: 'next/service/index.html', match: ['/next/service/$', '/next/service/case.html', '/next/service/new.html'] },
-    { sep: true },
-    // หน้าที่ยังไม่ได้ทำใหม่ เปิดหน้าเดิมแบบ "หน้าเดียว" (ไม่มีเมนูเก่า มีปุ่มกลับ · js/162 ของ Service เดิม) 2026-11-23
-    { ic: '🧾', label: 'ใบเสนอราคา', href: 'modules/service/index.html?page=quotation' },
     { ic: '📨', label: 'คำขอจากลูกค้า', href: 'modules/service/index.html?page=requests' },
+    { ic: '🗂️', label: 'งาน', children: [
+      { ic: '🆕', label: 'งานใหม่', cnt: 'new', href: 'next/service/index.html?c=new', match: ['/next/service/?c=new$'] },
+      { ic: '⏳', label: 'รอลูกค้า', cnt: 'wait', href: 'next/service/index.html?c=wait', match: ['/next/service/?c=wait$'] },
+      { ic: '🔧', label: 'กำลังซ่อม', cnt: 'repair', href: 'next/service/index.html?c=repair', match: ['/next/service/?c=repair$'] },
+      { ic: '📦', label: 'ส่งคืน', cnt: 'return', href: 'next/service/index.html?c=return', match: ['/next/service/?c=return$'] }
+    ] },
+    { sep: true },
+    { ic: '🧾', label: 'ใบเสนอราคา', href: 'modules/service/index.html?page=quotation' },
     { ic: '👨‍🔧', label: 'ทีมงาน', href: 'modules/service/index.html?page=technicians' },
     { ic: '🔔', label: 'แจ้งเตือน', href: 'next/notifications/index.html', match: ['/next/notifications/'] },
     { ic: '📊', label: 'รายงาน', href: 'modules/service/index.html?page=reports' },
