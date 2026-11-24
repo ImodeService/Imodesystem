@@ -14,7 +14,7 @@ window.NEXT_MODULES = [
   { id: 'install',   name: 'ติดตั้งเครื่องจักร',     ab: 'ตต', color: '#0B5E6A', perm: 'install.view',   href: '' },
   { id: 'stock',     name: 'สต็อกอะไหล่',          ab: 'สต', color: '#9A4A1C', perm: 'stock.view',     href: '' },
   { id: 'pettycash', name: 'เงินสดย่อย',           ab: 'งส', color: '#2F6B3A', perm: 'cash.view',      href: '' },
-  { id: 'customers', name: 'ลูกค้า',               ab: 'ลค', color: '#1F3A68', perm: 'customer.view',  href: '' },
+  { id: 'customers', name: 'ลูกค้า',               ab: 'ลค', color: '#1F3A68', perm: 'customer.view',  href: 'next/customers/index.html' },
   { id: 'machines',  name: 'เครื่องจักร',           ab: 'คจ', color: '#3A4A63', perm: 'machine.view',   href: '' },
   { id: 'hr',        name: 'บุคลากร',              ab: 'HR', color: '#5A6478', perm: 'hr.view',        href: '', old: 'modules/hr/index.html' },
   { id: 'settings',  name: 'ตั้งค่า',               ab: 'ตค', color: '#6B7280', perm: 'settings.view',  href: '' },
@@ -25,6 +25,14 @@ window.NEXT_MODULES = [
    match = ส่วนของที่อยู่หน้าที่ถือว่าอยู่เมนูนั้น (ทำไฮไลท์) · หน้าที่ยังไม่ได้ทำใหม่ลิงก์ไปหน้าเดิมใน Service
    ไม่มี "หน้างานช่าง": ช่างใช้แอปมือถือเท่านั้น แอดมินไม่ต้องเห็น (เจ้าของ 2026-11-22) */
 window.NEXT_SIDE = {
+  // 2026-11-24: ลูกค้า (หน้ารายการ + หน้ารายละเอียด)
+  customers: [
+    { ic: '👥', label: 'ลูกค้าทั้งหมด', href: 'next/customers/index.html', match: ['/next/customers/'] },
+    { ic: '⚙️', label: 'เครื่องจักร', href: 'modules/service/index.html?page=machines' },
+    { ic: '📨', label: 'คำขอจากลูกค้า', href: 'next/service/requests.html' },
+    { sep: true },
+    { ic: '🔧', label: 'Service (เคสงาน)', href: 'next/service/overview.html' }
+  ],
   // 2026-11-24: ใบเสนอราคา (หน้ารายการใหม่ · หน้ากรอกยังเป็น modules/service/quote-*.html)
   quote: [
     { ic: '🧾', label: 'ใบเสนอราคาทั้งหมด', href: 'next/quote/index.html', match: ['/next/quote/$', '/next/quote/index.html$'] },

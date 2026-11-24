@@ -115,6 +115,8 @@
   var count = {}; machines.forEach(function (m) { count[m.customerId] = (count[m.customerId] || 0) + 1; });
   customers.forEach(function (c) { c.mcount = count[c.id] || 0; });
   renderTechs();
+  /* 2026-11-24: ?customer=<id> จากหน้าลูกค้า → เลือกลูกค้าให้เลย */
+  try { var pc = new URLSearchParams(location.search).get('customer'); var hit = pc && customers.filter(function (c) { return c.id === pc; })[0]; if (hit) pickCust(hit); } catch (e) {}
 
   var f = $('f');
   f.addEventListener('click', function (e) {

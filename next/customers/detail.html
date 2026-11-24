@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>ลูกค้า · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261124">
+<link rel="stylesheet" href="../quote/quote.css?v=20261124">
+<link rel="stylesheet" href="customers.css?v=20261124">
+<script src="../shared/next-shell.js?v=20261124"></script>
+</head>
+<body>
+<main class="nx-main">
+  <div id="err"></div>
+  <div class="q-head cu-head"><a class="nx-btn" href="index.html">‹ ลูกค้าทั้งหมด</a><h1 id="title"><span class="sk" style="width:240px;height:26px"></span></h1>
+    <button type="button" class="nx-btn" id="edit" hidden>แก้ไข</button><button type="button" class="nx-btn" id="del" hidden>ลบ</button>
+    <a class="nx-btn primary" id="newCase" hidden>＋ เปิดเคส</a><a class="nx-btn primary" id="newQuote" hidden>＋ ใบเสนอราคา</a></div>
+  <div class="cu-grid">
+    <section class="nx-card q-box"><div id="tabs" class="q-chips cu-tabs" role="tablist"></div><div id="tab"></div></section>
+    <div class="cu-side">
+      <section class="nx-card cu-box"><h2>ข้อมูลบริษัท</h2><div id="info" class="cu-kv"></div></section>
+      <section class="nx-card cu-box"><h2>ผู้ติดต่อ<button type="button" class="nx-btn" id="addCt" hidden>＋ เพิ่ม</button></h2><div id="cts"></div></section>
+    </div>
+  </div>
+</main>
+<dialog id="dlg" class="cu-dlg">
+  <form method="dialog" id="frm">
+    <h2 id="dlgT">เพิ่มลูกค้า</h2>
+    <label class="cu-f">ชื่อบริษัท / ลูกค้า (ต้องใส่)<input id="fName" required autocomplete="off"></label>
+    <div class="cu-2"><label class="cu-f">สาขา<input id="fBranch" autocomplete="off"></label><label class="cu-f">สถานที่ (เช่น จังหวัด / นิคม)<input id="fLoc" autocomplete="off"></label></div>
+    <label class="cu-f">ที่อยู่<textarea id="fAddr" rows="2"></textarea></label>
+    <label class="cu-f">ลิงก์ Google Maps<input id="fMap" type="url" placeholder="https://maps.google.com/..." autocomplete="off"></label>
+    <div class="cu-2"><label class="cu-f">ผู้ติดต่อหลัก<input id="fContact" autocomplete="off"></label><label class="cu-f">เบอร์โทร<input id="fPhone" inputmode="tel" autocomplete="off"></label></div>
+    <label class="cu-f">อีเมล<input id="fEmail" type="email" autocomplete="off"></label>
+    <label class="cu-f">หมายเหตุ<textarea id="fNote" rows="2"></textarea></label>
+    <p id="dlgErr" class="cu-err" hidden></p>
+    <div class="cu-dbtn"><button value="cancel" class="nx-btn" formnovalidate>ยกเลิก</button><button value="ok" class="nx-btn primary" id="dlgOk">บันทึก</button></div>
+  </form>
+</dialog>
+<dialog id="ctDlg" class="cu-dlg">
+  <form method="dialog" id="ctFrm">
+    <h2 id="ctT">ผู้ติดต่อ</h2>
+    <div class="cu-2"><label class="cu-f">ชื่อ (ต้องใส่)<input id="cName" required autocomplete="off"></label><label class="cu-f">ตำแหน่ง / แผนก<input id="cPos" autocomplete="off"></label></div>
+    <div class="cu-2"><label class="cu-f">เบอร์โทร<input id="cPhone" inputmode="tel" autocomplete="off"></label><label class="cu-f">อีเมล<input id="cEmail" type="email" autocomplete="off"></label></div>
+    <label class="cu-f">LINE ID<input id="cLine" autocomplete="off"></label>
+    <label class="cu-f">หมายเหตุ<input id="cNote" autocomplete="off"></label>
+    <div class="cu-dbtn"><button type="button" class="nx-btn" id="cDel" hidden style="color:var(--bad-fg);margin-right:auto">ลบผู้ติดต่อ</button><button value="cancel" class="nx-btn" formnovalidate>ยกเลิก</button><button value="ok" class="nx-btn primary">บันทึก</button></div>
+  </form>
+</dialog>
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261124b"></script>
+<script src="../service/cases-common.js?v=20261124"></script>
+<script src="customers-common.js?v=20261124"></script>
+<script src="detail.js?v=20261124"></script>
+</body>
+</html>

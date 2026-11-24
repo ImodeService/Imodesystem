@@ -400,7 +400,9 @@
   var leaving = false;
   wireMenu();
   wireEdit();
-  if (!wireFab()) document.addEventListener('DOMContentLoaded', function () { if (!wireFab()) setTimeout(wireFab, 300); });
+  /* 2026-11-24: ปุ่ม + กลางของทั้งระบบ (shared/chat-fab.js: แชท · ธีม) ; หน้านี้เพิ่ม "จัดเรียงไอคอน" */
+  if (window.ImodeFab) window.ImodeFab.addItem({ id: 'edit', label: FAB_ITEMS[0].label, icon: FAB_ITEMS[0].icon, order: 50, run: FAB_ITEMS[0].run });
+  else if (!wireFab()) document.addEventListener('DOMContentLoaded', function () { if (!wireFab()) setTimeout(wireFab, 300); });
   ImodeAuth.requireUser('login.html').then(function (u) {
     storeKey = 'imode.launcher.' + u.username;
     try { st = cleanState(JSON.parse(lsGet(storeKey) || 'null')); } catch (e) {}

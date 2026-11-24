@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>ลูกค้า · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261124">
+<link rel="stylesheet" href="../quote/quote.css?v=20261124">
+<link rel="stylesheet" href="customers.css?v=20261124">
+<script src="../shared/next-shell.js?v=20261124"></script>
+</head>
+<body>
+<main class="nx-main">
+  <div id="err"></div>
+  <div class="q-head"><h1>ลูกค้า</h1><button type="button" class="nx-btn primary" id="add" hidden>＋ เพิ่มลูกค้า</button></div>
+  <div id="cards" class="q-cards"></div>
+  <section class="nx-card q-box">
+    <div class="q-bar">
+      <div id="chips" class="q-chips" role="group" aria-label="กรอง"></div>
+      <input id="q" type="search" placeholder="ค้นหาชื่อ ผู้ติดต่อ เบอร์ สถานที่" autocomplete="off" aria-label="ค้นหา">
+    </div>
+    <table class="q-t cu-t"><thead><tr><th>บริษัท</th><th>ผู้ติดต่อ</th><th class="hide-m">สถานที่</th><th class="num">เครื่อง</th><th class="num">เคสเปิด</th></tr></thead>
+      <tbody id="rows"></tbody></table>
+    <p id="empty" class="q-empty" hidden>ไม่พบลูกค้า</p>
+    <p id="more" class="q-empty" hidden></p>
+  </section>
+</main>
+<dialog id="dlg" class="cu-dlg">
+  <form method="dialog" id="frm">
+    <h2 id="dlgT">เพิ่มลูกค้า</h2>
+    <label class="cu-f">ชื่อบริษัท / ลูกค้า (ต้องใส่)<input id="fName" required autocomplete="off"></label>
+    <div class="cu-2"><label class="cu-f">สาขา<input id="fBranch" autocomplete="off"></label><label class="cu-f">สถานที่ (เช่น จังหวัด / นิคม)<input id="fLoc" autocomplete="off"></label></div>
+    <label class="cu-f">ที่อยู่<textarea id="fAddr" rows="2"></textarea></label>
+    <label class="cu-f">ลิงก์ Google Maps<input id="fMap" type="url" placeholder="https://maps.google.com/..." autocomplete="off"></label>
+    <div class="cu-2"><label class="cu-f">ผู้ติดต่อหลัก<input id="fContact" autocomplete="off"></label><label class="cu-f">เบอร์โทร<input id="fPhone" inputmode="tel" autocomplete="off"></label></div>
+    <label class="cu-f">อีเมล<input id="fEmail" type="email" autocomplete="off"></label>
+    <label class="cu-f">หมายเหตุ<textarea id="fNote" rows="2"></textarea></label>
+    <p id="dlgErr" class="cu-err" hidden></p>
+    <div class="cu-dbtn"><button value="cancel" class="nx-btn" formnovalidate>ยกเลิก</button><button value="ok" class="nx-btn primary" id="dlgOk">บันทึก</button></div>
+  </form>
+</dialog>
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261124b"></script>
+<script src="../service/cases-common.js?v=20261124"></script>
+<script src="customers-common.js?v=20261124"></script>
+<script src="customers.js?v=20261124"></script>
+</body>
+</html>

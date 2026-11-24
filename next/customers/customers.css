@@ -1,0 +1,46 @@
+/* I-MODE System (ระบบใหม่) · ลูกค้า (2026-11-24) · ใช้ quote.css เป็นฐานตาราง/การ์ด */
+.ln{display:inline-block;font-size:11px;font-weight:700;color:#06a14a;border:1px solid #06a14a;border-radius:6px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.sub2{font-size:12px;color:var(--mut)}
+.cu-t a.nm{color:var(--fg);font-weight:600;text-decoration:none}
+.cu-head h1{margin-left:6px}
+.cu-head .nx-btn[hidden]{display:none}
+.cu-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;margin-top:14px;align-items:start}
+.cu-side{display:flex;flex-direction:column;gap:14px}
+.cu-box{padding:16px}
+.cu-box h2{font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.cu-box h2 .nx-btn{margin-left:auto;height:34px}
+.cu-box h2 .nx-btn[hidden]{display:none}
+.cu-kv{display:grid;grid-template-columns:96px minmax(0,1fr);gap:6px 10px;font-size:14px}
+.cu-kv span{color:var(--mut)}
+.cu-kv div{overflow-wrap:anywhere;white-space:pre-line}
+.cu-tabs{margin-bottom:10px}
+.cu-ct{border-top:1px solid var(--line2);padding:9px 0;font-size:14px;display:flex;gap:8px;align-items:flex-start}
+.cu-ct:first-child{border-top:0}
+.cu-ct div{flex:1;min-width:0}
+.cu-ct small{color:var(--mut);display:block;overflow-wrap:anywhere}
+.cu-ct button{border:none;background:none;color:var(--navy);font-weight:600;padding:2px 4px}
+.cu-dlg{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);padding:18px;width:min(560px,calc(100vw - 32px))}
+.cu-dlg::backdrop{background:rgba(10,16,28,.45)}
+.cu-dlg h2{margin:0 0 4px;font-size:17px}
+.cu-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cu-f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);margin-top:10px}
+.cu-f input,.cu-f textarea{min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg);padding:8px 10px;font:inherit;font-size:14px}
+.cu-dbtn{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.cu-err{color:var(--bad-fg);font-size:14px;margin:10px 0 0}
+@media (max-width:900px){.cu-grid{grid-template-columns:minmax(0,1fr)}.cu-2{grid-template-columns:1fr}.cu-head h1{flex-basis:100%;order:-1;margin-left:0}}
+
+/* มือถือ: ปุ่มหัวหน้ารายละเอียดเล็กลง + ตารางในแท็บเรียงบรรทัดเดียว */
+@media (max-width:860px){
+  .cu-head .nx-btn{flex:1 1 auto;white-space:nowrap;padding:0 10px;font-size:13px}
+  #tab .q-t tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}
+  #tab .q-t td:nth-child(n){grid-column:auto;grid-row:auto;text-align:left;font-size:13px;color:var(--mut)}
+  #tab .q-t td:first-child{flex-basis:100%;font-size:14px;color:inherit}
+  #tab .q-t td.cn::before{content:'เคส '}
+}
+@media (max-width:860px){
+  .cu-t tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}
+  .cu-t td:nth-child(n){grid-column:auto;grid-row:auto;text-align:left;font-size:13px;color:var(--mut)}
+  .cu-t td:first-child{flex-basis:100%;font-size:14px;color:inherit}
+  .cu-t td.mc::before{content:'เครื่อง '}
+  .cu-t td.oc::before{content:'เคสเปิด '}
+}
