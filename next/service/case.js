@@ -101,7 +101,7 @@
             '<div>' + field('ช่างรับผิดชอบ', esc(C.techNames(c.assignee, techs))) + '</div>' +
             '<div>' + field('นัดหมาย', esc(C.fmtDate(c.appointment))) + '</div>' +
             '<div>' + field('ใบเสนอราคา', quotes.map(function (q) { return esc(q.id) + (q.status ? ' · ' + esc(q.status) : ''); }).join('<br>')) + '</div>' +
-            '<div>' + field('รายงานบริการ', reports.map(function (r) { return esc(r.report_no || r.id) + (r.status ? ' · ' + esc(r.status) : ''); }).join('<br>')) + '</div>' +
+            '<div>' + field('รายงานบริการ', reports.map(function (r) { return '<a href="reports.html?id=' + encodeURIComponent(r.id) + '">' + esc(r.report_no || r.id) + '</a>' + (r.status ? ' · ' + esc(r.status) : ''); }).join('<br>')) + '</div>' +
             '<div>' + field('ช่องทางที่แจ้ง', esc(c.channel || '')) + '</div>' +
             '<div>' + field('เปิดเคสเมื่อ', esc(C.fmtDate(c.created_at))) + '</div>' +
           '</div></section>' +

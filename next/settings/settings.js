@@ -9,6 +9,7 @@
   var esc = window.NextShell.esc, $ = function (id) { return document.getElementById(id); };
   var api, S = {}, E = {}, tab = 'company', users = [], perms = [];
   try { tab = localStorage.getItem('imode.settings.tab') || 'company'; } catch (e) {}
+  var qTab = new URLSearchParams(location.search).get('tab'); if (qTab) tab = qTab;
   var EDIT_KEYS = ['companyNameTh', 'companyName', 'companyAddress', 'companyPhone', 'companyEmail', 'companyTaxId', 'systemName',
     'quoteConfig', 'onsitePricingConfig', 'productCatalog', 'quotationStatuses', 'travelZones', 'mapConfig', 'lineConfig', 'portalNews', 'warrantyConfig', 'documentCategories'];
   var ARCHIVE = [

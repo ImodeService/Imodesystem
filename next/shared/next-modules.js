@@ -10,10 +10,10 @@ window.NEXT_MODULES = [
   { id: 'warranty',  name: 'ประกัน + PM',         ab: 'ปก', color: '#8A5A12', perm: 'warranty.view',  href: 'next/warranty/index.html' },
   { id: 'calendar',  name: 'ปฏิทินงาน',            ab: 'ปท', color: '#C2620A', perm: 'calendar.view',  href: 'next/calendar/index.html' },
   { id: 'quote',     name: 'ใบเสนอราคา',           ab: 'บส', color: '#5B4DB1', perm: 'quote.view',     href: 'next/quote/index.html' },
-  { id: 'docs',      name: 'เอกสารเครื่องจักร',     ab: 'อก', color: '#475569', perm: 'machine.view',   href: '' },
+  { id: 'docs',      name: 'เอกสารเครื่องจักร',     ab: 'อก', color: '#475569', perm: 'machine.view',   href: 'next/docs/index.html' },
   { id: 'install',   name: 'ติดตั้งเครื่องจักร',     ab: 'ตต', color: '#0B5E6A', perm: 'install.view',   href: '' },
-  { id: 'stock',     name: 'สต็อกอะไหล่',          ab: 'สต', color: '#9A4A1C', perm: 'stock.view',     href: '' },
-  { id: 'pettycash', name: 'เงินสดย่อย',           ab: 'งส', color: '#2F6B3A', perm: 'cash.view',      href: '' },
+  { id: 'stock',     name: 'สต็อกอะไหล่',          ab: 'สต', color: '#9A4A1C', perm: 'service.view',   href: 'next/parts/index.html' },
+  { id: 'pettycash', name: 'เงินสดย่อย',           ab: 'งส', color: '#2F6B3A', perm: 'service.view',   href: 'next/pettycash/index.html' },
   { id: 'customers', name: 'ลูกค้า',               ab: 'ลค', color: '#1F3A68', perm: 'customer.view',  href: 'next/customers/index.html' },
   { id: 'machines',  name: 'เครื่องจักร',           ab: 'คจ', color: '#3A4A63', perm: 'machine.view',   href: 'next/machines/index.html' },
   { id: 'hr',        name: 'บุคลากร',              ab: 'HR', color: '#5A6478', perm: 'hr.view',        href: '', old: 'modules/hr/index.html' },
@@ -25,6 +25,25 @@ window.NEXT_MODULES = [
    match = ส่วนของที่อยู่หน้าที่ถือว่าอยู่เมนูนั้น (ทำไฮไลท์) · หน้าที่ยังไม่ได้ทำใหม่ลิงก์ไปหน้าเดิมใน Service
    ไม่มี "หน้างานช่าง": ช่างใช้แอปมือถือเท่านั้น แอดมินไม่ต้องเห็น (เจ้าของ 2026-11-22) */
 window.NEXT_SIDE = {
+  // 2026-11-25: สต็อกอะไหล่ / เงินสดย่อย / เอกสารเครื่องจักร
+  stock: [
+    { ic: '📦', label: 'อะไหล่ + ใบสั่งซื้อ', href: 'next/parts/index.html', match: ['/next/parts/'] },
+    { ic: '📊', label: 'รายงานบริการ', href: 'next/service/reports.html' },
+    { sep: true },
+    { ic: '🔧', label: 'Service (เคสงาน)', href: 'next/service/overview.html' }
+  ],
+  pettycash: [
+    { ic: '💵', label: 'เงินสดย่อย', href: 'next/pettycash/index.html', match: ['/next/pettycash/'] },
+    { ic: '📦', label: 'สต็อกอะไหล่', href: 'next/parts/index.html' },
+    { sep: true },
+    { ic: '🔧', label: 'Service (เคสงาน)', href: 'next/service/overview.html' }
+  ],
+  docs: [
+    { ic: '📄', label: 'เอกสารทั้งหมด', href: 'next/docs/index.html', match: ['/next/docs/'] },
+    { ic: '⚙️', label: 'เครื่องจักร', href: 'next/machines/index.html' },
+    { sep: true },
+    { ic: '🔧', label: 'Service (เคสงาน)', href: 'next/service/overview.html' }
+  ],
   // 2026-11-25: เครื่องจักร (ทะเบียน + รายละเอียด + QR)
   machines: [
     { ic: '⚙️', label: 'เครื่องจักรทั้งหมด', href: 'next/machines/index.html', match: ['/next/machines/'] },
@@ -72,9 +91,10 @@ window.NEXT_SIDE = {
     ] },
     { sep: true },
     { ic: '🧾', label: 'ใบเสนอราคา', href: 'next/quote/index.html' },
-    { ic: '👨‍🔧', label: 'ทีมงาน', href: 'modules/service/index.html?page=technicians' },
+    { ic: '👨‍🔧', label: 'ทีมงาน', href: 'next/team/index.html', match: ['/next/team/'] },
     { ic: '🔔', label: 'แจ้งเตือน', href: 'next/notifications/index.html', match: ['/next/notifications/'] },
-    { ic: '📊', label: 'รายงาน', href: 'modules/service/index.html?page=reports' },
+    { ic: '📊', label: 'รายงานบริการ', href: 'next/service/reports.html', match: ['/next/service/reports.html'] },
+    { ic: '📦', label: 'สต็อกอะไหล่', href: 'next/parts/index.html', match: ['/next/parts/'] },
     { ic: '⚙️', label: 'ตั้งค่า', href: 'next/settings/index.html', match: ['/next/settings/'] }
   ],
   // Dashboard แยกหน้าตามหมวด (match ลงท้าย $ = ต้องตรงตัว)

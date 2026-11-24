@@ -60,6 +60,7 @@
       var link = d.url ? '<a class="no" href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.title || d.file_name || 'เอกสาร') + '</a>' : esc(d.title || d.file_name || 'เอกสาร');
       return '<tr><td>' + link + '</td><td>' + esc(d.category || '-') + '</td><td>' + esc(d.version || '-') + '</td><td>' + esc(day(d.doc_date || d.created_at)) + '</td></tr>';
     }).join('') + '</tbody></table>' : '<p class="q-empty">ยังไม่มีเอกสารของเครื่องนี้</p>';
+    if (tab === 'd') h += '<p style="margin:10px 0 0"><a class="nx-btn" href="../docs/index.html?machine=' + encodeURIComponent(ma.id) + '">📄 จัดการเอกสารของเครื่องนี้</a></p>';
     $('tab').innerHTML = h;
   }
 
