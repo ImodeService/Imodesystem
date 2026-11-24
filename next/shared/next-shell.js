@@ -327,7 +327,7 @@
     var mod = (window.NEXT_MODULES || []).filter(function (m) { return m.id === opts.moduleId; })[0];
     if (mod && mod.perm && !can(mod.perm)) throw new Error('บัญชีนี้ไม่มีสิทธิ์เข้าโมดุลนี้');
     // 2026-11-24: ปุ่ม + มุมขวาล่าง (แชท · ธีม) ทุกหน้า
-    if (!window.ImodeFab && !document.getElementById('cfJs')) { var fj = document.createElement('script'); fj.id = 'cfJs'; fj.src = ROOT + 'shared/chat-fab.js?v=20261124'; document.body.appendChild(fj); }
+    if (!window.ImodeFab && !document.getElementById('cfJs')) { var fj = document.createElement('script'); fj.id = 'cfJs'; fj.src = ROOT + 'shared/chat-fab.js?v=20261124b'; document.body.appendChild(fj); }
     return { user: state.user, can: can, sb: window.ImodeAuth.client(), root: ROOT, esc: esc };
   }
 

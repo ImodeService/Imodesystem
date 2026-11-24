@@ -46,7 +46,7 @@
       '.cf-fab:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}',
       '.cf-fab.is-move{animation:cfShake .28s ease-in-out infinite;box-shadow:0 14px 30px -6px rgba(15,30,60,.6);cursor:grabbing}',
       '@keyframes cfShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}',
-      '.cf-n{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#D9730D;color:#fff;font-size:11px;font-weight:700;line-height:20px;text-align:center;box-shadow:0 0 0 2px var(--bg,#F4F5F7)}',
+      '.cf-n{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#D9730D;color:#fff;font-size:11px;font-weight:700;line-height:20px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;box-shadow:0 0 0 2px var(--bg,#F4F5F7)}',
       '.cf-dim{position:fixed;inset:0;z-index:68;background:rgba(15,25,45,0);transition:background .18s}.cf-dim.is-in{background:rgba(15,25,45,.28)}',
       '.cf-act{position:fixed;z-index:69;display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;cursor:pointer;font:inherit;opacity:0;transform:scale(.6);transition:opacity .15s,transform .18s cubic-bezier(.2,.9,.3,1.3)}',
       '.cf-dim.is-in~.cf-act{opacity:1;transform:none}',
@@ -92,6 +92,11 @@
       '.cf-lnk{font-size:12.5px;color:var(--navy,#1F3A68);text-decoration:underline;white-space:nowrap}',
       '[data-theme="dark"] .cf-av{background:#2A3A55;color:#C9D6EE}[data-theme="dark"] .cf-av.g{background:#244030;color:#BFE0C8}[data-theme="dark"] .cf-av.c{background:#4A3A22;color:#F0D6B0}',
       '[data-theme="dark"] .cf-lnk{color:#9DB8E8}',
+      '[data-theme="dark"] .cf-ic{background:#2B3547;color:#EEF3FB;border-color:#4A5872;box-shadow:0 4px 14px rgba(0,0,0,.45)}',
+      '[data-theme="dark"] .cf-lb{background:#2B3547;color:#EEF3FB;box-shadow:0 2px 10px rgba(0,0,0,.45)}',
+      '[data-theme="dark"] .cf-act:hover .cf-ic,[data-theme="dark"] .cf-act.is-hot .cf-ic,[data-theme="dark"] .cf-act:focus-visible .cf-ic{background:#9DB8E8;color:#12161D;border-color:#9DB8E8}',
+      '[data-theme="dark"] .cf-dim.is-in{background:rgba(0,0,0,.5)}',
+      '[data-theme="dark"] .cf-fab{background:#2F5BA8;color:#fff;box-shadow:0 8px 22px -4px rgba(0,0,0,.7)}',
       '@media (prefers-reduced-motion:reduce){.cf-fab,.cf-fab svg,.cf-act,.cf-pn,.cf-dim{transition:none}.cf-fab.is-move{animation:none}}'
     ].join('\n');
     document.head.appendChild(st);
