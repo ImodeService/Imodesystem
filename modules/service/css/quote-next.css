@@ -1,0 +1,27 @@
+/* 2026-11-24 · หน้ากรอกใบเสนอราคา ในกรอบระบบใหม่ (เมนูซ้าย + แถบบน ของ next/)
+   โหลดต่อจาก quote-pages.css · ฟอร์ม/การคำนวณ/ลายเซ็น เหมือนเดิมทุกอย่าง แค่สีและกรอบ */
+:root{
+  --font:'IBM Plex Sans Thai','Anuphan',system-ui,sans-serif;
+  --bg:#F4F5F7;--card:#FFFFFF;--soft:#E9EEF6;--line:#E2E5EA;--line2:#EEF0F3;--fg:#1B2333;--mut:#5B6474;
+  --navy:#1F3A68;--navy-fg:#FFFFFF;
+  --ink:#1B2333;--muted:#5B6474;--imode-navy:#1F3A68;--imode-blue:#1F3A68;--shadow:none;--radius:12px;
+}
+html[data-theme="dark"]{
+  --bg:#12161D;--card:#181D26;--soft:#2E3A50;--line:#262D39;--line2:#222935;--fg:#E6E9EF;--mut:#8E97A8;
+  --navy:#9DB8E8;--navy-fg:#12161D;
+  --ink:#E6E9EF;--muted:#8E97A8;--imode-navy:#E6E9EF;--imode-blue:#9DB8E8;
+}
+body.nx-with-side,body.qn{font-family:var(--font);background:var(--bg);color:var(--fg)}
+body.qn .qc-top{display:none}
+body.nx-with-side .qc-wrap{margin-left:232px;max-width:1180px;padding:20px 16px 40px}
+@media (min-width:1500px){body.nx-with-side .qc-wrap{margin-left:calc(232px + (100vw - 232px - 1180px)/2)}}
+body.nx-with-side.nx-side-closed .qc-wrap{margin-left:auto}
+@media (max-width:900px){body.nx-with-side .qc-wrap{margin-left:0;padding:14px 12px 110px}}
+body.qn .qc-card{border-radius:12px;box-shadow:none}
+body.qn .qc-btn.is-primary{background:var(--navy);border-color:var(--navy);color:var(--navy-fg);box-shadow:none}
+body.qn .qc-btn.is-primary:hover{filter:brightness(1.08)}
+body.qn .qc-btn.is-primary:active{transform:none;box-shadow:none}
+body.qn .qc-type.is-on{background:var(--navy);border-color:var(--navy);color:var(--navy-fg);box-shadow:none}
+body.qn .qc-type.is-on small{color:inherit;opacity:.8}
+body.qn .qc-field input:focus,body.qn .qc-field select:focus,body.qn .qc-field textarea:focus,body.qn .qc-input:focus{outline:2px solid var(--soft);border-color:var(--navy)}
+body.qn .qc-sum{top:76px}

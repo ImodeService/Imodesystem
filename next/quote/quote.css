@@ -1,0 +1,43 @@
+/* I-MODE System (ระบบใหม่) · รายการใบเสนอราคา (2026-11-24) */
+.q-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.q-head h1{margin:0;font-size:22px;flex:1}
+.q-newl{color:var(--mut);font-size:14px}
+.q-head .nx-btn{height:40px;display:inline-flex;align-items:center;text-decoration:none}
+.q-head .nx-btn[hidden]{display:none}
+.q-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+.q-card{padding:14px 16px;display:block;color:inherit;text-decoration:none;text-align:left;border:1px solid var(--line);font:inherit;cursor:pointer}
+.q-card small{color:var(--mut);font-size:13px;display:block}
+.q-card b{font-size:26px;line-height:1.3;font-variant-numeric:tabular-nums;display:block}
+.q-box{padding:14px}
+.q-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.q-chips{display:flex;gap:6px;flex-wrap:wrap}
+.q-chip{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:14px;cursor:pointer}
+.q-chip[aria-pressed="true"]{background:var(--navy);color:var(--navy-fg);border-color:var(--navy)}
+.q-bar input,.q-bar select{height:36px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg);padding:0 10px;font:inherit;font-size:14px}
+.q-bar input{flex:1;min-width:180px}
+.q-t{width:100%;border-collapse:collapse;font-size:14px}
+.q-t th{text-align:left;font-size:12px;color:var(--mut);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)}
+.q-t td{padding:12px;border-bottom:1px solid var(--line2)}
+.q-t tbody tr{cursor:pointer}
+.q-t tbody tr:hover td{background:var(--soft)}
+.q-t a.no{font-weight:600;color:var(--fg);text-decoration:none}
+.q-t .num{text-align:right;font-variant-numeric:tabular-nums}
+.q-t .ty{font-size:12px;color:var(--mut)}
+.st{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--soft);color:var(--fg);white-space:nowrap}
+.st.ok{background:#e5f4e4;color:#1f6b2c}.st.no{background:#fbebeb;color:#9b2c2c}.st.sent{background:#e7f1fb;color:#1d4f86}
+:root[data-theme="dark"] .st.ok{background:#173a22;color:#9fe0ad}:root[data-theme="dark"] .st.no{background:#3d1d1d;color:#f3a9a9}:root[data-theme="dark"] .st.sent{background:#17304d;color:#a9cdf3}
+.q-empty{color:var(--mut);text-align:center;padding:24px 0;margin:0}
+@media (max-width:860px){
+  .q-cards{grid-template-columns:1fr 1fr}
+  .q-head h1{flex-basis:100%}.q-newl{display:none}.q-head .nx-btn{flex:1;justify-content:center;padding:0 8px}
+  .q-t thead{display:none}
+  .q-t,.q-t tbody,.q-t tr,.q-t td{display:block}
+  .q-t tr{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:12px 0;border-bottom:1px solid var(--line2)}
+  .q-t td{padding:0;border:0}
+  .q-t tbody tr:hover td{background:none}
+  .q-t td:nth-child(2){grid-column:2;grid-row:2;text-align:right;color:var(--mut);font-size:13px}
+  .q-t td:nth-child(3){grid-column:1;grid-row:2}
+  .q-t td.num{grid-column:2;grid-row:1}
+  .q-t td:last-child{grid-column:1/-1}
+  .q-t .hide-m{display:none}
+}

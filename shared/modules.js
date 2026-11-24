@@ -13,7 +13,7 @@ window.IMODE_MODULES = [
     icon: '<path d="M30 8a10 10 0 0 0-9.6 12.8L8 33.2a4 4 0 0 0 5.7 5.7l12.4-12.4A10 10 0 0 0 39 16.6l-6 6-6.4-1.7L24.9 15l6-6A10 10 0 0 0 30 8z" fill="#0b63e5"/><circle cx="11" cy="36" r="2" fill="#fff"/><circle cx="38" cy="36" r="7" fill="#f79009"/>' },
   { id: 'calendar', name: 'ปฏิทินงาน', fullName: 'ปฏิทินและแผนงานช่าง', group: 'ops', href: 'next/calendar/index.html',
     icon: '<rect x="6" y="9" width="36" height="32" rx="5" fill="#f79009"/><rect x="6" y="9" width="36" height="9" rx="4" fill="#c25e00"/><rect x="13" y="5" width="4" height="9" rx="2" fill="#0c225e"/><rect x="31" y="5" width="4" height="9" rx="2" fill="#0c225e"/><rect x="12" y="23" width="7" height="6" rx="1.5" fill="#fff"/><rect x="22" y="23" width="7" height="6" rx="1.5" fill="#fff"/><rect x="12" y="32" width="7" height="5" rx="1.5" fill="#fff"/>' },
-  { id: 'quote', name: 'ใบเสนอราคา', fullName: 'ใบเสนอราคา', group: 'ops', href: 'modules/service/index.html?page=quotation',
+  { id: 'quote', name: 'ใบเสนอราคา', fullName: 'ใบเสนอราคา', group: 'ops', href: 'next/quote/index.html',
     icon: '<path d="M11 5h17l10 10v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z" fill="#5b4db1"/><path d="M28 5v10h10" fill="#c9c2ef"/><text x="23" y="35" font-size="16" font-weight="700" text-anchor="middle" fill="#fff">฿</text>' },
   { id: 'customers', name: 'ลูกค้า', fullName: 'รายชื่อลูกค้า', group: 'ops', href: 'modules/service/index.html?page=customers',
     icon: '<circle cx="18" cy="15" r="7" fill="#0c225e"/><path d="M4 39a14 14 0 0 1 28 0z" fill="#0c225e"/><circle cx="34" cy="18" r="5.5" fill="#0b63e5"/><path d="M28 31a10 10 0 0 1 16 8H31z" fill="#0b63e5"/>' },

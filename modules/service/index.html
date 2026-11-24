@@ -21,6 +21,7 @@
   <script>(function(){var c=/[?&](machineToken|serial)=|[?&]page=(customer-entry|scan|customer-portal|customer-home)\b/.test(location.search)||/customer-portal|#\/(customer-home|customer-entry|scan)/.test(location.hash),v='';try{v=(c?localStorage.getItem('imode.customerTheme'):localStorage.getItem('imode.theme')||localStorage.getItem('imode.serviceTheme'))||''}catch(e){}var r=document.documentElement;r.setAttribute('data-view',c?'customer':'staff');if(!c&&v==='classic')v='flat-light';if(v==='auto')v=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'flat-dark':'flat-light';r.setAttribute('data-ui',/^(flat-light|flat-dark|classic)$/.test(v)?v:(c?'classic':'flat-light'))})();</script>
   <!-- platform sign-in (G:\imodeservice): shared settings, then Service joins the shared session -->
   <script src="../../shared/config.js"></script>
+  <script>/* 2026-11-24 เลิกใช้หน้า Service เดิม: เปิดแบบไม่มี ?page= และไม่ใช่หน้าลูกค้า (QR/Serial/portal) → กลับหน้าเลือกโมดุลหลัก */(function(){try{var q=location.search,h=location.hash||'',E=window.IMODE_ENV||{};if(E.customerHost&&location.host===E.customerHost)return;if(q&&q!=='?')return;if(/customer|scan|portal/i.test(h))return;location.replace('../../apps/launcher/index.html')}catch(e){}})();</script>
   <!-- 2026-10-14: staff theme shared with every module (shared/theme-pref.js); js/127 still draws Service's picker -->
   <script src="../../shared/theme-pref.js?v=20261122"></script>
   <script src="./js/00-platform.js"></script>

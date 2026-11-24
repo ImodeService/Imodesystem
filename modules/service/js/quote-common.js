@@ -1302,6 +1302,7 @@
   return SIDE_DEFAULT.map(function(x){return {p:x[0],i:x[1],t:x[2]}});
  }
  function sidebar(){
+  if(window.NextShell)return; /* 2026-11-24: กรอบระบบใหม่ (next-shell) ทำเมนูซ้ายให้แล้ว */
   var top=document.querySelector('.qc-top');
   if(!top||document.getElementById('qcSide'))return;
   var u=user(),nm=userName()||'ผู้ใช้',role=String(u.permissionRole||u.role||'');

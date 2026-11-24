@@ -118,7 +118,9 @@
             '<div class="nx-sub-wrap' + (open ? ' open' : '') + '"' + (open ? '' : ' inert') + '><ul class="nx-sub" id="nx-grp-' + gi + '">' + it.children.map(function (c) { return link(c, true); }).join('') + '</ul></div></li>';
         }
         return link(it, false);
-      }).join('') + '</ul></nav>';
+      }).join('') + '</ul></nav>' +
+      /* 2026-11-24: ปุ่มกลับหน้าเลือกโมดุลหลัก (เจ้าของขอ) อยู่ล่างสุดของเมนูซ้าย */
+      '<a href="' + esc(ROOT + 'apps/launcher/index.html') + '" class="nx-side-home"><span class="ic" aria-hidden="true">⬅</span><span>กลับหน้าเลือกโมดุล</span></a>';
     aside.addEventListener('click', function (e) {
       var b = e.target.closest('[data-grp]'); if (!b) return;
       var open = b.getAttribute('aria-expanded') !== 'true';

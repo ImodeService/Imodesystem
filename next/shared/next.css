@@ -139,3 +139,7 @@ body.nx-with-side .nx-top,body.nx-with-side .nx-main{transition:margin-left .2s 
 .nx-side .nx-sub-wrap.open .nx-sub li{transform:none}
 .nx-side .nx-sub li a{min-height:40px;font-size:14px}
 @media (prefers-reduced-motion:reduce){.nx-side .nx-grp-btn .chev,.nx-side .nx-sub-wrap,.nx-side .nx-sub li{transition:none}}
+
+/* 2026-11-24 ปุ่มกลับหน้าเลือกโมดุล ล่างสุดของเมนูซ้าย */
+.nx-side-home{margin:auto 10px 14px;display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:10px;font-size:15px;color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.18)}
+.nx-side-home:hover{background:rgba(255,255,255,.08);color:#fff}
