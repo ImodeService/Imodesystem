@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>เครื่องจักร · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261124">
+<link rel="stylesheet" href="../quote/quote.css?v=20261124">
+<link rel="stylesheet" href="../customers/customers.css?v=20261124">
+<link rel="stylesheet" href="machines.css?v=20261125">
+<script src="../shared/next-shell.js?v=20261124"></script>
+</head>
+<body>
+<main class="nx-main">
+  <div id="err"></div>
+  <div class="q-head"><h1>เครื่องจักร</h1><button type="button" class="nx-btn primary" id="add" hidden>＋ เพิ่มเครื่อง</button></div>
+  <div id="origin" class="ma-origin" role="tablist" aria-label="ที่มาของเครื่อง"></div>
+  <div id="cards" class="q-cards"></div>
+  <section class="nx-card q-box">
+    <div class="q-bar">
+      <div id="chips" class="q-chips" role="group" aria-label="ขนาด"></div>
+      <select id="svc" aria-label="สถานะ Service"><option value="">ทุกสถานะ Service</option><option>ต่อ Service</option><option>ไม่ต่อ Service</option><option>ไม่ระบุ</option></select>
+      <input id="q" type="search" placeholder="ค้นหาชื่อ Model S/N ลูกค้า" autocomplete="off" aria-label="ค้นหา">
+    </div>
+    <table class="q-t ma-t"><thead><tr><th>เครื่อง</th><th>Model</th><th>S/N</th><th class="hide-m">ลูกค้า</th><th>ขนาด</th><th>Service</th><th>ประกัน</th><th class="num">เคส</th></tr></thead>
+      <tbody id="rows"></tbody></table>
+    <p id="empty" class="q-empty" hidden>ไม่พบเครื่องจักร</p>
+    <p id="more" class="q-empty" hidden></p>
+  </section>
+</main>
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261125"></script>
+<script src="../service/cases-common.js?v=20261124"></script>
+<script src="machines-common.js?v=20261125"></script>
+<script src="machines.js?v=20261125"></script>
+</body>
+</html>

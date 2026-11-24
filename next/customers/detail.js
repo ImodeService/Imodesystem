@@ -38,7 +38,8 @@
     var h = '', mById = {}; data.m.forEach(function (m) { mById[m.id] = m; });
     if (tab === 'm') h = data.m.length ? '<table class="q-t"><thead><tr><th>เครื่อง</th><th>Serial</th><th>ประกัน</th><th class="num">เคส</th></tr></thead><tbody>' + data.m.map(function (m) {
       var n = data.c.filter(function (c) { return c.machine_id === m.id; }).length;
-      return '<tr><td><b>' + esc(mName(m)) + '</b><div class="ty">' + esc([m.model, m.size].filter(Boolean).join(' · ')) + '</div></td><td>' + esc(m.imodeSn || m.serial || '-') + '</td><td>' + wBadge(wEnd(m.id)) + '</td><td class="num cn">' + n + '</td></tr>';
+      var mu = '../machines/detail.html?id=' + encodeURIComponent(m.id);
+      return '<tr data-href="' + esc(mu) + '"><td><a class="no" href="' + esc(mu) + '">' + esc(mName(m)) + '</a><div class="ty">' + esc([m.model, m.size].filter(Boolean).join(' · ')) + '</div></td><td>' + esc(m.imodeSn || m.serial || '-') + '</td><td>' + wBadge(wEnd(m.id)) + '</td><td class="num cn">' + n + '</td></tr>';
     }).join('') + '</tbody></table>' : '<p class="q-empty">ยังไม่มีเครื่อง</p>';
     if (tab === 'c') h = data.c.length ? '<table class="q-t"><thead><tr><th>เคส</th><th>วันที่</th><th>เครื่อง</th><th>ขั้นงาน</th></tr></thead><tbody>' + data.c.map(function (c) {
       var u = '../service/case.html?id=' + encodeURIComponent(c.id);

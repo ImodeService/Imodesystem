@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>ประกัน + PM · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261124">
+<link rel="stylesheet" href="../quote/quote.css?v=20261124">
+<link rel="stylesheet" href="../customers/customers.css?v=20261124">
+<link rel="stylesheet" href="../machines/machines.css?v=20261125">
+<link rel="stylesheet" href="warranty.css?v=20261125">
+<script src="../shared/next-shell.js?v=20261124"></script>
+</head>
+<body>
+<main class="nx-main">
+  <div id="err"></div>
+  <div class="q-head"><h1 id="h1">ประกันเครื่อง</h1><button type="button" class="nx-btn primary" id="add" hidden>＋ ลงทะเบียนประกัน</button></div>
+  <div id="cards" class="q-cards"></div>
+  <section class="nx-card q-box" id="wBox">
+    <div class="q-bar">
+      <div id="chips" class="q-chips" role="group" aria-label="สถานะประกัน"></div>
+      <input id="q" type="search" placeholder="ค้นหาเลขที่ ลูกค้า เครื่อง S/N" autocomplete="off" aria-label="ค้นหา">
+    </div>
+    <table class="q-t wr-t"><thead id="thead"></thead><tbody id="rows"></tbody></table>
+    <p id="empty" class="q-empty" hidden>ไม่พบรายการ</p>
+    <p id="more" class="q-empty" hidden></p>
+  </section>
+</main>
+<dialog id="vDlg" class="cu-dlg ma-dlg wr-v"><div id="vBody"></div></dialog>
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261125b"></script>
+<script src="../machines/machines-common.js?v=20261125"></script>
+<script src="warranty.js?v=20261125"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>เครื่องจักร · I-MODE System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/next.css?v=20261124">
+<link rel="stylesheet" href="../quote/quote.css?v=20261124">
+<link rel="stylesheet" href="../customers/customers.css?v=20261124">
+<link rel="stylesheet" href="machines.css?v=20261125">
+<script src="../shared/next-shell.js?v=20261124"></script>
+</head>
+<body>
+<main class="nx-main">
+  <div id="err"></div>
+  <div class="q-head cu-head"><a class="nx-btn" href="index.html">‹ เครื่องจักรทั้งหมด</a><h1 id="title"><span class="sk" style="width:240px;height:26px"></span></h1>
+    <button type="button" class="nx-btn" id="edit" hidden>แก้ไข</button><button type="button" class="nx-btn" id="del" hidden>ลบ</button>
+    <a class="nx-btn primary" id="newCase" hidden>＋ เปิดเคสเครื่องนี้</a></div>
+  <div class="cu-grid">
+    <section class="nx-card q-box"><div id="tabs" class="q-chips cu-tabs" role="tablist"></div><div id="tab"></div></section>
+    <div class="cu-side">
+      <section class="nx-card cu-box"><div id="pic" class="ma-big"></div><h2>ข้อมูลเครื่อง</h2><div id="info" class="cu-kv"></div></section>
+      <section class="nx-card cu-box"><h2>QR ประจำเครื่อง</h2>
+        <div class="ma-qrs"><figure><div id="qrM" class="ma-qr"></div><figcaption>ลูกค้าสแกน → หน้าเครื่องนี้</figcaption></figure><figure><div id="qrL" class="ma-qr"></div><figcaption>เพิ่มเพื่อน LINE OA</figcaption></figure></div>
+        <div class="ma-qrb"><button type="button" class="nx-btn" data-print="machine">🖨 ฉลากเครื่อง</button><button type="button" class="nx-btn" data-print="line">🖨 QR LINE</button><button type="button" class="nx-btn primary" data-print="both">🖨 พิมพ์ทั้งสอง</button></div>
+        <p class="ma-url"><a id="pUrl" target="_blank" rel="noopener">เปิดหน้าลูกค้าของเครื่องนี้</a> · <a id="pNew" target="_blank" rel="noopener">หน้าลูกค้าแบบใหม่ (ทดสอบ)</a> · <button type="button" id="copy" class="ma-lnk">คัดลอกลิงก์</button></p>
+      </section>
+    </div>
+  </div>
+</main>
+<script src="../../shared/vendor/qrcode.min.js"></script>
+<script src="../../shared/vendor/supabase.min.js"></script>
+<script src="../../shared/config.js"></script>
+<script src="../../shared/auth.js"></script>
+<script src="../shared/next-modules.js?v=20261125"></script>
+<script src="../service/cases-common.js?v=20261124"></script>
+<script src="machines-common.js?v=20261125"></script>
+<script src="detail.js?v=20261125c"></script>
+</body>
+</html>

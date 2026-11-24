@@ -1,0 +1,43 @@
+/* I-MODE System (ระบบใหม่) · เครื่องจักร (2026-11-25) · ฐานจาก quote.css + customers.css */
+.ma-origin{display:flex;gap:6px;margin:4px 0 12px;border-bottom:1px solid var(--line);overflow-x:auto}
+.ma-origin button{border:0;background:none;color:var(--mut);font:inherit;font-size:14px;font-weight:600;padding:8px 12px;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;cursor:pointer}
+.ma-origin button[aria-selected="true"]{color:var(--navy);border-bottom-color:var(--navy)}
+.ma-origin b{font-weight:700;margin-left:4px}
+.q-card[aria-pressed="true"]{outline:2px solid var(--navy);outline-offset:-2px}
+.q-bar select{min-height:38px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg);padding:0 10px;font:inherit;font-size:14px}
+.ma-nm{display:flex;gap:10px;align-items:center;min-width:0}
+.ma-nm img,.ma-ph{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none;background:var(--soft);display:grid;place-items:center;color:var(--mut);font-size:18px}
+.ma-nm a.nm{color:var(--fg);font-weight:600;text-decoration:none}
+.ma-sn{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.ma-sz{display:inline-block;min-width:26px;text-align:center;font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;background:var(--soft);color:var(--navy)}
+.ma-sz.none{background:var(--hold-bg,#FFF4E0);color:var(--hold-fg,#8A5A12);font-weight:600}
+.ma-en{display:block;font-size:14px;font-weight:500;color:var(--mut)}
+.ma-big{height:180px;border-radius:12px;background:var(--soft);display:grid;place-items:center;margin-bottom:12px;overflow:hidden;font-size:42px;color:var(--mut)}
+.ma-big img{width:100%;height:100%;object-fit:contain;background:#fff}
+.ma-qrs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0}
+.ma-qrs figure{margin:0;text-align:center}
+.ma-qr{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;aspect-ratio:1;display:grid;place-items:center}
+.ma-qr img{width:100%;height:auto;display:block}
+.ma-qrs figcaption{font-size:12px;color:var(--mut);margin-top:4px}
+.ma-qrb{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.ma-qrb .nx-btn{flex:1 1 auto;height:36px;font-size:13px;padding:0 10px;white-space:nowrap}
+.ma-url{font-size:13px;margin:10px 0 0;color:var(--mut)}
+.ma-url a,.ma-lnk{color:var(--navy);font:inherit;font-size:13px;text-decoration:underline;border:0;background:none;padding:0;cursor:pointer}
+.ma-dlg{width:min(620px,calc(100vw - 32px))}
+.ma-dlg select{min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg);padding:8px 10px;font:inherit;font-size:14px}
+.ma-dlg small{font-size:11.5px;color:var(--mut)}
+.ma-chk{justify-content:flex-end}.ma-chk span{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--fg);min-height:40px}
+.ma-chk input{width:18px;height:18px}
+.ma-pic{display:flex;gap:12px;align-items:center;margin-top:10px}
+.ma-pic #mPic{width:96px;height:72px;border-radius:10px;background:var(--soft);display:grid;place-items:center;overflow:hidden;font-size:12px;color:var(--mut);flex:none}
+.ma-pic #mPic img{width:100%;height:100%;object-fit:cover}
+.ma-picb{display:flex;gap:6px;flex-wrap:wrap}.ma-picb .nx-btn{height:36px;font-size:13px;cursor:pointer}
+.ma-picb [hidden]{display:none}
+@media (max-width:860px){
+  .ma-t tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+  .ma-t td:nth-child(n){grid-column:auto;grid-row:auto;text-align:left;font-size:13px;color:var(--mut)}
+  .ma-t td:first-child{flex-basis:100%;font-size:14px;color:inherit}
+  .ma-t td.cn::before,#tab .q-t td.cn::before{content:'เคส '}
+  .q-bar select{flex:1 1 140px}
+}
+.ma-big.none{height:72px;font-size:28px}

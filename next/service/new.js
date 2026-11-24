@@ -116,7 +116,14 @@
   customers.forEach(function (c) { c.mcount = count[c.id] || 0; });
   renderTechs();
   /* 2026-11-24: ?customer=<id> จากหน้าลูกค้า → เลือกลูกค้าให้เลย */
-  try { var pc = new URLSearchParams(location.search).get('customer'); var hit = pc && customers.filter(function (c) { return c.id === pc; })[0]; if (hit) pickCust(hit); } catch (e) {}
+  try {
+    var sp = new URLSearchParams(location.search), pc = sp.get('customer'), pm = sp.get('machine');
+    /* 2026-11-25: ?machine=<id> จากหน้าเครื่องจักร → เลือกลูกค้า + เครื่องให้เลย */
+    var mh = pm && machines.filter(function (m) { return m.id === pm; })[0];
+    if (mh && !pc) pc = mh.customerId;
+    var hit = pc && customers.filter(function (c) { return c.id === pc; })[0];
+    if (hit) { pickCust(hit); if (mh && mh.customerId === hit.id) { st.mach = mh.id; renderMach(); } }
+  } catch (e) {}
 
   var f = $('f');
   f.addEventListener('click', function (e) {
